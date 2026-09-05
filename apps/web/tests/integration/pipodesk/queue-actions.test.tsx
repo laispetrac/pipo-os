@@ -26,7 +26,16 @@ async function renderQueue() {
   return router
 }
 
-const liveCount = () => Number(screen.getByRole('status').textContent?.match(/^(\d+)/)?.[1])
+/** The queue announces its total in a `status` region. The DS `Snackbar` also
+ *  renders one, so once a batch message is up the page legitimately has two —
+ *  the count is the region that starts with a number. */
+const liveCount = () =>
+  Number(
+    screen
+      .getAllByRole('status')
+      .map((region) => region.textContent?.match(/^(\d+)/)?.[1])
+      .find((digits) => digits !== undefined),
+  )
 
 describe('painel de filtros', () => {
   it('should apply a filter from the panel and grow a removable chip', async () => {
@@ -256,10 +265,49 @@ describe('barra de lote', () => {
 
     // Nothing leaves the queue (the cut is by owner, not status)…
     expect(liveCount()).toBe(antes)
-    // …mas `Em espera` agora conta a fila inteira.
+
+    /* …and `Em espera` gets the half that could move. It used to be the whole
+       cut: DSP-19 changed that. `archived` is `closedAt`, an axis of its own —
+       894 of the fixture's final tickets were never archived — so this cut
+       carries completed and cancelled tickets that now stay put. The two
+       numbers are asserted against each other, not against a constant, so the
+       test keeps meaning something when the fixture is regenerated. */
+    const ficaram = Number(screen.getByRole('alert').textContent?.match(/^(\d+)/)?.[1])
+    expect(ficaram).toBeGreaterThan(0)
     const sidebar = screen.getByRole('navigation', { name: /pipodesk/i })
     const emEspera = within(sidebar).getByText('Em espera').closest('button')
-    expect(emEspera?.textContent).toContain(String(antes))
+    expect(emEspera?.textContent).toContain(String(antes - ficaram))
+  })
+  /**
+   * DSP-19: a final ticket does not reopen. `Cancelamentos` mixes the two
+   * natures on purpose — `submitted-cancellation` is still in flight and
+   * `cancelled` has ended — so a batch over it is the honest test: the open
+   * half moves and the final half must stay put, in the same click. Before the
+   * rule, `runBatch` patched the whole selection and the node emptied.
+   */
+  it('should leave the final tickets untouched when the batch changes status', async () => {
+    await renderQueue()
+    const user = userEvent.setup()
+
+    const sidebar = screen.getByRole('navigation', { name: /pipodesk/i })
+    await user.click(within(sidebar).getByRole('button', { name: /^Cancelamentos/ }))
+    const naFila = liveCount()
+
+    await user.click(screen.getByRole('checkbox', { name: /selecionar todos/i }))
+    const barra = await screen.findByRole('group', { name: 'Ações em lote' })
+    await user.click(within(barra).getByRole('button', { name: 'Ações' }))
+    await user.click(screen.getByRole('button', { name: 'Mudar status' }))
+    await user.click(await screen.findByRole('button', { name: /Na operadora/ }))
+
+    // The cancelled ones are still here; only the in-flight half left the cut.
+    const ficaram = liveCount()
+    expect(ficaram).toBeGreaterThan(0)
+    expect(ficaram).toBeLessThan(naFila)
+
+    // And the screen says so, otherwise the selection just vanishes in silence.
+    expect(await screen.findByRole('alert')).toHaveTextContent(
+      new RegExp(`${ficaram}.*(estado final|não (muda|mudam))`, 'i'),
+    )
   })
 })
 

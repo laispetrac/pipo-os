@@ -15,5 +15,12 @@ export default {
   liveCount: (count: number, label: string) =>
     `${count} ${count === 1 ? 'chamado' : 'chamados'} em ${label}`,
   free: 'Livre no pod',
+  /** A mixed selection changes the open tickets and leaves the final ones. The
+   *  count has to be said, or the selection just vanishes and nobody knows
+   *  which half moved. */
+  batchFinalKept: (count: number) =>
+    `${count} ${count === 1 ? 'chamado' : 'chamados'} em estado final ${
+      count === 1 ? 'não muda' : 'não mudam'
+    } de situação: concluído e cancelado não reabrem.`,
   empty_cell: '—',
 }

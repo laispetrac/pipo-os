@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useState } from 'react'
 import { useNavigate } from '@tanstack/react-router'
+import { Snackbar } from '@piposaude/design-system'
 import { QueueHeader } from '@/components/pipodesk/queue/QueueHeader'
 import { QueueTable } from '@/components/pipodesk/queue/QueueTable'
 import { BatchBar, type PodOption } from '@/components/pipodesk/queue/BatchBar'
@@ -18,6 +19,8 @@ import type { LabelContext } from '@/lib/pipodesk/filter-copy'
 import { filterChipsOf } from '@/lib/pipodesk/filter-copy'
 import { groupTickets } from '@/lib/pipodesk/group'
 import { sortTickets } from '@/lib/pipodesk/sort'
+import { transitionsFrom } from '@/lib/pipodesk/status'
+import type { ApiStatus } from '@/lib/pipodesk/status'
 import { isSearchNode, pillsOf, type TreeNode, type TreeSection } from '@/lib/pipodesk/tree'
 import { toQueueNode } from '@/lib/pipodesk/queue-node'
 import { ANALYSTS_BY_POD, structureFixture, VIEWER_GROUP_ID } from '@/fixtures/pipodesk/dataset'
@@ -134,11 +137,29 @@ export default function QueuePage() {
 
   /* Effective selection = intersection with the listed rows: an action that
        removes rows from the queue empties the selection with them. */
+  const [batchMessage, setBatchMessage] = useState<string | null>(null)
+
   const listedIds = useMemo(() => new Set(listed.map((ticket) => ticket.id)), [listed])
   const selectedVisible = view.selectedIds.filter((id) => listedIds.has(id))
 
   const runBatch = (patch: Parameters<typeof applyPatch>[1]) => {
     applyPatch(selectedVisible, patch)
+  }
+
+  /* A final ticket does not reopen (DSP-19), and a batch is where that gets
+     violated by accident: `Cancelamentos` mixes an in-flight cancellation with
+     an ended one, so one click over the whole cut used to reopen the ended
+     half. The open ones move, the final ones stay — and the count of those
+     that stayed is said out loud, or the selection just vanishes. */
+  const runStatusBatch = (status: ApiStatus) => {
+    const byId = new Map(listed.map((ticket) => [ticket.id, ticket]))
+    const movable = selectedVisible.filter((id) => {
+      const current = byId.get(id)
+      return current ? transitionsFrom(current.status).includes(status) : false
+    })
+    const kept = selectedVisible.length - movable.length
+    applyPatch(movable, { status })
+    setBatchMessage(kept > 0 ? constants.batchFinalKept(kept) : null)
   }
 
   /* The pod the queue is showing, not the viewer's. Nodes outside a pod
@@ -242,10 +263,25 @@ export default function QueuePage() {
           onAssign={(userId) => runBatch({ assigneeId: userId })}
           pods={pods}
           onMoveToPod={(groupId, userId) => runBatch({ groupId, assigneeId: userId })}
-          onStatus={(status) => runBatch({ status })}
+          onStatus={runStatusBatch}
           onSchedule={(date) => runBatch({ actionDate: date })}
         />
       )}
+
+      {/* The live region is always in the tree, and only its content comes and
+          goes: a region that enters together with its text is not announced by
+          most screen readers (the same trap the PD-114 review found in the
+          Copiado balloon). */}
+      <div role="alert">
+        {batchMessage !== null && (
+          <Snackbar
+            open
+            feedbackType="info"
+            message={batchMessage}
+            onClose={() => setBatchMessage(null)}
+          />
+        )}
+      </div>
     </div>
   )
 }

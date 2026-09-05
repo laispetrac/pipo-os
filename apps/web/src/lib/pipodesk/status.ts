@@ -87,3 +87,19 @@ export function toApiStatus(status: DisplayStatus, reason: PendingReason | null)
 export function isOpen(status: ApiStatus): boolean {
   return !FINAL_STATUSES.includes(status)
 }
+
+/** Where a ticket may go from each status — the one rule every writer of
+ *  status reads. **A final ticket does not reopen** (DSP-19, merged from
+ *  DSP-105): the way back leaves the design, so `completed` and `cancelled`
+ *  offer nothing. Between open statuses no transition is forbidden anywhere,
+ *  so the list stays whole — including the current status, which is "send
+ *  without changing the situation". Narrowing it further would invent domain
+ *  rules the product has not decided.
+ *
+ *  This is the front half of a rule that belongs in the API (ACE-55/56, and
+ *  PD-042 for the batch). While the queue runs on the fixture it is the only
+ *  fence there is; once the batch becomes an endpoint it has to exist on both
+ *  sides, because a fence only on the client is not a fence. */
+export function transitionsFrom(status: ApiStatus): ApiStatus[] {
+  return isOpen(status) ? API_STATUSES : []
+}
