@@ -27,6 +27,8 @@ function row(overrides: Partial<TicketRow> & { id: string }): TicketRow {
     beneficiaryName: null,
     taxId: null,
     companyName: null,
+    parentCompanyId: null,
+    parentCompanyName: null,
     companySize: null,
     carrierId: null,
     carrierName: null,
@@ -387,5 +389,36 @@ describe('applyFilter and countByOption', () => {
 
     expect(countByOption(rows, 'contractTypes').get('sem')).toBe(1)
     expect(countByOption(rows, 'contractTypes').get(NULL_TOKEN)).toBeUndefined()
+  })
+})
+
+/**
+ * DSP-36: a client with forty branches is one client. Felipe filters by client
+ * when protocols pile up, and filtering branch by branch groups nothing. The
+ * parent is the key — for matching, and for the option counts the panel shows.
+ */
+describe('empresa pela matriz', () => {
+  const filial = row({ id: 'a', companyId: 'sub-1', parentCompanyId: 'matriz-1' })
+  const matriz = row({ id: 'b', companyId: 'matriz-1' })
+
+  it('should match a branch ticket when the filter names its parent', () => {
+    expect(matchesFilter(filial, { companyIds: ['matriz-1'] }, VIEWER)).toBe(true)
+  })
+
+  /** A saved view pointing at a branch has to keep working: the change makes
+   *  the parent an extra way in, never the only one. */
+  it('should still match a branch ticket when the filter names the branch itself', () => {
+    expect(matchesFilter(filial, { companyIds: ['sub-1'] }, VIEWER)).toBe(true)
+  })
+
+  it('should not match an unrelated company', () => {
+    expect(matchesFilter(filial, { companyIds: ['matriz-2'] }, VIEWER)).toBe(false)
+  })
+
+  it('should count a branch under its parent in the option counts', () => {
+    const counts = countByOption([filial, matriz], 'companyIds')
+
+    expect(counts.get('matriz-1')).toBe(2)
+    expect(counts.has('sub-1')).toBe(false)
   })
 })

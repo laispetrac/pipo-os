@@ -1,6 +1,6 @@
 import type { TicketFilter as ApiTicketFilter } from '@pipo-os/api-client'
 import { businessDay } from '@/lib/date'
-import type { TicketRow } from './ticket-row'
+import { principalIdOf, type TicketRow } from './ticket-row'
 
 /**
  * Queue filtering, plus the alive/awake window rules.
@@ -119,7 +119,15 @@ export function matchesFilter(ticket: TicketRow, filter: TicketFilter, viewerId:
   if (filter.createdSince && businessDay(ticket.createdAt) < filter.createdSince) return false
 
   if (missesList(filter.statuses, ticket.status)) return false
-  if (missesList(filter.companyIds, ticket.companyId)) return false
+  /* By the company itself **or** by its parent (DSP-36): filtering the parent
+     brings the branches, and a saved view pointing at a branch keeps working.
+     Same key as `optionKeysOf` and as the grouping. */
+  if (
+    filter.companyIds?.length &&
+    !filter.companyIds.includes(ticket.companyId) &&
+    !filter.companyIds.includes(principalIdOf(ticket))
+  )
+    return false
   if (missesList(filter.carrierIds, ticket.carrierId)) return false
   if (missesList(filter.products, ticket.product)) return false
   if (missesList(filter.types, ticket.enrollmentType)) return false
@@ -183,7 +191,7 @@ const optionKeysOf = (ticket: TicketRow, field: FilterField): string[] => {
     case 'statuses':
       return [ticket.status]
     case 'companyIds':
-      return [ticket.companyId]
+      return [principalIdOf(ticket)]
     case 'carrierIds':
       return ticket.carrierId ? [ticket.carrierId] : []
     case 'products':

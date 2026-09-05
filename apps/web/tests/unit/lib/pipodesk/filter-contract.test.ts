@@ -51,6 +51,8 @@ const toRow = (seed: FixtureTicket): TicketRow => ({
   beneficiaryName: null,
   taxId: null,
   companyName: null,
+  parentCompanyId: null,
+  parentCompanyName: null,
   companySize: seed.client.companySize,
   carrierId: seed.carrierId,
   carrierName: null,

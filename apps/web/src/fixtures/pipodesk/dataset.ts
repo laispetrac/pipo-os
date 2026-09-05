@@ -21,6 +21,8 @@ interface RawRow {
   beneficiaryName: string | null
   taxId: string | null
   companyName: string | null
+  parentCompanyId: string | null
+  parentCompanyName: string | null
   porte: string | null
   carrierId: string | null
   carrierName: string | null

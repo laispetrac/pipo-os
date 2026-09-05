@@ -15,6 +15,8 @@ function row(overrides: Partial<TicketRow> & { id: string }): TicketRow {
     beneficiaryName: null,
     taxId: null,
     companyName: null,
+    parentCompanyId: null,
+    parentCompanyName: null,
     companySize: null,
     carrierId: null,
     carrierName: null,
@@ -137,5 +139,31 @@ describe('groupTickets', () => {
 
     expect(groups).toHaveLength(2)
     expect(groups.find((group) => group.label === 'Livre no pod')?.tickets).toHaveLength(1)
+  })
+})
+
+/**
+ * DSP-36: grouping by company is for putting what belongs to the same client
+ * together, and forty branches in forty groups put nothing together.
+ */
+describe('agrupar por empresa usa a matriz', () => {
+  it('should put a branch and its parent in the same group, named after the parent', () => {
+    const groups = groupTickets(
+      [
+        row({
+          id: 'a',
+          companyId: 'sub-1',
+          companyName: 'Filial Norte',
+          parentCompanyId: 'matriz-1',
+          parentCompanyName: 'Grupo Meridiano',
+        }),
+        row({ id: 'b', companyId: 'matriz-1', companyName: 'Grupo Meridiano' }),
+      ],
+      'company',
+    )
+
+    expect(groups).toHaveLength(1)
+    expect(groups[0].label).toBe('Grupo Meridiano')
+    expect(groups[0].tickets.map((ticket) => ticket.id)).toEqual(['a', 'b'])
   })
 })

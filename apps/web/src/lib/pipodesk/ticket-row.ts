@@ -52,6 +52,14 @@ export interface TicketRow {
   beneficiaryName: string | null
   taxId: string | null
   companyName: string | null
+  /** The parent company, when this ticket's company is a branch; `null` when it
+   *  already is the parent. DSP-36 made the parent the key the queue filters
+   *  and groups by — a client with forty branches is one client, and forty
+   *  groups group nothing. It travels on the row, not as a company table to
+   *  join client-side: the queue is a flat projection that will come from
+   *  `GET /tickets/rows`, so the grouping key has to be in the projection. */
+  parentCompanyId: string | null
+  parentCompanyName: string | null
   companySize: string | null
   carrierId: string | null
   carrierName: string | null
@@ -72,6 +80,15 @@ export interface TicketRow {
   updatedAt: string
   closedAt: string | null
 }
+
+/** The company the queue answers "whose is this?" with: the parent when the
+ *  ticket's company is a branch, the company itself otherwise (DSP-36). One
+ *  derivation, three readers — the filter, the option counts and the grouping —
+ *  because three copies of a rule is the known road to three different rules. */
+export const principalIdOf = (row: TicketRow): string => row.parentCompanyId ?? row.companyId
+
+export const principalNameOf = (row: TicketRow): string | null =>
+  row.parentCompanyName ?? row.companyName
 
 const isRecord = (value: unknown): value is Record<string, unknown> =>
   typeof value === 'object' && value !== null && !Array.isArray(value)
@@ -143,6 +160,13 @@ export function toTicketRow(ticket: Ticket): TicketRow {
     ),
     taxId: readString(snapshot, ['primary', 'profile', 'tax-id']),
     companyName: readString(snapshot, ['company', 'company-name'], ['company', 'name']),
+    /* The API does not serve the parent company yet: the snapshot has the
+       ticket's own company and nothing above it, and `GET /tickets/rows` has
+       no column for it either (PD-043 has to add one). Until then the queue
+       gets the parent only from the fixture, and a real API row groups by the
+       branch — which is the old behaviour, not a silent wrong answer. */
+    parentCompanyId: null,
+    parentCompanyName: null,
     companySize: ticket.companySize,
     carrierId: ticket.carrierId,
     carrierName: ticket.carrierName,
