@@ -90,6 +90,16 @@ export const principalIdOf = (row: TicketRow): string => row.parentCompanyId ?? 
 export const principalNameOf = (row: TicketRow): string | null =>
   row.parentCompanyName ?? row.companyName
 
+/** What the Empresa cell hovers. The branch does not enter the table — it
+ *  complicates a line swept by the thousand — but it stays reachable here,
+ *  next to the parent, without taking a column. The prototype writes the two
+ *  legal names; the row only carries trade names, and adding two more columns
+ *  to the projection for a tooltip is not worth it (registered on ACE-193). */
+export const companyTitleOf = (row: TicketRow): string | undefined =>
+  row.parentCompanyName
+    ? `${row.parentCompanyName} › ${row.companyName ?? ''}`
+    : (row.companyName ?? undefined)
+
 const isRecord = (value: unknown): value is Record<string, unknown> =>
   typeof value === 'object' && value !== null && !Array.isArray(value)
 

@@ -4,7 +4,7 @@ import { DISPLAY_STATUS_COPY, PENDING_REASON_COPY } from '@/constants/pipodesk/s
 import { ENROLLMENT_TYPE_COPY, PRODUCT_COPY, RELATIONSHIP_COPY } from '@/constants/pipodesk/domain'
 import type { QueueColumn } from '@/lib/pipodesk/columns'
 import { formatDayMonth, formatPrazo, prazoVariant } from '@/lib/pipodesk/format'
-import type { TicketRow } from '@/lib/pipodesk/ticket-row'
+import { companyTitleOf, principalNameOf, type TicketRow } from '@/lib/pipodesk/ticket-row'
 import constants from '@/constants/pages/pipodesk/queue'
 import styles from './Queue.module.css'
 
@@ -149,9 +149,14 @@ export function QueueRow({
         {ticket.relationship ? RELATIONSHIP_COPY[ticket.relationship] : constants.empty_cell}
       </td>
     ),
+    /* The cell shows the **parent**, and only it (DSP-36). The Zendesk puts
+       the branch on the ticket and the parent on the organization, and whoever
+       reads the queue cannot tell where the case came from — some clients have
+       forty branches. The parent is the identifier that gets filtered; the
+       branch lives in the detail, and in this cell's `title`. */
     company: (
-      <td key="company" title={ticket.companyName ?? undefined}>
-        {ticket.companyName ?? constants.empty_cell}
+      <td key="company" title={companyTitleOf(ticket)}>
+        {principalNameOf(ticket) ?? constants.empty_cell}
       </td>
     ),
     /* Internal copy, for the analyst. The reason lives ONLY in `title`, like

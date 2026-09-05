@@ -325,7 +325,9 @@ describe('busca global', () => {
     await user.paste('guaporé agropecuária')
     await user.click(
       await within(palette).findByRole('option', {
-        name: /^Guaporé Agropecuária Todos os chamados da empresa/,
+        // The detail line used to be `Todos os chamados da empresa` on every
+        // hit. DSP-36/117 made it say what distinguishes one from another.
+        name: /^Guaporé Agropecuária Matriz/,
       }),
     )
 

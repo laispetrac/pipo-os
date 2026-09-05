@@ -81,7 +81,7 @@ export function searchQueue(
 
   const chamados: SearchHit[] = []
   const porPessoa = new Map<string, TicketRow[]>()
-  const porEmpresa = new Map<string, { name: string; count: number }>()
+  const porEmpresa = new Map<string, { name: string; parentName: string | null; count: number }>()
 
   for (const row of rows) {
     // Both keys: the UUID (links, logs) and the number someone pastes from Slack.
@@ -109,6 +109,7 @@ export function searchQueue(
       const atual = porEmpresa.get(row.companyId)
       porEmpresa.set(row.companyId, {
         name: row.companyName,
+        parentName: row.parentCompanyName,
         count: (atual?.count ?? 0) + 1,
       })
     }
@@ -130,7 +131,13 @@ export function searchQueue(
     key: `company-${companyId}`,
     category: 'empresa',
     label: info.name,
-    detail: 'Todos os chamados da empresa',
+    /* Whether it is a parent or a branch, and of whom (DSP-36/117). Every hit
+       used to read `Todos os chamados da empresa`, so two results looked
+       identical on screen and choosing between them was a coin toss — and 115
+       trade names repeat across companies in the fixture alone. The CNPJ, the
+       other half of the prototype's line, waits for the row projection to
+       carry it (registered on ACE-193). */
+    detail: info.parentName ? `Filial de ${info.parentName}` : 'Matriz',
     count: info.count,
     node: syntheticNode(`company-${companyId}`, info.name, { companyIds: [companyId] }),
   }))

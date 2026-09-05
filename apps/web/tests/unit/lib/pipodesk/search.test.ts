@@ -150,3 +150,41 @@ describe('defaultHits', () => {
     expect(hits[0].label).toBe('Meus tickets')
   })
 })
+
+/**
+ * DSP-36/117: the company hit said `Todos os chamados da empresa` for every
+ * result, so two results were indistinguishable on screen and choosing became
+ * a coin toss. Saying whether it is a parent or a branch — and of whom — is
+ * what makes the list readable.
+ */
+describe('detail da empresa na busca', () => {
+  it('should name the parent on a branch result', () => {
+    const groups = searchQueue(
+      'caicara',
+      [
+        row({
+          id: '1',
+          companyId: 'empresa-1',
+          companyName: 'Caiçara Metalurgia',
+          parentCompanyId: 'empresa-9',
+          parentCompanyName: 'Grupo Quiriri',
+        }),
+      ],
+      sections,
+    )
+
+    const empresas = groups.find((group) => group.category === 'empresa')
+    expect(empresas?.hits[0].detail).toBe('Filial de Grupo Quiriri')
+  })
+
+  it('should call a company with no parent a parent company', () => {
+    const groups = searchQueue(
+      'caicara',
+      [row({ id: '1', companyName: 'Caiçara Metalurgia' })],
+      sections,
+    )
+
+    const empresas = groups.find((group) => group.category === 'empresa')
+    expect(empresas?.hits[0].detail).toBe('Matriz')
+  })
+})
