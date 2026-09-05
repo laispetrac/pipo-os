@@ -133,8 +133,6 @@ describe('createLoggerOptions', () => {
     expect(entry.msg).toBe('ticket created')
   })
 
-  // The list was written in kebab-case while the API serializes in camelCase,
-  // so `tax-id` never covered the `taxId` the contract actually returns.
   it.each(['tax-id', 'taxId', 'tax_id', 'beneficiaryName', 'birthDate'])(
     'redacts %s, whichever spelling the writer used',
     (field) => {
@@ -147,8 +145,6 @@ describe('createLoggerOptions', () => {
     },
   )
 
-  // The snapshot shape is not a closed contract, so redacting the object whole
-  // is the only rule that does not age with the EI payload.
   it('redacts the enrollment snapshot as a whole, not field by field', () => {
     const { stream, lines } = captureLogs()
     const logger = pino(createLoggerOptions({ nodeEnv: 'test' }), stream)
