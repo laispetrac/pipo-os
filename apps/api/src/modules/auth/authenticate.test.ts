@@ -29,6 +29,7 @@ describe('authenticate hook', () => {
       sub: request.principal.sub ?? null,
     }))
     app.get('/__test/public', { config: { public: true } }, async () => ({ ok: true }))
+    app.get('/docs-internal', async () => ({ ok: true }))
 
     await app.ready()
 
@@ -85,6 +86,12 @@ describe('authenticate hook', () => {
 
     expect(response.statusCode).toBe(200)
     expect(response.json()).toEqual({ ok: true })
+  })
+
+  it('does not extend the docs exemption to a route that merely starts with it', async () => {
+    const response = await app.inject({ method: 'GET', url: '/docs-internal' })
+
+    expect(response.statusCode).toBe(401)
   })
 
   it('keeps GET /health public', async () => {

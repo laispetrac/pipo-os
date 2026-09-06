@@ -20,6 +20,12 @@ declare module 'fastify' {
   }
 }
 
+// Swagger-ui serves the prefix itself and everything under it. A route that
+// merely starts with the same characters is not the docs.
+function isDocsRoute(url: string | undefined): boolean {
+  return url === DOCS_ROUTE_PREFIX || url?.startsWith(`${DOCS_ROUTE_PREFIX}/`) === true
+}
+
 // The access-token may carry no `sub`, so a handler writing an author or an
 // assignee has to demand it instead of assuming it.
 export function requireUserId(request: FastifyRequest): string {
@@ -43,7 +49,7 @@ export default fp(
         return
       }
 
-      if (request.routeOptions.url?.startsWith(DOCS_ROUTE_PREFIX)) {
+      if (isDocsRoute(request.routeOptions.url)) {
         return
       }
 
