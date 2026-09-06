@@ -2,6 +2,7 @@ import type { FastifyInstance } from 'fastify'
 import { afterAll, afterEach, beforeAll, describe, expect, it } from 'vitest'
 import { buildApp } from '../../app.js'
 import { SESSION_COOKIE_NAME } from '../auth/session.js'
+import { CLOSED_STATUSES } from './schemas.js'
 
 function cookieValue(
   response: { cookies: Array<{ name: string; value: string }> },
@@ -98,6 +99,39 @@ describe('tickets routes', () => {
       expect(response.statusCode).toBe(409)
       expect(response.json().error).toBe('ConflictError')
     })
+
+    // The rule lives in a partial index that spells the closing statuses out,
+    // while the application reads them from CLOSED_STATUSES. Deriving the cases
+    // from it means a new closing status is covered here the day it is added —
+    // and fails until the index knows it too.
+    it.each([...CLOSED_STATUSES])(
+      'frees the enrollment for a new ticket once the old one is %s',
+      async (closingStatus) => {
+        const created = await app.inject({
+          method: 'POST',
+          url: '/api/tickets',
+          payload: validTicketBody,
+          cookies: { [SESSION_COOKIE_NAME]: sessionCookie },
+        })
+        const { id } = created.json()
+
+        await app.inject({
+          method: 'PATCH',
+          url: `/api/tickets/${id}/status`,
+          payload: { status: closingStatus },
+          cookies: { [SESSION_COOKIE_NAME]: sessionCookie },
+        })
+
+        const response = await app.inject({
+          method: 'POST',
+          url: '/api/tickets',
+          payload: validTicketBody,
+          cookies: { [SESSION_COOKIE_NAME]: sessionCookie },
+        })
+
+        expect(response.statusCode).toBe(201)
+      },
+    )
 
     it('returns 400 for missing required fields', async () => {
       const response = await app.inject({
@@ -714,9 +748,9 @@ describe('tickets routes', () => {
       expect(response.json().closedAt).not.toBeNull()
     })
 
-    it.each([{ closingStatus: 'completed' }, { closingStatus: 'cancelled' }])(
-      'returns 422 when ticket is already $closingStatus',
-      async ({ closingStatus }) => {
+    it.each([...CLOSED_STATUSES])(
+      'returns 422 when ticket is already %s',
+      async (closingStatus) => {
         const created = await app.inject({
           method: 'POST',
           url: '/api/tickets',
