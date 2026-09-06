@@ -14,6 +14,9 @@ const PII_FIELD_ROOTS = [
   'taxId',
   'address',
   'beneficiaryName',
+  // The ticket subject, free text from the EI: the Zendesk convention ends it
+  // with the beneficiary's name (98% of the fixture). Broad key on purpose.
+  'title',
 ] as const
 
 /** Redacted whole — free-form jsonb with no closed shape (PD-001). */

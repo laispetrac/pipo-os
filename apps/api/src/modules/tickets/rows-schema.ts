@@ -77,7 +77,7 @@ export const ticketRowSchema = z
 export const ROW_FIELD_PII = {
   id: 'internal uuid',
   displayNumber: 'ticket number, not a person',
-  title: 'free text, but never carried a name — ACE-196',
+  title: true,
   enrollmentId: 'internal uuid',
   enrollmentType: 'inclusion | exclusion | plan_change',
   status: 'closed vocabulary',
