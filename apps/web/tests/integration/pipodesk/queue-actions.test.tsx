@@ -26,10 +26,7 @@ async function renderQueue() {
   return router
 }
 
-/** The queue announces its total in a `status` region. The DS `Snackbar` also
- *  renders one, so once a batch message is up the page legitimately has two.
- *  Both start with a number; the queue's comes first in the document, which is
- *  what this picks. */
+/** Two `status` regions once a batch message is up; the queue's comes first. */
 const liveCount = () =>
   Number(
     screen
@@ -267,12 +264,7 @@ describe('barra de lote', () => {
     // Nothing leaves the queue (the cut is by owner, not status)…
     expect(liveCount()).toBe(antes)
 
-    /* …and `Em espera` gets the half that could move. It used to be the whole
-       cut: DSP-19 changed that. `archived` is `closedAt`, an axis of its own —
-       894 of the fixture's final tickets were never archived — so this cut
-       carries completed and cancelled tickets that now stay put. The two
-       numbers are asserted against each other, not against a constant, so the
-       test keeps meaning something when the fixture is regenerated. */
+    // `archived` is `closedAt`, a separate axis: this cut carries final tickets.
     const aviso = screen.getByText(/em estado final/)
     const ficaram = Number(aviso.textContent?.match(/^(\d+)/)?.[1])
     expect(ficaram).toBeGreaterThan(0)
@@ -280,13 +272,6 @@ describe('barra de lote', () => {
     const emEspera = within(sidebar).getByText('Em espera').closest('button')
     expect(emEspera?.textContent).toContain(String(antes - ficaram))
   })
-  /**
-   * DSP-19: a final ticket does not reopen. `Cancelamentos` mixes the two
-   * natures on purpose — `submitted-cancellation` is still in flight and
-   * `cancelled` has ended — so a batch over it is the honest test: the open
-   * half moves and the final half must stay put, in the same click. Before the
-   * rule, `runBatch` patched the whole selection and the node emptied.
-   */
   it('should leave the final tickets untouched when the batch changes status', async () => {
     await renderQueue()
     const user = userEvent.setup()
@@ -325,8 +310,6 @@ describe('busca global', () => {
     await user.paste('guaporé agropecuária')
     await user.click(
       await within(palette).findByRole('option', {
-        // The detail line used to be `Todos os chamados da empresa` on every
-        // hit. DSP-36/117 made it say what distinguishes one from another.
         name: /^Guaporé Agropecuária Matriz/,
       }),
     )

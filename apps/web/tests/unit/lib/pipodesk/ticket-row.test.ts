@@ -204,13 +204,6 @@ describe('toTicketRow — assunto da linha', () => {
   })
 })
 
-/**
- * The parent company is the key the queue filters and groups by, and the API
- * does not serve it yet — `GET /tickets/rows` has no column for it (PD-043).
- * Pinning the null here is what turns "still missing" into a visible fact: the
- * day the column lands, this test is the one that says the mapper was not
- * updated with it, instead of the queue silently grouping by branch again.
- */
 describe('empresa matriz na projeção da API', () => {
   it('should carry no parent company, because the API has no column for it yet', () => {
     const row = toTicketRow(apiTicket())
@@ -219,8 +212,6 @@ describe('empresa matriz na projeção da API', () => {
     expect(row.parentCompanyName).toBeNull()
   })
 
-  /** And the derivations degrade to the branch — the behaviour before DSP-36,
-   *  which is the old answer and not a wrong one. */
   it('should fall back to the ticket own company while the parent is missing', () => {
     const row = toTicketRow(apiTicket())
 

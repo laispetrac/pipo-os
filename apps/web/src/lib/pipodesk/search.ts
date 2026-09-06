@@ -131,12 +131,7 @@ export function searchQueue(
     key: `company-${companyId}`,
     category: 'empresa',
     label: info.name,
-    /* Whether it is a parent or a branch, and of whom (DSP-36/117). Every hit
-       used to read `Todos os chamados da empresa`, so two results looked
-       identical on screen and choosing between them was a coin toss — and 115
-       trade names repeat across companies in the fixture alone. The CNPJ, the
-       other half of the prototype's line, waits for the row projection to
-       carry it (registered on ACE-193). */
+    // No CNPJ yet: the row projection does not carry it (ACE-193).
     detail: info.parentName ? `Filial de ${info.parentName}` : 'Matriz',
     count: info.count,
     node: syntheticNode(`company-${companyId}`, info.name, { companyIds: [companyId] }),

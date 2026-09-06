@@ -33,9 +33,6 @@ function keyAndLabelOf(
     case 'status':
       return { key: ticket.display, label: DISPLAY_STATUS_COPY[ticket.display] }
     case 'company': {
-      // By the parent (DSP-36): grouping by company is for putting what belongs
-      // to the same client together, and forty branches in forty groups put
-      // nothing together.
       const key = principalIdOf(ticket)
       return { key, label: principalNameOf(ticket) ?? key }
     }

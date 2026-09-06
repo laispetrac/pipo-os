@@ -151,12 +151,6 @@ describe('defaultHits', () => {
   })
 })
 
-/**
- * DSP-36/117: the company hit said `Todos os chamados da empresa` for every
- * result, so two results were indistinguishable on screen and choosing became
- * a coin toss. Saying whether it is a parent or a branch — and of whom — is
- * what makes the list readable.
- */
 describe('detail da empresa na busca', () => {
   it('should name the parent on a branch result', () => {
     const groups = searchQueue(

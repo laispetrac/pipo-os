@@ -142,10 +142,6 @@ describe('groupTickets', () => {
   })
 })
 
-/**
- * DSP-36: grouping by company is for putting what belongs to the same client
- * together, and forty branches in forty groups put nothing together.
- */
 describe('agrupar por empresa usa a matriz', () => {
   it('should put a branch and its parent in the same group, named after the parent', () => {
     const groups = groupTickets(

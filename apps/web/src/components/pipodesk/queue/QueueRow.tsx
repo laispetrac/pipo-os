@@ -149,11 +149,6 @@ export function QueueRow({
         {ticket.relationship ? RELATIONSHIP_COPY[ticket.relationship] : constants.empty_cell}
       </td>
     ),
-    /* The cell shows the **parent**, and only it (DSP-36). The Zendesk puts
-       the branch on the ticket and the parent on the organization, and whoever
-       reads the queue cannot tell where the case came from — some clients have
-       forty branches. The parent is the identifier that gets filtered; the
-       branch lives in the detail, and in this cell's `title`. */
     company: (
       <td key="company" title={companyTitleOf(ticket)}>
         {principalNameOf(ticket) ?? constants.empty_cell}

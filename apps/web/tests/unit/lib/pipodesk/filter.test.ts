@@ -392,11 +392,6 @@ describe('applyFilter and countByOption', () => {
   })
 })
 
-/**
- * DSP-36: a client with forty branches is one client. Felipe filters by client
- * when protocols pile up, and filtering branch by branch groups nothing. The
- * parent is the key — for matching, and for the option counts the panel shows.
- */
 describe('empresa pela matriz', () => {
   const filial = row({ id: 'a', companyId: 'sub-1', parentCompanyId: 'matriz-1' })
   const matriz = row({ id: 'b', companyId: 'matriz-1' })
@@ -405,8 +400,6 @@ describe('empresa pela matriz', () => {
     expect(matchesFilter(filial, { companyIds: ['matriz-1'] }, VIEWER)).toBe(true)
   })
 
-  /** A saved view pointing at a branch has to keep working: the change makes
-   *  the parent an extra way in, never the only one. */
   it('should still match a branch ticket when the filter names the branch itself', () => {
     expect(matchesFilter(filial, { companyIds: ['sub-1'] }, VIEWER)).toBe(true)
   })
@@ -415,11 +408,6 @@ describe('empresa pela matriz', () => {
     expect(matchesFilter(filial, { companyIds: ['matriz-2'] }, VIEWER)).toBe(false)
   })
 
-  /** The expansion answers what a *person* meant by picking a company. A cut
-   *  the code derived means the companies it listed and nothing else — the
-   *  Triagem node lists the ones nobody carries, and pulling in a carried
-   *  branch through its uncarried parent is the failure its own comment warns
-   *  about: triage that never ends. */
   it('should not reach a branch through its parent on an exact cut', () => {
     expect(matchesFilter(filial, { companyIdsExact: ['matriz-1'] }, VIEWER)).toBe(false)
   })

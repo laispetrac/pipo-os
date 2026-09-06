@@ -109,12 +109,6 @@ describe('isOpen', () => {
   })
 })
 
-/**
- * DSP-19 (merged from DSP-105): a final ticket does not reopen. One rule, read
- * by every writer of status — today the batch bar, tomorrow the detail's
- * composer. Between open statuses nothing is forbidden anywhere, so the list
- * stays whole; narrowing it further would invent domain rules.
- */
 describe('transitionsFrom', () => {
   it('should offer nothing from a final status, so a closed ticket cannot reopen', () => {
     expect(transitionsFrom('completed')).toEqual([])

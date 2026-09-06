@@ -52,12 +52,8 @@ export interface TicketRow {
   beneficiaryName: string | null
   taxId: string | null
   companyName: string | null
-  /** The parent company, when this ticket's company is a branch; `null` when it
-   *  already is the parent. DSP-36 made the parent the key the queue filters
-   *  and groups by — a client with forty branches is one client, and forty
-   *  groups group nothing. It travels on the row, not as a company table to
-   *  join client-side: the queue is a flat projection that will come from
-   *  `GET /tickets/rows`, so the grouping key has to be in the projection. */
+  /** The parent company when this one is a branch, `null` when it already is
+   *  the parent. The key the queue filters and groups by (DSP-36). */
   parentCompanyId: string | null
   parentCompanyName: string | null
   companySize: string | null
@@ -81,20 +77,14 @@ export interface TicketRow {
   closedAt: string | null
 }
 
-/** The company the queue answers "whose is this?" with: the parent when the
- *  ticket's company is a branch, the company itself otherwise (DSP-36). One
- *  derivation, three readers — the filter, the option counts and the grouping —
- *  because three copies of a rule is the known road to three different rules. */
+/** One derivation, three readers: the filter, the option counts, the grouping. */
 export const principalIdOf = (row: TicketRow): string => row.parentCompanyId ?? row.companyId
 
 export const principalNameOf = (row: TicketRow): string | null =>
   row.parentCompanyName ?? row.companyName
 
-/** What the Empresa cell hovers. The branch does not enter the table — it
- *  complicates a line swept by the thousand — but it stays reachable here,
- *  next to the parent, without taking a column. The prototype writes the two
- *  legal names; the row only carries trade names, and adding two more columns
- *  to the projection for a tooltip is not worth it (registered on ACE-193). */
+/** The Empresa cell hover: the branch is reachable here and nowhere else in
+ *  the table. Trade names — the row carries no legal name. */
 export const companyTitleOf = (row: TicketRow): string | undefined =>
   row.parentCompanyName && row.companyName
     ? `${row.parentCompanyName} › ${row.companyName}`
@@ -170,11 +160,7 @@ export function toTicketRow(ticket: Ticket): TicketRow {
     ),
     taxId: readString(snapshot, ['primary', 'profile', 'tax-id']),
     companyName: readString(snapshot, ['company', 'company-name'], ['company', 'name']),
-    /* The API does not serve the parent company yet: the snapshot has the
-       ticket's own company and nothing above it, and `GET /tickets/rows` has
-       no column for it either (PD-043 has to add one). Until then the queue
-       gets the parent only from the fixture, and a real API row groups by the
-       branch — which is the old behaviour, not a silent wrong answer. */
+    // No column for the parent in `GET /tickets/rows` yet — PD-043 adds it.
     parentCompanyId: null,
     parentCompanyName: null,
     companySize: ticket.companySize,

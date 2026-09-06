@@ -146,14 +146,7 @@ export default function QueuePage() {
     applyPatch(selectedVisible, patch)
   }
 
-  /* A final ticket does not reopen (DSP-19), and a batch is where that gets
-     violated by accident: `Cancelamentos` mixes an in-flight cancellation with
-     an ended one, so one click over the whole cut used to reopen the ended
-     half. The open ones move, the final ones stay — and the count of those
-     that stayed is said out loud, or the selection just vanishes. */
   const runStatusBatch = (status: ApiStatus) => {
-    // Derived from `listed`, which `selectedVisible` is already an intersection
-    // of — so there is no "ticket not found" case to invent a default for.
     const selected = listed.filter((ticket) => selectedVisible.includes(ticket.id))
     const movable = selected
       .filter((ticket) => transitionsFrom(ticket.status).includes(status))
@@ -269,15 +262,8 @@ export default function QueuePage() {
         />
       )}
 
-      {/* No wrapper with a role of its own: the DS `Snackbar` already renders
-          `role="status" aria-live="polite"`, and nesting an `alert` (implicitly
-          assertive) around a `status` (polite) is two live regions with
-          conflicting politeness — announced twice, or unpredictably, depending
-          on the screen reader. The cost of leaving it to the DS is the trap the
-          PD-114 review named: a region that enters the tree together with its
-          text is announced by fewer readers than one that was already there.
-          Between a known partial announcement and an unpredictable double one,
-          this takes the first. */}
+      {/* No wrapper role: the DS Snackbar is already `role="status"`, and an
+          `alert` around it nests two live regions with conflicting politeness. */}
       {batchMessage !== null && (
         <Snackbar
           open

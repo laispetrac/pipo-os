@@ -189,13 +189,6 @@ describe('fila operacional', () => {
     expect(empresa).toHaveAttribute('aria-sort', 'descending')
   })
 
-  /**
-   * DSP-36: the cell shows the **parent**, and only it — a branch does not
-   * enter a table swept by the thousand. It stays reachable through the `title`,
-   * which carries both names. Filtering by the parent is also the proof that
-   * the filter reaches the branches: `Quiriri Farmacêutica` owns none of these
-   * tickets directly, its branches do.
-   */
   it('should show the parent company in the cell, with both names in the title', async () => {
     await renderQueue()
     const user = userEvent.setup()
@@ -212,7 +205,6 @@ describe('fila operacional', () => {
     expect(comMatriz.length).toBeGreaterThan(0)
 
     for (const cell of comMatriz) {
-      // The text is the parent, and the title is `parent › branch`.
       expect(cell.textContent).toBe('Quiriri Farmacêutica')
       expect(cell.getAttribute('title')).toMatch(/^Quiriri Farmacêutica › .+$/)
     }
