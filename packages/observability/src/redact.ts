@@ -24,7 +24,6 @@ const PII_FIELD_ROOTS = [
   'taxId',
   'address',
   'beneficiaryName',
-  'birthDate',
 ] as const
 
 /** Redacted **whole**: the entire object under the key disappears, not the

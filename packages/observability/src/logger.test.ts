@@ -134,7 +134,7 @@ describe('createLoggerOptions', () => {
     expect(entry.msg).toBe('ticket created')
   })
 
-  it.each(['tax-id', 'taxId', 'tax_id', 'beneficiaryName', 'birthDate'])(
+  it.each(['tax-id', 'taxId', 'tax_id', 'beneficiaryName'])(
     'redacts %s, whichever spelling the writer used',
     (field) => {
       const { stream, lines } = captureLogs()
