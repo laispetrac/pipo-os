@@ -1,7 +1,6 @@
 import type { ZodTypeProvider } from '@fastify/type-provider-zod'
 import type { FastifyInstance } from 'fastify'
-import { UnauthorizedError } from '../../shared/errors.js'
-import { getSession } from '../auth/session.js'
+import { requireUserId } from '../auth/authenticate.js'
 import { businessToday } from '../../shared/business-date.js'
 import { ticketRowsQuerySchema, ticketRowsSchema } from './rows-schema.js'
 import {
@@ -28,7 +27,6 @@ export function registerTicketRoutes(app: FastifyInstance, service: TicketsServi
       },
     },
     async (request) => {
-      getSession(request)
       // TODO: enforce tenant scope from session claims before this endpoint goes to production
       // Any authenticated user can currently list tickets from any company by omitting companyId
       return service.list(request.query)
@@ -50,7 +48,7 @@ export function registerTicketRoutes(app: FastifyInstance, service: TicketsServi
       },
     },
     async (request) => {
-      const { email } = getSession(request)
+      const { email } = request.principal
       // TODO: enforce tenant scope from session claims before this endpoint goes to production
       // Any authenticated user can currently read rows from any company, and this one
       // answers up to 5000 of them at once, with beneficiary name and tax id
@@ -67,7 +65,6 @@ export function registerTicketRoutes(app: FastifyInstance, service: TicketsServi
       },
     },
     async (request) => {
-      getSession(request)
       return service.get(request.params.id)
     },
   )
@@ -81,7 +78,6 @@ export function registerTicketRoutes(app: FastifyInstance, service: TicketsServi
       },
     },
     async (request, reply) => {
-      getSession(request)
       const ticket = await service.create(request.body)
       reply.status(201)
       return ticket
@@ -103,7 +99,6 @@ export function registerTicketRoutes(app: FastifyInstance, service: TicketsServi
       },
     },
     async (request) => {
-      getSession(request)
       return service.update(request.params.id, request.body)
     },
   )
@@ -124,9 +119,7 @@ export function registerTicketRoutes(app: FastifyInstance, service: TicketsServi
       },
     },
     async (request) => {
-      const claims = getSession(request)
-      const authorId = claims.sub?.trim()
-      if (!authorId) throw new UnauthorizedError('Invalid session')
+      const authorId = requireUserId(request)
       return service.changeStatus(request.params.id, request.body, authorId)
     },
   )
@@ -145,11 +138,7 @@ export function registerTicketRoutes(app: FastifyInstance, service: TicketsServi
       },
     },
     async (request) => {
-      const claims = getSession(request)
-      const assigneeId = claims.sub?.trim()
-      if (!assigneeId) {
-        throw new UnauthorizedError('Invalid session')
-      }
+      const assigneeId = requireUserId(request)
       return service.claim(request.params.id, assigneeId)
     },
   )

@@ -1,8 +1,7 @@
 import type { ZodTypeProvider } from '@fastify/type-provider-zod'
 import type { FastifyInstance } from 'fastify'
 import { z } from 'zod'
-import { UnauthorizedError } from '../../shared/errors.js'
-import { getSession } from '../auth/session.js'
+import { requireUserId } from '../auth/authenticate.js'
 import { ticketListSchema } from '../tickets/schemas.js'
 import {
   addQueueGroupBodySchema,
@@ -31,11 +30,7 @@ export function registerQueueRoutes(app: FastifyInstance, service: QueuesService
       },
     },
     async (request, reply) => {
-      const claims = getSession(request)
-      const createdBy = claims.sub?.trim()
-      if (!createdBy) {
-        throw new UnauthorizedError('Invalid session')
-      }
+      const createdBy = requireUserId(request)
       const queue = await service.create(request.body, createdBy)
       reply.status(201)
       return queue
@@ -51,7 +46,6 @@ export function registerQueueRoutes(app: FastifyInstance, service: QueuesService
       },
     },
     async (request) => {
-      getSession(request)
       return service.list(request.query)
     },
   )
@@ -65,7 +59,6 @@ export function registerQueueRoutes(app: FastifyInstance, service: QueuesService
       },
     },
     async (request) => {
-      getSession(request)
       return service.get(request.params.id)
     },
   )
@@ -85,9 +78,7 @@ export function registerQueueRoutes(app: FastifyInstance, service: QueuesService
       },
     },
     async (request) => {
-      const claims = getSession(request)
-      const updatedBy = claims.sub?.trim()
-      if (!updatedBy) throw new UnauthorizedError('Invalid session')
+      const updatedBy = requireUserId(request)
       return service.update(request.params.id, request.body, updatedBy)
     },
   )
@@ -106,7 +97,6 @@ export function registerQueueRoutes(app: FastifyInstance, service: QueuesService
       },
     },
     async (request, reply) => {
-      getSession(request)
       await service.delete(request.params.id)
       reply.status(204)
       return null
@@ -129,7 +119,6 @@ export function registerQueueRoutes(app: FastifyInstance, service: QueuesService
       },
     },
     async (request, reply) => {
-      getSession(request)
       const group = await service.addGroup(request.params.id, request.body.groupId)
       reply.status(201)
       return group
@@ -149,7 +138,6 @@ export function registerQueueRoutes(app: FastifyInstance, service: QueuesService
       },
     },
     async (request, reply) => {
-      getSession(request)
       await service.removeGroup(request.params.id, request.params.groupId)
       reply.status(204)
       return null
@@ -166,7 +154,6 @@ export function registerQueueRoutes(app: FastifyInstance, service: QueuesService
       },
     },
     async (request) => {
-      getSession(request)
       return service.listTickets(request.params.id, request.query)
     },
   )
