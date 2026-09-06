@@ -65,7 +65,10 @@ export function registerAuthRoutes(
 
   server.get(
     '/api/auth/google',
-    { schema: { querystring: googleLoginQuerySchema, response: { 302: z.null() } } },
+    {
+      config: { public: true },
+      schema: { querystring: googleLoginQuerySchema, response: { 302: z.null() } },
+    },
     async (request, reply) => {
       const state: OAuthState = {
         state: randomUUID(),
@@ -83,7 +86,10 @@ export function registerAuthRoutes(
 
   server.get(
     '/api/auth/google/callback',
-    { schema: { querystring: googleCallbackQuerySchema, response: { 302: z.null() } } },
+    {
+      config: { public: true },
+      schema: { querystring: googleCallbackQuerySchema, response: { 302: z.null() } },
+    },
     async (request, reply) => {
       const rawStateCookie = request.cookies[OAUTH_STATE_COOKIE_NAME]
       reply.clearCookie(OAUTH_STATE_COOKIE_NAME, { path: '/' })
@@ -144,7 +150,7 @@ export function registerAuthRoutes(
 
   server.post(
     '/api/auth/logout',
-    { schema: { response: { 204: z.null() } } },
+    { config: { public: true }, schema: { response: { 204: z.null() } } },
     async (_request, reply) => {
       reply.clearCookie(SESSION_COOKIE_NAME, { path: '/' })
       reply.status(204)

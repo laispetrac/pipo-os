@@ -19,6 +19,7 @@ import { sql } from 'kysely'
 import { z } from 'zod'
 import dbPlugin from './infrastructure/db.js'
 import errorHandlerPlugin from './infrastructure/error-handler.js'
+import authenticatePlugin, { DOCS_ROUTE_PREFIX } from './modules/auth/authenticate.js'
 
 function corsOrigins(): string[] {
   return (process.env.CORS_ORIGIN ?? 'http://localhost:5173')
@@ -71,6 +72,7 @@ export function buildApp(): FastifyInstance {
 
   app.register(cors, { origin: corsOrigins() })
   app.register(cookie, { secret: cookieSecret() })
+  app.register(authenticatePlugin)
   app.register(metricsPlugin)
   app.register(dbPlugin)
   app.register(errorHandlerPlugin)
@@ -89,12 +91,13 @@ export function buildApp(): FastifyInstance {
   })
 
   if (process.env.NODE_ENV !== 'production' && process.env.NODE_ENV !== 'test') {
-    app.register(swaggerUi, { routePrefix: '/docs' })
+    app.register(swaggerUi, { routePrefix: DOCS_ROUTE_PREFIX })
   }
 
   app.withTypeProvider<ZodTypeProvider>().get(
     '/health',
     {
+      config: { public: true },
       schema: {
         response: {
           200: z.object({ status: z.literal('ok') }),
