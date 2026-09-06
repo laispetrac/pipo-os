@@ -72,20 +72,8 @@ export const ticketRowSchema = z
   })
   .meta({ id: 'TicketRow' })
 
-/** Every field above, classified. `true` never reaches a log line; anything
- *  else is the reason it may, written on the field's own line.
- *
- *  The record is what makes this exhaustive. A literal needs a value per key,
- *  so adding a field to the schema stops compiling until it is classified —
- *  here, in the same file, in the same edit. The same list living in a test
- *  could only fail later and elsewhere, where pasting the name into the kept
- *  side is the cheapest way out, and a guard that is easiest to satisfy by
- *  rubber-stamping is not much of a guard.
- *
- *  The reason is a string and not a `false` for the other half of that
- *  problem: the compiler can force a decision but cannot tell a considered one
- *  from a careless one, and a blank line is where careless hides. Writing why
- *  a field is safe is the part a reviewer can actually check. */
+/** Every field of the projection, classified: `true` never reaches a log line,
+ *  anything else is the reason it may. The record is what makes it exhaustive. */
 export const ROW_FIELD_PII = {
   id: 'internal uuid',
   displayNumber: 'ticket number, not a person',

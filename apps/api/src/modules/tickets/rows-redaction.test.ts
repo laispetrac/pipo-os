@@ -4,10 +4,7 @@ import Fastify from 'fastify'
 import { describe, expect, it } from 'vitest'
 import { ROW_FIELD_PII } from './rows-schema.js'
 
-/** Both sides come from the one classification in `rows-schema.ts`, so they
- *  cannot drift from the projection or from each other. The exhaustiveness
- *  that used to be asserted here is now the compiler's job: the record there
- *  fails to build when a field is added and left unclassified. */
+/** Both sides derive from the classification in `rows-schema.ts`. */
 const fields = Object.keys(ROW_FIELD_PII) as (keyof typeof ROW_FIELD_PII)[]
 const REDACTED = fields.filter((field) => ROW_FIELD_PII[field] === true)
 const KEPT = fields.filter((field) => ROW_FIELD_PII[field] !== true)
@@ -28,9 +25,7 @@ function captureLogs() {
 }
 
 describe('ticket row logging', () => {
-  /** Guards the classification against being emptied: filtering a record whose
-   *  values all flipped to `false` would leave `REDACTED` empty, and every
-   *  assertion below would vacuously pass. */
+  /** An emptied classification would make every assertion below vacuous. */
   it('has personal data to redact in the first place', () => {
     expect(REDACTED).toEqual(['beneficiaryName', 'taxId'])
   })

@@ -146,15 +146,8 @@ describe('createLoggerOptions', () => {
     },
   )
 
-  /** The depth is a real boundary, not an accident: `fast-redact` matches one
-   *  level per `*`, so coverage is exactly as deep as the paths written. Both
-   *  sides are pinned here — where it holds and where it stops — so narrowing
-   *  it fails a test, and widening it is a deliberate act with a measured
-   *  price (see the note in `redact.ts`).
-   *
-   *  The wrapper key is deliberately neutral: `req`, `res` and `err` have
-   *  serializers that rewrite the object before redaction ever runs, so a test
-   *  built on them would pass without proving anything about the paths. */
+  /** Neutral wrapper key on purpose: `req`, `res` and `err` have serializers
+   *  that rewrite the object before redaction runs. */
   it.each([
     ['at the root', { taxId: 'sentinel' }],
     ['one nesting in', { row: { taxId: 'sentinel' } }],
@@ -168,9 +161,7 @@ describe('createLoggerOptions', () => {
     expect(lines.at(-1) ?? '').not.toContain('sentinel')
   })
 
-  /** Where coverage ends. Asserting the hole is uncomfortable on a security
-   *  control and that is the point: it is written down instead of discovered,
-   *  and the day someone adds the fourth level this test says so. */
+  /** Where coverage ends — written down instead of discovered. */
   it.each([
     ['three nestings in', { ctx: { body: { row: { taxId: 'sentinel' } } } }],
     ['in an array two nestings in', { ctx: { body: [{ taxId: 'sentinel' }] } }],
@@ -198,9 +189,6 @@ describe('createLoggerOptions', () => {
   })
 })
 
-/** The generators are what produce the coverage: a field-name test passes as
- *  long as the spelling it happens to use is generated, so a regression here
- *  could narrow the list without turning anything red. */
 describe('grafias', () => {
   it.each([
     ['accessToken', 'access-token', 'access_token'],

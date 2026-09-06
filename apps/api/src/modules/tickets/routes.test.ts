@@ -100,10 +100,7 @@ describe('tickets routes', () => {
       expect(response.json().error).toBe('ConflictError')
     })
 
-    // The rule lives in a partial index that spells the closing statuses out,
-    // while the application reads them from CLOSED_STATUSES. Deriving the cases
-    // from it means a new closing status is covered here the day it is added —
-    // and fails until the index knows it too.
+    // Cases from the vocabulary; the partial index must list the same statuses.
     it.each([...CLOSED_STATUSES])(
       'frees the enrollment for a new ticket once the old one is %s',
       async (closingStatus) => {
