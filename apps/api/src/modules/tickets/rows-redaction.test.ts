@@ -3,6 +3,7 @@ import { createLoggerOptions } from '@pipo-os/observability/logger'
 import Fastify from 'fastify'
 import { describe, expect, it } from 'vitest'
 import { ROW_FIELD_PII } from './rows-schema.js'
+import { createTicketBodySchema, updateTicketBodySchema } from './schemas.js'
 
 /** Both sides derive from the classification in `rows-schema.ts`. */
 const fields = Object.keys(ROW_FIELD_PII) as (keyof typeof ROW_FIELD_PII)[]
@@ -46,5 +47,17 @@ describe('ticket row logging', () => {
     for (const field of KEPT) {
       expect(entry.row[field]).toBe(SENTINEL(field))
     }
+  })
+})
+
+/** `title` is classified as safe because nothing writes it. That is an
+ *  invariant of the write schemas, so it is checked here. */
+describe('title', () => {
+  it('is not writable, which is why it is not classified as personal data', () => {
+    expect(Object.keys(createTicketBodySchema.shape)).not.toContain('title')
+
+    const rejected = updateTicketBodySchema.safeParse({ title: 'Inclusão - MARIA SILVA' })
+
+    expect(rejected.success).toBe(false)
   })
 })
