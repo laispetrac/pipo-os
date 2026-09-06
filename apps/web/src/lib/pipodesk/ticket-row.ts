@@ -96,9 +96,9 @@ export const principalNameOf = (row: TicketRow): string | null =>
  *  legal names; the row only carries trade names, and adding two more columns
  *  to the projection for a tooltip is not worth it (registered on ACE-193). */
 export const companyTitleOf = (row: TicketRow): string | undefined =>
-  row.parentCompanyName
-    ? `${row.parentCompanyName} › ${row.companyName ?? ''}`
-    : (row.companyName ?? undefined)
+  row.parentCompanyName && row.companyName
+    ? `${row.parentCompanyName} › ${row.companyName}`
+    : (principalNameOf(row) ?? undefined)
 
 const isRecord = (value: unknown): value is Record<string, unknown> =>
   typeof value === 'object' && value !== null && !Array.isArray(value)

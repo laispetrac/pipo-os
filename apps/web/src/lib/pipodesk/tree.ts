@@ -410,7 +410,9 @@ export function buildTree(tickets: TicketRow[], options: BuildTreeOptions): Tree
   const semCarteira = unallocatedCompanyIdsOf(structure, [
     ...new Set(tickets.map((ticket) => ticket.companyId)),
   ])
-  const triagemFilter: TicketFilter = { companyIds: semCarteira, archived: false }
+  // `companyIdsExact`, not `companyIds`: this list was derived, not picked, so
+  // it means these companies and not their branches. See the field's note.
+  const triagemFilter: TicketFilter = { companyIdsExact: semCarteira, archived: false }
   const naRaiz = awake.filter((ticket) => ticket.groupId === rootGroup.id)
   const triagem: TreeNode[] =
     semCarteira.length === 0

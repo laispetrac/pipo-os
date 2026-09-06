@@ -152,12 +152,13 @@ export default function QueuePage() {
      half. The open ones move, the final ones stay — and the count of those
      that stayed is said out loud, or the selection just vanishes. */
   const runStatusBatch = (status: ApiStatus) => {
-    const byId = new Map(listed.map((ticket) => [ticket.id, ticket]))
-    const movable = selectedVisible.filter((id) => {
-      const current = byId.get(id)
-      return current ? transitionsFrom(current.status).includes(status) : false
-    })
-    const kept = selectedVisible.length - movable.length
+    // Derived from `listed`, which `selectedVisible` is already an intersection
+    // of — so there is no "ticket not found" case to invent a default for.
+    const selected = listed.filter((ticket) => selectedVisible.includes(ticket.id))
+    const movable = selected
+      .filter((ticket) => transitionsFrom(ticket.status).includes(status))
+      .map((ticket) => ticket.id)
+    const kept = selected.length - movable.length
     applyPatch(movable, { status })
     setBatchMessage(kept > 0 ? constants.batchFinalKept(kept) : null)
   }
@@ -268,20 +269,23 @@ export default function QueuePage() {
         />
       )}
 
-      {/* The live region is always in the tree, and only its content comes and
-          goes: a region that enters together with its text is not announced by
-          most screen readers (the same trap the PD-114 review found in the
-          Copiado balloon). */}
-      <div role="alert">
-        {batchMessage !== null && (
-          <Snackbar
-            open
-            feedbackType="info"
-            message={batchMessage}
-            onClose={() => setBatchMessage(null)}
-          />
-        )}
-      </div>
+      {/* No wrapper with a role of its own: the DS `Snackbar` already renders
+          `role="status" aria-live="polite"`, and nesting an `alert` (implicitly
+          assertive) around a `status` (polite) is two live regions with
+          conflicting politeness — announced twice, or unpredictably, depending
+          on the screen reader. The cost of leaving it to the DS is the trap the
+          PD-114 review named: a region that enters the tree together with its
+          text is announced by fewer readers than one that was already there.
+          Between a known partial announcement and an unpredictable double one,
+          this takes the first. */}
+      {batchMessage !== null && (
+        <Snackbar
+          open
+          feedbackType="info"
+          message={batchMessage}
+          onClose={() => setBatchMessage(null)}
+        />
+      )}
     </div>
   )
 }

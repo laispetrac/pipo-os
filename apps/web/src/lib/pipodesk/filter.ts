@@ -27,6 +27,15 @@ export interface TicketFilter extends ApiTicketFilter {
   /** Computed per render from a query result; never a saved filter. */
   ticketIds?: string[]
   taxIds?: string[]
+  /** The companies listed, and **not** their branches — the exact cut.
+   *
+   *  `companyIds` answers what a person meant by picking a company, so it
+   *  reaches the branches through the parent (DSP-36). A cut the code derived
+   *  means what it listed: `Triagem` lists the companies nobody carries, and
+   *  reaching a carried branch through its uncarried parent is the failure its
+   *  own comment warns about — triage that never ends. Two meanings, two
+   *  fields, instead of one field that is right half the time. */
+  companyIdsExact?: string[]
 }
 
 export type FilterField = {
@@ -107,6 +116,16 @@ export const valuesOf = (filter: TicketFilter, field: FilterField): readonly (st
 export const storedOf = (field: FilterField, token: string): string | null =>
   token === NULL_TOKEN && NULLABLE_FIELDS.has(field) ? null : token
 
+/** `missesList` for the one field a ticket matches by two keys: its own
+ *  company **or** the parent (DSP-36). Filtering the parent brings the
+ *  branches, and a saved view pointing at a branch keeps working. Same key as
+ *  `optionKeysOf` and as the grouping. */
+const missesCompany = (wanted: string[] | undefined, ticket: TicketRow): boolean =>
+  wanted !== undefined &&
+  wanted.length > 0 &&
+  !wanted.includes(ticket.companyId) &&
+  !wanted.includes(principalIdOf(ticket))
+
 const missesList = <T>(wanted: T[] | undefined, value: T | null): boolean =>
   !!wanted?.length && (value === null || !wanted.includes(value))
 
@@ -119,15 +138,8 @@ export function matchesFilter(ticket: TicketRow, filter: TicketFilter, viewerId:
   if (filter.createdSince && businessDay(ticket.createdAt) < filter.createdSince) return false
 
   if (missesList(filter.statuses, ticket.status)) return false
-  /* By the company itself **or** by its parent (DSP-36): filtering the parent
-     brings the branches, and a saved view pointing at a branch keeps working.
-     Same key as `optionKeysOf` and as the grouping. */
-  if (
-    filter.companyIds?.length &&
-    !filter.companyIds.includes(ticket.companyId) &&
-    !filter.companyIds.includes(principalIdOf(ticket))
-  )
-    return false
+  if (missesCompany(filter.companyIds, ticket)) return false
+  if (missesList(filter.companyIdsExact, ticket.companyId)) return false
   if (missesList(filter.carrierIds, ticket.carrierId)) return false
   if (missesList(filter.products, ticket.product)) return false
   if (missesList(filter.types, ticket.enrollmentType)) return false

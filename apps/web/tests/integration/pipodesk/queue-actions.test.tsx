@@ -27,8 +27,9 @@ async function renderQueue() {
 }
 
 /** The queue announces its total in a `status` region. The DS `Snackbar` also
- *  renders one, so once a batch message is up the page legitimately has two —
- *  the count is the region that starts with a number. */
+ *  renders one, so once a batch message is up the page legitimately has two.
+ *  Both start with a number; the queue's comes first in the document, which is
+ *  what this picks. */
 const liveCount = () =>
   Number(
     screen
@@ -272,7 +273,8 @@ describe('barra de lote', () => {
        carries completed and cancelled tickets that now stay put. The two
        numbers are asserted against each other, not against a constant, so the
        test keeps meaning something when the fixture is regenerated. */
-    const ficaram = Number(screen.getByRole('alert').textContent?.match(/^(\d+)/)?.[1])
+    const aviso = screen.getByText(/em estado final/)
+    const ficaram = Number(aviso.textContent?.match(/^(\d+)/)?.[1])
     expect(ficaram).toBeGreaterThan(0)
     const sidebar = screen.getByRole('navigation', { name: /pipodesk/i })
     const emEspera = within(sidebar).getByText('Em espera').closest('button')
@@ -305,9 +307,7 @@ describe('barra de lote', () => {
     expect(ficaram).toBeLessThan(naFila)
 
     // And the screen says so, otherwise the selection just vanishes in silence.
-    expect(await screen.findByRole('alert')).toHaveTextContent(
-      new RegExp(`${ficaram}.*(estado final|não (muda|mudam))`, 'i'),
-    )
+    expect(await screen.findByText(/em estado final/)).toHaveTextContent(new RegExp(`^${ficaram} `))
   })
 })
 

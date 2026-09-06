@@ -1,6 +1,11 @@
 // @vitest-environment node
 import type { Ticket } from '@pipo-os/api-client'
-import { toTicketRow } from '@/lib/pipodesk/ticket-row'
+import {
+  companyTitleOf,
+  principalIdOf,
+  principalNameOf,
+  toTicketRow,
+} from '@/lib/pipodesk/ticket-row'
 
 function apiTicket(overrides: Partial<Ticket> = {}): Ticket {
   return {
@@ -196,5 +201,31 @@ describe('toTicketRow — assunto da linha', () => {
 
   it('should fall back to the ticket id when there is nothing to build a subject from', () => {
     expect(toTicketRow(apiTicket()).subject).toBe('ticket-1')
+  })
+})
+
+/**
+ * The parent company is the key the queue filters and groups by, and the API
+ * does not serve it yet — `GET /tickets/rows` has no column for it (PD-043).
+ * Pinning the null here is what turns "still missing" into a visible fact: the
+ * day the column lands, this test is the one that says the mapper was not
+ * updated with it, instead of the queue silently grouping by branch again.
+ */
+describe('empresa matriz na projeção da API', () => {
+  it('should carry no parent company, because the API has no column for it yet', () => {
+    const row = toTicketRow(apiTicket())
+
+    expect(row.parentCompanyId).toBeNull()
+    expect(row.parentCompanyName).toBeNull()
+  })
+
+  /** And the derivations degrade to the branch — the behaviour before DSP-36,
+   *  which is the old answer and not a wrong one. */
+  it('should fall back to the ticket own company while the parent is missing', () => {
+    const row = toTicketRow(apiTicket())
+
+    expect(principalIdOf(row)).toBe(row.companyId)
+    expect(principalNameOf(row)).toBe(row.companyName)
+    expect(companyTitleOf(row)).toBe(row.companyName ?? undefined)
   })
 })

@@ -415,6 +415,19 @@ describe('empresa pela matriz', () => {
     expect(matchesFilter(filial, { companyIds: ['matriz-2'] }, VIEWER)).toBe(false)
   })
 
+  /** The expansion answers what a *person* meant by picking a company. A cut
+   *  the code derived means the companies it listed and nothing else — the
+   *  Triagem node lists the ones nobody carries, and pulling in a carried
+   *  branch through its uncarried parent is the failure its own comment warns
+   *  about: triage that never ends. */
+  it('should not reach a branch through its parent on an exact cut', () => {
+    expect(matchesFilter(filial, { companyIdsExact: ['matriz-1'] }, VIEWER)).toBe(false)
+  })
+
+  it('should still match the company itself on an exact cut', () => {
+    expect(matchesFilter(filial, { companyIdsExact: ['sub-1'] }, VIEWER)).toBe(true)
+  })
+
   it('should count a branch under its parent in the option counts', () => {
     const counts = countByOption([filial, matriz], 'companyIds')
 
