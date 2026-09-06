@@ -2,38 +2,15 @@ import { Writable } from 'node:stream'
 import { createLoggerOptions } from '@pipo-os/observability/logger'
 import Fastify from 'fastify'
 import { describe, expect, it } from 'vitest'
-import { ticketRowSchema } from './rows-schema.js'
+import { ROW_FIELD_PII } from './rows-schema.js'
 
-/** Fields whose value may not reach a log line. */
-const REDACTED = new Set(['beneficiaryName', 'taxId'])
-
-/** Everything else, listed one by one so a new field fails this test until
- *  someone classifies it. `assigneeId` and `title` are deliberate — see ACE-196. */
-const KEPT = new Set([
-  'id',
-  'displayNumber',
-  'title',
-  'enrollmentId',
-  'enrollmentType',
-  'status',
-  'priority',
-  'actionDate',
-  'groupId',
-  'assigneeId',
-  'companyId',
-  'companyName',
-  'carrierId',
-  'carrierName',
-  'product',
-  'contractType',
-  'companySize',
-  'relationship',
-  'tags',
-  'sourceSystem',
-  'closedAt',
-  'createdAt',
-  'updatedAt',
-])
+/** Both sides come from the one classification in `rows-schema.ts`, so they
+ *  cannot drift from the projection or from each other. The exhaustiveness
+ *  that used to be asserted here is now the compiler's job: the record there
+ *  fails to build when a field is added and left unclassified. */
+const fields = Object.keys(ROW_FIELD_PII) as (keyof typeof ROW_FIELD_PII)[]
+const REDACTED = fields.filter((field) => ROW_FIELD_PII[field])
+const KEPT = fields.filter((field) => !ROW_FIELD_PII[field])
 
 const SENTINEL = (field: string): string => `sentinel-${field}`
 
@@ -51,10 +28,11 @@ function captureLogs() {
 }
 
 describe('ticket row logging', () => {
-  const fields = Object.keys(ticketRowSchema.shape)
-
-  it('classifies every field of the projection', () => {
-    expect(new Set([...REDACTED, ...KEPT])).toEqual(new Set(fields))
+  /** Guards the classification against being emptied: filtering a record whose
+   *  values all flipped to `false` would leave `REDACTED` empty, and every
+   *  assertion below would vacuously pass. */
+  it('has personal data to redact in the first place', () => {
+    expect(REDACTED).toEqual(['beneficiaryName', 'taxId'])
   })
 
   it('redacts the personal data of a row logged whole', () => {

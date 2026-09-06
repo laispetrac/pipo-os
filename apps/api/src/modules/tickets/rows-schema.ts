@@ -72,6 +72,46 @@ export const ticketRowSchema = z
   })
   .meta({ id: 'TicketRow' })
 
+/** Every field above, classified: `true` never reaches a log line.
+ *
+ *  The record is what makes this exhaustive. A literal needs a value per key,
+ *  so adding a field to the schema stops compiling until it is classified —
+ *  here, in the same file, in the same edit. The same list living in a test
+ *  could only fail later and elsewhere, where pasting the name into the kept
+ *  side is the cheapest way out, and a guard that is easiest to satisfy by
+ *  rubber-stamping is not much of a guard.
+ *
+ *  `title` and `assigneeId` are kept on purpose (ACE-196): the title has never
+ *  carried a person's name, and the assignee is a Pipo user id, not the
+ *  beneficiary. */
+export const ROW_FIELD_PII = {
+  id: false,
+  displayNumber: false,
+  title: false,
+  enrollmentId: false,
+  enrollmentType: false,
+  status: false,
+  priority: false,
+  actionDate: false,
+  groupId: false,
+  assigneeId: false,
+  companyId: false,
+  companyName: false,
+  beneficiaryName: true,
+  taxId: true,
+  carrierId: false,
+  carrierName: false,
+  product: false,
+  contractType: false,
+  companySize: false,
+  relationship: false,
+  tags: false,
+  sourceSystem: false,
+  closedAt: false,
+  createdAt: false,
+  updatedAt: false,
+} satisfies Record<keyof z.infer<typeof ticketRowSchema>, boolean>
+
 export const ticketRowsSchema = z
   .object({
     data: z.array(ticketRowSchema),
