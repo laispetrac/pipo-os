@@ -72,6 +72,36 @@ export const ticketRowSchema = z
   })
   .meta({ id: 'TicketRow' })
 
+/** Every field of the projection, classified: `true` never reaches a log line,
+ *  anything else is the reason it may. The record is what makes it exhaustive. */
+export const ROW_FIELD_PII = {
+  id: 'internal uuid',
+  displayNumber: 'ticket number, not a person',
+  title: 'always null — not writable, see the guard in rows-redaction.test',
+  enrollmentId: 'internal uuid',
+  enrollmentType: 'inclusion | exclusion | plan_change',
+  status: 'closed vocabulary',
+  priority: 'closed vocabulary',
+  actionDate: 'date of the work, not of the person',
+  groupId: 'internal uuid',
+  assigneeId: 'Pipo user id, not the beneficiary — ACE-196',
+  companyId: 'internal uuid',
+  companyName: 'legal entity, not a natural person',
+  beneficiaryName: true,
+  taxId: true,
+  carrierId: 'carrier, not a person',
+  carrierName: 'carrier, not a person',
+  product: 'closed vocabulary',
+  contractType: 'closed vocabulary',
+  companySize: 'closed vocabulary',
+  relationship: 'holder | dependent | family-group, says nothing about who',
+  tags: 'shape enforced by tagSchema — no space, no accent, so no person',
+  sourceSystem: 'closed vocabulary',
+  closedAt: 'timestamp',
+  createdAt: 'timestamp',
+  updatedAt: 'timestamp',
+} satisfies Record<keyof z.infer<typeof ticketRowSchema>, true | string>
+
 export const ticketRowsSchema = z
   .object({
     data: z.array(ticketRowSchema),

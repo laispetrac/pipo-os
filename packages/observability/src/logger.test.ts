@@ -2,6 +2,7 @@ import { Writable } from 'node:stream'
 import pino from 'pino'
 import { describe, expect, it } from 'vitest'
 import { createLoggerOptions } from './logger.js'
+import { kebabOf, snakeOf } from './redact.js'
 
 function captureLogs() {
   const lines: string[] = []
@@ -131,5 +132,78 @@ describe('createLoggerOptions', () => {
     expect(entry.ticketId).toBe('ticket-1')
     expect(entry.status).toBe('open')
     expect(entry.msg).toBe('ticket created')
+  })
+
+  it.each(['tax-id', 'taxId', 'tax_id', 'beneficiaryName'])(
+    'redacts %s, whichever spelling the writer used',
+    (field) => {
+      const { stream, lines } = captureLogs()
+      const logger = pino(createLoggerOptions({ nodeEnv: 'test' }), stream)
+
+      logger.info({ row: { [field]: 'sentinel-value' } }, 'ticket row')
+
+      expect(lastEntry(lines).row[field]).toBe('[REDACTED]')
+    },
+  )
+
+  /** Neutral wrapper key on purpose: `req`, `res` and `err` have serializers
+   *  that rewrite the object before redaction runs. */
+  it.each([
+    ['at the root', { taxId: 'sentinel' }],
+    ['one nesting in', { row: { taxId: 'sentinel' } }],
+    ['two nestings in', { ctx: { row: { taxId: 'sentinel' } } }],
+  ])('redacts personal data %s', (_label, payload) => {
+    const { stream, lines } = captureLogs()
+    const logger = pino(createLoggerOptions({ nodeEnv: 'test' }), stream)
+
+    logger.info(payload, 'ticket row')
+
+    expect(lines.at(-1) ?? '').not.toContain('sentinel')
+  })
+
+  /** Where coverage ends — written down instead of discovered. */
+  it.each([
+    ['three nestings in', { ctx: { body: { row: { taxId: 'sentinel' } } } }],
+    ['in an array two nestings in', { ctx: { body: [{ taxId: 'sentinel' }] } }],
+  ])('does NOT reach personal data %s', (_label, payload) => {
+    const { stream, lines } = captureLogs()
+    const logger = pino(createLoggerOptions({ nodeEnv: 'test' }), stream)
+
+    logger.info(payload, 'ticket row')
+
+    expect(lines.at(-1) ?? '').toContain('sentinel')
+  })
+
+  it('redacts the enrollment snapshot as a whole, not field by field', () => {
+    const { stream, lines } = captureLogs()
+    const logger = pino(createLoggerOptions({ nodeEnv: 'test' }), stream)
+
+    logger.info(
+      { ticket: { enrollmentSnapshot: { primary: { profile: { name: 'Fulana' } } } } },
+      'ticket created',
+    )
+
+    const line = lines.at(-1) ?? ''
+    expect(lastEntry(lines).ticket.enrollmentSnapshot).toBe('[REDACTED]')
+    expect(line).not.toContain('Fulana')
+  })
+})
+
+describe('grafias', () => {
+  it.each([
+    ['accessToken', 'access-token', 'access_token'],
+    ['taxId', 'tax-id', 'tax_id'],
+    ['beneficiaryName', 'beneficiary-name', 'beneficiary_name'],
+    ['apiKey', 'api-key', 'api_key'],
+  ])('expands %s into kebab and snake case', (root, kebab, snake) => {
+    expect(kebabOf(root)).toBe(kebab)
+    expect(snakeOf(root)).toBe(snake)
+  })
+
+  /** A single-word root is its own kebab and snake form — the Set in `redact`
+   *  relies on that to collapse the three into one path. */
+  it('leaves a single-word root untouched', () => {
+    expect(kebabOf('cpf')).toBe('cpf')
+    expect(snakeOf('cpf')).toBe('cpf')
   })
 })
