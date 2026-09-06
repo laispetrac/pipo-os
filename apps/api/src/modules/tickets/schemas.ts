@@ -70,6 +70,10 @@ export const ticketParamsSchema = z.object({
   id: z.uuid(),
 })
 
+/** Classification only, never a person: no space and no accent is what makes
+ *  the `tags` entry in `ROW_FIELD_PII` a fact instead of a convention. */
+const tagSchema = z.string().regex(/^[a-z0-9_:-]+$/)
+
 export const createTicketBodySchema = z
   .object({
     enrollmentId: z.uuid(),
@@ -85,7 +89,7 @@ export const createTicketBodySchema = z
     status: ticketStatusSchema.optional(),
     queueId: z.uuid().optional(),
     assigneeId: z.string().min(1).optional(),
-    tags: z.array(z.string()).optional(),
+    tags: z.array(tagSchema).optional(),
     forceCompletion: z.boolean().optional(),
     parentTicketId: z.uuid().optional(),
   })
@@ -96,7 +100,7 @@ export const updateTicketBodySchema = z
     status: ticketStatusSchema.optional(),
     queueId: z.uuid().nullable().optional(),
     assigneeId: z.string().min(1).nullable().optional(),
-    tags: z.array(z.string()).optional(),
+    tags: z.array(tagSchema).optional(),
     forceCompletion: z.boolean().optional(),
     closedAt: z.iso.datetime({ offset: true }).nullable().optional(),
     parentTicketId: z.uuid().nullable().optional(),

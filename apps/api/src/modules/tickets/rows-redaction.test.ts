@@ -52,6 +52,14 @@ describe('ticket row logging', () => {
 
 /** `title` is classified as safe because nothing writes it. That is an
  *  invariant of the write schemas, so it is checked here. */
+const validBody = {
+  enrollmentId: '00000000-0000-4000-8000-000000000001',
+  enrollmentType: 'inclusion',
+  companyId: '00000000-0000-4000-8000-000000000002',
+  sourceSystem: 'enrollment-integrations',
+  enrollmentSnapshot: {},
+}
+
 describe('title', () => {
   it('is not writable, which is why it is not classified as personal data', () => {
     expect(Object.keys(createTicketBodySchema.shape)).not.toContain('title')
@@ -59,5 +67,30 @@ describe('title', () => {
     const rejected = updateTicketBodySchema.safeParse({ title: 'Inclusão - MARIA SILVA' })
 
     expect(rejected.success).toBe(false)
+  })
+})
+
+/** `tags` is classified as safe because a tag cannot hold a person. That is an
+ *  invariant of the write schemas, so it is checked here. */
+describe('tags', () => {
+  it.each(['produto:health', 'porte:pme-plus', 'risco_carencia', 'pj_mov'])(
+    'accepts the classification tag %s',
+    (tag) => {
+      const parsed = createTicketBodySchema.safeParse({ ...validBody, tags: [tag] })
+
+      expect(parsed.success).toBe(true)
+    },
+  )
+
+  it.each([
+    ['a name', 'NATÁLIA MACHADO ANDRADE'],
+    ['a name in a value', 'beneficiario:Maria Silva'],
+    ['free text', 'ligar para a Maria amanhã'],
+  ])('rejects %s as a tag', (_label, tag) => {
+    const created = createTicketBodySchema.safeParse({ ...validBody, tags: [tag] })
+    const updated = updateTicketBodySchema.safeParse({ tags: [tag] })
+
+    expect(created.success).toBe(false)
+    expect(updated.success).toBe(false)
   })
 })

@@ -95,7 +95,7 @@ export const ROW_FIELD_PII = {
   contractType: 'closed vocabulary',
   companySize: 'closed vocabulary',
   relationship: 'holder | dependent | family-group, says nothing about who',
-  tags: 'classification only: product, type, size, waiting-period risk',
+  tags: 'shape enforced by tagSchema — no space, no accent, so no person',
   sourceSystem: 'closed vocabulary',
   closedAt: 'timestamp',
   createdAt: 'timestamp',
