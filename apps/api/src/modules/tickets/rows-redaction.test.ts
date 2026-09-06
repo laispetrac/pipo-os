@@ -9,8 +9,8 @@ import { ROW_FIELD_PII } from './rows-schema.js'
  *  that used to be asserted here is now the compiler's job: the record there
  *  fails to build when a field is added and left unclassified. */
 const fields = Object.keys(ROW_FIELD_PII) as (keyof typeof ROW_FIELD_PII)[]
-const REDACTED = fields.filter((field) => ROW_FIELD_PII[field])
-const KEPT = fields.filter((field) => !ROW_FIELD_PII[field])
+const REDACTED = fields.filter((field) => ROW_FIELD_PII[field] === true)
+const KEPT = fields.filter((field) => ROW_FIELD_PII[field] !== true)
 
 const SENTINEL = (field: string): string => `sentinel-${field}`
 

@@ -72,7 +72,8 @@ export const ticketRowSchema = z
   })
   .meta({ id: 'TicketRow' })
 
-/** Every field above, classified: `true` never reaches a log line.
+/** Every field above, classified. `true` never reaches a log line; anything
+ *  else is the reason it may, written on the field's own line.
  *
  *  The record is what makes this exhaustive. A literal needs a value per key,
  *  so adding a field to the schema stops compiling until it is classified —
@@ -81,36 +82,37 @@ export const ticketRowSchema = z
  *  side is the cheapest way out, and a guard that is easiest to satisfy by
  *  rubber-stamping is not much of a guard.
  *
- *  `title` and `assigneeId` are kept on purpose (ACE-196): the title has never
- *  carried a person's name, and the assignee is a Pipo user id, not the
- *  beneficiary. */
+ *  The reason is a string and not a `false` for the other half of that
+ *  problem: the compiler can force a decision but cannot tell a considered one
+ *  from a careless one, and a blank line is where careless hides. Writing why
+ *  a field is safe is the part a reviewer can actually check. */
 export const ROW_FIELD_PII = {
-  id: false,
-  displayNumber: false,
-  title: false,
-  enrollmentId: false,
-  enrollmentType: false,
-  status: false,
-  priority: false,
-  actionDate: false,
-  groupId: false,
-  assigneeId: false,
-  companyId: false,
-  companyName: false,
+  id: 'internal uuid',
+  displayNumber: 'ticket number, not a person',
+  title: 'free text, but never carried a name — ACE-196',
+  enrollmentId: 'internal uuid',
+  enrollmentType: 'inclusion | exclusion | plan_change',
+  status: 'closed vocabulary',
+  priority: 'closed vocabulary',
+  actionDate: 'date of the work, not of the person',
+  groupId: 'internal uuid',
+  assigneeId: 'Pipo user id, not the beneficiary — ACE-196',
+  companyId: 'internal uuid',
+  companyName: 'legal entity, not a natural person',
   beneficiaryName: true,
   taxId: true,
-  carrierId: false,
-  carrierName: false,
-  product: false,
-  contractType: false,
-  companySize: false,
-  relationship: false,
-  tags: false,
-  sourceSystem: false,
-  closedAt: false,
-  createdAt: false,
-  updatedAt: false,
-} satisfies Record<keyof z.infer<typeof ticketRowSchema>, boolean>
+  carrierId: 'carrier, not a person',
+  carrierName: 'carrier, not a person',
+  product: 'closed vocabulary',
+  contractType: 'closed vocabulary',
+  companySize: 'closed vocabulary',
+  relationship: 'holder | dependent | family-group, says nothing about who',
+  tags: 'classification only: product, type, size, waiting-period risk',
+  sourceSystem: 'closed vocabulary',
+  closedAt: 'timestamp',
+  createdAt: 'timestamp',
+  updatedAt: 'timestamp',
+} satisfies Record<keyof z.infer<typeof ticketRowSchema>, true | string>
 
 export const ticketRowsSchema = z
   .object({

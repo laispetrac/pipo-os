@@ -2,6 +2,7 @@ import { Writable } from 'node:stream'
 import pino from 'pino'
 import { describe, expect, it } from 'vitest'
 import { createLoggerOptions } from './logger.js'
+import { kebabOf, snakeOf } from './redact.js'
 
 function captureLogs() {
   const lines: string[] = []
@@ -145,6 +146,43 @@ describe('createLoggerOptions', () => {
     },
   )
 
+  /** The depth is a real boundary, not an accident: `fast-redact` matches one
+   *  level per `*`, so coverage is exactly as deep as the paths written. Both
+   *  sides are pinned here — where it holds and where it stops — so narrowing
+   *  it fails a test, and widening it is a deliberate act with a measured
+   *  price (see the note in `redact.ts`).
+   *
+   *  The wrapper key is deliberately neutral: `req`, `res` and `err` have
+   *  serializers that rewrite the object before redaction ever runs, so a test
+   *  built on them would pass without proving anything about the paths. */
+  it.each([
+    ['at the root', { taxId: 'sentinel' }],
+    ['one nesting in', { row: { taxId: 'sentinel' } }],
+    ['two nestings in', { ctx: { row: { taxId: 'sentinel' } } }],
+  ])('redacts personal data %s', (_label, payload) => {
+    const { stream, lines } = captureLogs()
+    const logger = pino(createLoggerOptions({ nodeEnv: 'test' }), stream)
+
+    logger.info(payload, 'ticket row')
+
+    expect(lines.at(-1) ?? '').not.toContain('sentinel')
+  })
+
+  /** Where coverage ends. Asserting the hole is uncomfortable on a security
+   *  control and that is the point: it is written down instead of discovered,
+   *  and the day someone adds the fourth level this test says so. */
+  it.each([
+    ['three nestings in', { ctx: { body: { row: { taxId: 'sentinel' } } } }],
+    ['in an array two nestings in', { ctx: { body: [{ taxId: 'sentinel' }] } }],
+  ])('does NOT reach personal data %s', (_label, payload) => {
+    const { stream, lines } = captureLogs()
+    const logger = pino(createLoggerOptions({ nodeEnv: 'test' }), stream)
+
+    logger.info(payload, 'ticket row')
+
+    expect(lines.at(-1) ?? '').toContain('sentinel')
+  })
+
   it('redacts the enrollment snapshot as a whole, not field by field', () => {
     const { stream, lines } = captureLogs()
     const logger = pino(createLoggerOptions({ nodeEnv: 'test' }), stream)
@@ -157,5 +195,27 @@ describe('createLoggerOptions', () => {
     const line = lines.at(-1) ?? ''
     expect(lastEntry(lines).ticket.enrollmentSnapshot).toBe('[REDACTED]')
     expect(line).not.toContain('Fulana')
+  })
+})
+
+/** The generators are what produce the coverage: a field-name test passes as
+ *  long as the spelling it happens to use is generated, so a regression here
+ *  could narrow the list without turning anything red. */
+describe('grafias', () => {
+  it.each([
+    ['accessToken', 'access-token', 'access_token'],
+    ['taxId', 'tax-id', 'tax_id'],
+    ['beneficiaryName', 'beneficiary-name', 'beneficiary_name'],
+    ['apiKey', 'api-key', 'api_key'],
+  ])('expands %s into kebab and snake case', (root, kebab, snake) => {
+    expect(kebabOf(root)).toBe(kebab)
+    expect(snakeOf(root)).toBe(snake)
+  })
+
+  /** A single-word root is its own kebab and snake form — the Set in `redact`
+   *  relies on that to collapse the three into one path. */
+  it('leaves a single-word root untouched', () => {
+    expect(kebabOf('cpf')).toBe('cpf')
+    expect(snakeOf('cpf')).toBe('cpf')
   })
 })
