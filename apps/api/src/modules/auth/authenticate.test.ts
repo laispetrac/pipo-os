@@ -1,6 +1,7 @@
 import type { FastifyInstance } from 'fastify'
 import { afterAll, beforeAll, describe, expect, it } from 'vitest'
 import { buildApp } from '../../app.js'
+import { requirePrincipal } from './authenticate.js'
 import { SESSION_COOKIE_NAME } from './session.js'
 
 function cookieValue(
@@ -23,12 +24,14 @@ describe('authenticate hook', () => {
 
     // Routes added before ready(): hooks bind at preReady, so a route that
     // declares no config is covered exactly like an autoloaded one.
-    app.get('/__test/protected', async (request) => ({
-      email: request.principal.email,
-      policies: request.principal.policies,
-      sub: request.principal.sub ?? null,
-    }))
+    app.get('/__test/protected', async (request) => {
+      const principal = requirePrincipal(request)
+      return { email: principal.email, policies: principal.policies, sub: principal.sub ?? null }
+    })
     app.get('/__test/public', { config: { public: true } }, async () => ({ ok: true }))
+    app.get('/__test/public-reading-principal', { config: { public: true } }, async (request) =>
+      requirePrincipal(request),
+    )
     app.get('/docs-internal', async () => ({ ok: true }))
 
     await app.ready()
@@ -108,6 +111,16 @@ describe('authenticate hook', () => {
     // The only call in the suite that exercises cors ahead of the auth hook.
     expect(response.statusCode).toBe(204)
     expect(response.headers['access-control-allow-origin']).toBe('http://localhost:5173')
+  })
+
+  it('answers 401, not 500, when a public route asks for a principal', async () => {
+    const response = await app.inject({ method: 'GET', url: '/__test/public-reading-principal' })
+
+    expect(response.statusCode).toBe(401)
+    expect(response.json()).toEqual({
+      error: 'UnauthorizedError',
+      message: 'Not authenticated',
+    })
   })
 
   it('keeps GET /health public', async () => {

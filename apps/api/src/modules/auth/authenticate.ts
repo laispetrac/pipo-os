@@ -11,8 +11,9 @@ export const DOCS_ROUTE_PREFIX = '/docs'
 
 declare module 'fastify' {
   interface FastifyRequest {
-    // Unset only on public routes, which never read it.
-    principal: Principal
+    // Optional on purpose: a public route has no principal, and the compiler is
+    // what stops a handler there from reading one that is not going to be set.
+    principal?: Principal
   }
 
   interface FastifyContextConfig {
@@ -26,10 +27,22 @@ function isDocsRoute(url: string | undefined): boolean {
   return url === DOCS_ROUTE_PREFIX || url?.startsWith(`${DOCS_ROUTE_PREFIX}/`) === true
 }
 
+// Handlers reach the principal through this, never through request.principal,
+// so a public route asking for one answers 401 instead of a TypeError.
+export function requirePrincipal(request: FastifyRequest): Principal {
+  const principal = request.principal
+
+  if (!principal) {
+    throw new UnauthorizedError('Not authenticated')
+  }
+
+  return principal
+}
+
 // The access-token may carry no `sub`, so a handler writing an author or an
 // assignee has to demand it instead of assuming it.
 export function requireUserId(request: FastifyRequest): string {
-  const sub = request.principal.sub?.trim()
+  const sub = requirePrincipal(request).sub?.trim()
 
   if (!sub) {
     throw new UnauthorizedError('Invalid session')

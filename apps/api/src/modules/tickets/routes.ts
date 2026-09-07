@@ -1,6 +1,6 @@
 import type { ZodTypeProvider } from '@fastify/type-provider-zod'
 import type { FastifyInstance } from 'fastify'
-import { requireUserId } from '../auth/authenticate.js'
+import { requirePrincipal, requireUserId } from '../auth/authenticate.js'
 import { businessToday } from '../../shared/business-date.js'
 import { ticketRowsQuerySchema, ticketRowsSchema } from './rows-schema.js'
 import {
@@ -48,7 +48,7 @@ export function registerTicketRoutes(app: FastifyInstance, service: TicketsServi
       },
     },
     async (request) => {
-      const { email } = request.principal
+      const { email } = requirePrincipal(request)
       // TODO: enforce tenant scope from session claims before this endpoint goes to production
       // Any authenticated user can currently read rows from any company, and this one
       // answers up to 5000 of them at once, with beneficiary name and tax id
