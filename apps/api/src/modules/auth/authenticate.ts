@@ -5,10 +5,6 @@ import { SESSION_COOKIE_NAME, extractSessionClaims, type SessionClaims } from '.
 
 export type Principal = SessionClaims
 
-// Swagger-ui owns its routes, so they cannot carry our `public` config.
-// Shared with the app.register call so the two cannot drift.
-export const DOCS_ROUTE_PREFIX = '/docs'
-
 declare module 'fastify' {
   interface FastifyRequest {
     // Optional on purpose: a public route has no principal, and the compiler is
@@ -19,12 +15,6 @@ declare module 'fastify' {
   interface FastifyContextConfig {
     public?: boolean
   }
-}
-
-// Swagger-ui serves the prefix itself and everything under it. A route that
-// merely starts with the same characters is not the docs.
-function isDocsRoute(url: string | undefined): boolean {
-  return url === DOCS_ROUTE_PREFIX || url?.startsWith(`${DOCS_ROUTE_PREFIX}/`) === true
 }
 
 // Handlers reach the principal through this, never through request.principal,
@@ -59,10 +49,6 @@ export default fp(
       // The 404 context inherits root hooks with an empty config: without this
       // an unknown route would answer 401 instead of 404.
       if (request.is404) {
-        return
-      }
-
-      if (isDocsRoute(request.routeOptions.url)) {
         return
       }
 

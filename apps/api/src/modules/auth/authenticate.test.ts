@@ -32,7 +32,6 @@ describe('authenticate hook', () => {
     app.get('/__test/public-reading-principal', { config: { public: true } }, async (request) =>
       requirePrincipal(request),
     )
-    app.get('/docs-internal', async () => ({ ok: true }))
 
     await app.ready()
 
@@ -89,12 +88,6 @@ describe('authenticate hook', () => {
 
     expect(response.statusCode).toBe(200)
     expect(response.json()).toEqual({ ok: true })
-  })
-
-  it('does not extend the docs exemption to a route that merely starts with it', async () => {
-    const response = await app.inject({ method: 'GET', url: '/docs-internal' })
-
-    expect(response.statusCode).toBe(401)
   })
 
   it('answers 204 to a browser preflight with no session cookie', async () => {
