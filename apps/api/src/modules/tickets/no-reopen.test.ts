@@ -20,8 +20,11 @@ const validTicketBody = {
 describe('a closed ticket does not go back to an open state', () => {
   let app: FastifyInstance
   let sessionCookie: string
+  let previousDevLoginEnabled: string | undefined
+  const createdTicketIds: string[] = []
 
   beforeAll(async () => {
+    previousDevLoginEnabled = process.env.DEV_LOGIN_ENABLED
     process.env.DEV_LOGIN_ENABLED = 'true'
     app = buildApp()
     await app.ready()
@@ -36,12 +39,18 @@ describe('a closed ticket does not go back to an open state', () => {
 
   afterAll(async () => {
     await app.close()
-    delete process.env.DEV_LOGIN_ENABLED
+    if (previousDevLoginEnabled === undefined) delete process.env.DEV_LOGIN_ENABLED
+    else process.env.DEV_LOGIN_ENABLED = previousDevLoginEnabled
   })
 
+  // Scoped to this suite's own tickets: truncating the tables would take other
+  // suites' fixtures with it if file parallelism is ever turned on.
   afterEach(async () => {
-    await app.db.deleteFrom('ticket_status_history').execute()
-    await app.db.deleteFrom('tickets').execute()
+    if (createdTicketIds.length === 0) return
+
+    const ids = createdTicketIds.splice(0)
+    await app.db.deleteFrom('ticket_status_history').where('ticket_id', 'in', ids).execute()
+    await app.db.deleteFrom('tickets').where('id', 'in', ids).execute()
   })
 
   /** A closed OPEN_STATUS would make every assertion below vacuous. */
@@ -57,7 +66,9 @@ describe('a closed ticket does not go back to an open state', () => {
       payload: validTicketBody,
       cookies,
     })
+    expect(created.statusCode).toBe(201)
     const { id } = created.json()
+    createdTicketIds.push(id)
 
     const closed = await app.inject({
       method: 'PATCH',
