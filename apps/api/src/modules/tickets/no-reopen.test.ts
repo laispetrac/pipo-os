@@ -44,6 +44,11 @@ describe('a closed ticket does not go back to an open state', () => {
     await app.db.deleteFrom('tickets').execute()
   })
 
+  /** A closed OPEN_STATUS would make every assertion below vacuous. */
+  it('reopens to a status that is actually open', () => {
+    expect(CLOSED_STATUSES.has(OPEN_STATUS)).toBe(false)
+  })
+
   async function createClosedTicket(closingStatus: string): Promise<string> {
     const cookies = { [SESSION_COOKIE_NAME]: sessionCookie }
     const created = await app.inject({
