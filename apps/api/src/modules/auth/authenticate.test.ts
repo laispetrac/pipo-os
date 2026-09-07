@@ -94,6 +94,22 @@ describe('authenticate hook', () => {
     expect(response.statusCode).toBe(401)
   })
 
+  it('answers 204 to a browser preflight with no session cookie', async () => {
+    const response = await app.inject({
+      method: 'OPTIONS',
+      url: '/api/tickets',
+      headers: {
+        origin: 'http://localhost:5173',
+        'access-control-request-method': 'POST',
+        'access-control-request-headers': 'content-type',
+      },
+    })
+
+    // The only call in the suite that exercises cors ahead of the auth hook.
+    expect(response.statusCode).toBe(204)
+    expect(response.headers['access-control-allow-origin']).toBe('http://localhost:5173')
+  })
+
   it('keeps GET /health public', async () => {
     const response = await app.inject({ method: 'GET', url: '/health' })
 

@@ -68,7 +68,10 @@ export default fp(
       request.principal = claims
     })
   },
-  // Cookies are parsed in @fastify/cookie's own onRequest hook, so this plugin
-  // must run after it or request.cookies is not there yet.
-  { name: 'authenticate', dependencies: ['@fastify/cookie'] },
+  // Both run their own onRequest hook, and hooks fire in registration order:
+  // before @fastify/cookie there is no request.cookies to read, and before
+  // @fastify/cors a browser preflight would get 401 here instead of the 204
+  // cors answers on its own — with every test still green, since inject()
+  // sends no preflight.
+  { name: 'authenticate', dependencies: ['@fastify/cookie', '@fastify/cors'] },
 )
