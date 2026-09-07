@@ -31,6 +31,7 @@ function sessionWithoutSub(app: FastifyInstance): string {
 describe('authenticate hook', () => {
   let app: FastifyInstance
   let sessionCookie: string
+  const devLoginEnabled = process.env.DEV_LOGIN_ENABLED
 
   beforeAll(async () => {
     process.env.DEV_LOGIN_ENABLED = 'true'
@@ -60,7 +61,12 @@ describe('authenticate hook', () => {
 
   afterAll(async () => {
     await app.close()
-    delete process.env.DEV_LOGIN_ENABLED
+    // Assigning undefined back would write the string 'undefined'.
+    if (devLoginEnabled === undefined) {
+      delete process.env.DEV_LOGIN_ENABLED
+    } else {
+      process.env.DEV_LOGIN_ENABLED = devLoginEnabled
+    }
   })
 
   it('answers 401 on a route that declares nothing, without a session cookie', async () => {
