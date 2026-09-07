@@ -13,6 +13,7 @@ import { displayNameFromEmail } from '@/lib/pipodesk/format'
 import { logout } from '@/lib/auth'
 import { useSessionStore } from '@/stores/session'
 import {
+  COMPANY_CNPJS,
   DATASET_TODAY,
   FIXTURE_USER_NAMES,
   INBOX_TICKET_IDS,
@@ -263,6 +264,7 @@ export function DeskShell() {
             onClose={() => setSearchOpen(false)}
             rows={rows}
             sections={sections}
+            companyCnpjs={COMPANY_CNPJS}
             onSelect={(node) => {
               dispatch({ type: 'select-node', node })
               navigate({ to: '/' })

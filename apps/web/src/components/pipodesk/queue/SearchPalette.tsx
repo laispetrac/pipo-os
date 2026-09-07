@@ -26,12 +26,14 @@ export function SearchPalette({
   onClose,
   rows,
   sections,
+  companyCnpjs,
   onSelect,
 }: {
   open: boolean
   onClose: () => void
   rows: TicketRow[]
   sections: TreeSection[]
+  companyCnpjs?: Record<string, string>
   onSelect: (node: QueueNode) => void
 }) {
   const [query, setQuery] = useState('')
@@ -41,7 +43,10 @@ export function SearchPalette({
   /** Who had the focus when the palette opened — it gets it back on close. */
   const opener = useRef<HTMLElement | null>(null)
 
-  const groups = useMemo(() => searchQueue(query, rows, sections), [query, rows, sections])
+  const groups = useMemo(
+    () => searchQueue(query, rows, sections, companyCnpjs),
+    [query, rows, sections, companyCnpjs],
+  )
   const empty = useMemo(() => defaultHits(sections), [sections])
   const flat: SearchHit[] = query.trim() ? groups.flatMap((group) => group.hits) : empty
 

@@ -5,6 +5,7 @@
  * `GET /api/search` (PD-080) takes over later without changing the palette.
  */
 
+import { COMPANY_STRUCTURE_COPY } from '@/constants/pipodesk/domain'
 import { toQueueNode } from './queue-node'
 import type { QueueNode } from './queue-view'
 import { SEARCH_NODE_PREFIX, type TreeNode, type TreeSection } from './tree'
@@ -59,6 +60,14 @@ const syntheticNode = (key: string, label: string, filter: QueueNode['filter']):
   sort: { by: 'updatedAt', direction: 'desc' },
 })
 
+/** `Matriz` or `Filial de X`, plus the CNPJ when it is known. */
+const companyDetail = (parentName: string | null, cnpj: string | undefined): string => {
+  const structure = parentName
+    ? COMPANY_STRUCTURE_COPY.branch(parentName)
+    : COMPANY_STRUCTURE_COPY.parent
+  return cnpj ? `${structure} · ${cnpj}` : structure
+}
+
 const treeNodes = (sections: TreeSection[]): TreeNode[] => {
   const out: TreeNode[] = []
   const walk = (nodes: TreeNode[]) => {
@@ -75,6 +84,9 @@ export function searchQueue(
   query: string,
   rows: TicketRow[],
   sections: TreeSection[],
+  /** CNPJ by company id. Optional: the row projection has none until PD-043
+   *  adds the column, and without it two branches of a parent read alike. */
+  companyCnpjs: Record<string, string> = {},
 ): SearchGroup[] {
   const needle = normalize(query.trim())
   if (needle.length === 0) return []
@@ -131,8 +143,7 @@ export function searchQueue(
     key: `company-${companyId}`,
     category: 'empresa',
     label: info.name,
-    // No CNPJ yet: the row projection does not carry it (ACE-193).
-    detail: info.parentName ? `Filial de ${info.parentName}` : 'Matriz',
+    detail: companyDetail(info.parentName, companyCnpjs[companyId]),
     count: info.count,
     node: syntheticNode(`company-${companyId}`, info.name, { companyIds: [companyId] }),
   }))

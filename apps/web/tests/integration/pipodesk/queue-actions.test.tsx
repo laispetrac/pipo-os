@@ -310,7 +310,7 @@ describe('busca global', () => {
     await user.paste('guaporé agropecuária')
     await user.click(
       await within(palette).findByRole('option', {
-        name: /^Guaporé Agropecuária Matriz/,
+        name: /^Guaporé Agropecuária Matriz · \d/,
       }),
     )
 

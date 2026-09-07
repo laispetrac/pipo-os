@@ -152,20 +152,16 @@ describe('defaultHits', () => {
 })
 
 describe('detail da empresa na busca', () => {
+  const branch = row({
+    id: '1',
+    companyId: 'empresa-1',
+    companyName: 'Caiçara Metalurgia',
+    parentCompanyId: 'empresa-9',
+    parentCompanyName: 'Grupo Quiriri',
+  })
+
   it('should name the parent on a branch result', () => {
-    const groups = searchQueue(
-      'caicara',
-      [
-        row({
-          id: '1',
-          companyId: 'empresa-1',
-          companyName: 'Caiçara Metalurgia',
-          parentCompanyId: 'empresa-9',
-          parentCompanyName: 'Grupo Quiriri',
-        }),
-      ],
-      sections,
-    )
+    const groups = searchQueue('caicara', [branch], sections)
 
     const empresas = groups.find((group) => group.category === 'empresa')
     expect(empresas?.hits[0].detail).toBe('Filial de Grupo Quiriri')
@@ -180,5 +176,37 @@ describe('detail da empresa na busca', () => {
 
     const empresas = groups.find((group) => group.category === 'empresa')
     expect(empresas?.hits[0].detail).toBe('Matriz')
+  })
+
+  /* The fixture shares a trade name between 116 companies, so two branches of
+     the same parent read identically without it. */
+  it('should tell two companies apart by the cnpj when it is known', () => {
+    const other = row({
+      id: '2',
+      companyId: 'empresa-2',
+      companyName: 'Caiçara Metalurgia',
+      parentCompanyId: 'empresa-9',
+      parentCompanyName: 'Grupo Quiriri',
+    })
+
+    const groups = searchQueue('caicara', [branch, other], sections, {
+      'empresa-1': '11.222.333/0001-44',
+      'empresa-2': '11.222.333/0002-25',
+    })
+
+    const details = groups
+      .find((group) => group.category === 'empresa')
+      ?.hits.map((hit) => hit.detail)
+    expect(details).toEqual([
+      'Filial de Grupo Quiriri · 11.222.333/0001-44',
+      'Filial de Grupo Quiriri · 11.222.333/0002-25',
+    ])
+  })
+
+  it('should keep the structure alone when the cnpj is unknown', () => {
+    const groups = searchQueue('caicara', [branch], sections, {})
+
+    const empresas = groups.find((group) => group.category === 'empresa')
+    expect(empresas?.hits[0].detail).toBe('Filial de Grupo Quiriri')
   })
 })
