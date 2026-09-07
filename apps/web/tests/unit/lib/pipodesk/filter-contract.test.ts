@@ -51,6 +51,8 @@ const toRow = (seed: FixtureTicket): TicketRow => ({
   beneficiaryName: null,
   taxId: null,
   companyName: null,
+  // GET /tickets/rows has no parent column, so parity on the matriz expansion
+  // cannot be claimed here; whoever adds it decides which side expands.
   parentCompanyId: null,
   parentCompanyName: null,
   companySize: seed.client.companySize,
