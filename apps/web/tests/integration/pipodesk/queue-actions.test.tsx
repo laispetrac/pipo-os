@@ -9,6 +9,7 @@ import {
   VIEWER_ID,
 } from '@/fixtures/pipodesk/dataset'
 import { isAuthenticated, logout } from '@/lib/auth'
+import constants from '@/constants/pages/pipodesk/queue'
 
 vi.mock('@/lib/auth', () => ({
   ensureSession: vi.fn().mockResolvedValue(undefined),
@@ -26,13 +27,14 @@ async function renderQueue() {
   return router
 }
 
-/** Two `status` regions once a batch message is up; the queue's comes first. */
+/** Named region, not DOM order: the batch Snackbar is also `role="status"` and
+ *  also opens with a number, so picking the first one made the assertion depend
+ *  on render order — and, when it lost, compare the batch number to itself. */
 const liveCount = () =>
   Number(
     screen
-      .getAllByRole('status')
-      .map((region) => region.textContent?.match(/^(\d+)/)?.[1])
-      .find((digits) => digits !== undefined),
+      .getByRole('status', { name: constants.liveCountLabel })
+      .textContent?.match(/^(\d+)/)?.[1],
   )
 
 describe('painel de filtros', () => {
@@ -293,6 +295,32 @@ describe('barra de lote', () => {
 
     // And the screen says so, otherwise the selection just vanishes in silence.
     expect(await screen.findByText(/em estado final/)).toHaveTextContent(new RegExp(`^${ficaram} `))
+  })
+
+  /** The notice belongs to the batch that produced it. Only the status batch
+   *  wrote it, so any other action left it on screen describing a selection
+   *  that had already moved. */
+  it('should drop the final-tickets notice when the next batch is not a status change', async () => {
+    await renderQueue()
+    const user = userEvent.setup()
+
+    const sidebar = screen.getByRole('navigation', { name: /pipodesk/i })
+    await user.click(within(sidebar).getByRole('button', { name: /^Cancelamentos/ }))
+
+    await user.click(screen.getByRole('checkbox', { name: /selecionar todos/i }))
+    const barra = await screen.findByRole('group', { name: 'Ações em lote' })
+    await user.click(within(barra).getByRole('button', { name: 'Ações' }))
+    await user.click(screen.getByRole('button', { name: 'Mudar status' }))
+    await user.click(await screen.findByRole('button', { name: /Na operadora/ }))
+
+    expect(await screen.findByText(/em estado final/)).toBeInTheDocument()
+
+    const colega = ANALYSTS_BY_POD[VIEWER_GROUP_ID].find((id) => id !== VIEWER_ID)!
+    await user.click(within(barra).getByRole('button', { name: 'Ações' }))
+    await user.click(screen.getByRole('button', { name: 'Reatribuir' }))
+    await user.click(await screen.findByRole('button', { name: FIXTURE_USER_NAMES[colega] }))
+
+    expect(screen.queryByText(/em estado final/)).not.toBeInTheDocument()
   })
 })
 

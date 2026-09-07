@@ -143,6 +143,9 @@ export default function QueuePage() {
   const selectedVisible = view.selectedIds.filter((id) => listedIds.has(id))
 
   const runBatch = (patch: Parameters<typeof applyPatch>[1]) => {
+    // Every batch answers for itself: without this the notice from a previous
+    // status batch stays on screen describing a selection that already moved.
+    setBatchMessage(null)
     applyPatch(selectedVisible, patch)
   }
 
@@ -224,7 +227,7 @@ export default function QueuePage() {
 
       {/* The total left the visible header (the sidebar shows it) but not the
                  screen reader. */}
-      <p className={styles.live} role="status">
+      <p className={styles.live} role="status" aria-label={constants.liveCountLabel}>
         {constants.liveCount(total, view.label)}
       </p>
 
