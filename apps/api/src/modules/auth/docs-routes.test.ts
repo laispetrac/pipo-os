@@ -17,7 +17,12 @@ describe('the docs routes, with swagger-ui actually registered', () => {
 
   afterAll(async () => {
     await app.close()
-    process.env.NODE_ENV = originalNodeEnv
+    // Assigning undefined back would write the string 'undefined'.
+    if (originalNodeEnv === undefined) {
+      delete process.env.NODE_ENV
+    } else {
+      process.env.NODE_ENV = originalNodeEnv
+    }
   })
 
   it('serves the docs without a session cookie', async () => {
