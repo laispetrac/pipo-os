@@ -365,12 +365,10 @@ export class TicketsRepository implements TicketsRepositoryPort {
     const row = await this.db
       .updateTable('tickets')
       .set({
-        ...(data.status !== undefined && { status: data.status }),
         ...(data.queueId !== undefined && { queue_id: data.queueId }),
         ...(data.assigneeId !== undefined && { assignee_id: data.assigneeId }),
         ...(data.tags !== undefined && { tags: data.tags }),
         ...(data.forceCompletion !== undefined && { force_completion: data.forceCompletion }),
-        ...(data.closedAt !== undefined && { closed_at: data.closedAt }),
         ...(data.parentTicketId !== undefined && { parent_ticket_id: data.parentTicketId }),
       })
       .where('id', '=', id)
