@@ -6,6 +6,7 @@ import {
   defaultHits,
   hitCountLabel,
   searchQueue,
+  type CompanyRecord,
   type SearchHit,
 } from '@/lib/pipodesk/search'
 import type { TreeSection } from '@/lib/pipodesk/tree'
@@ -26,14 +27,14 @@ export function SearchPalette({
   onClose,
   rows,
   sections,
-  companyCnpjs,
+  companies,
   onSelect,
 }: {
   open: boolean
   onClose: () => void
   rows: TicketRow[]
   sections: TreeSection[]
-  companyCnpjs?: Record<string, string>
+  companies?: Record<string, CompanyRecord>
   onSelect: (node: QueueNode) => void
 }) {
   const [query, setQuery] = useState('')
@@ -44,8 +45,8 @@ export function SearchPalette({
   const opener = useRef<HTMLElement | null>(null)
 
   const groups = useMemo(
-    () => searchQueue(query, rows, sections, companyCnpjs),
-    [query, rows, sections, companyCnpjs],
+    () => searchQueue(query, rows, sections, companies),
+    [query, rows, sections, companies],
   )
   const empty = useMemo(() => defaultHits(sections), [sections])
   const flat: SearchHit[] = query.trim() ? groups.flatMap((group) => group.hits) : empty

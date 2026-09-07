@@ -190,8 +190,8 @@ describe('detail da empresa na busca', () => {
     })
 
     const groups = searchQueue('caicara', [branch, other], sections, {
-      'empresa-1': '11.222.333/0001-44',
-      'empresa-2': '11.222.333/0002-25',
+      'empresa-1': { legalName: 'Caiçara Metalurgia LTDA', cnpj: '11.222.333/0001-44' },
+      'empresa-2': { legalName: 'Caiçara Metalurgia ME', cnpj: '11.222.333/0002-25' },
     })
 
     const details = groups
@@ -208,5 +208,48 @@ describe('detail da empresa na busca', () => {
 
     const empresas = groups.find((group) => group.category === 'empresa')
     expect(empresas?.hits[0].detail).toBe('Filial de Grupo Quiriri')
+  })
+})
+
+describe('empresa na busca: rótulo, casamento e contagem', () => {
+  const registry = {
+    'empresa-9': { legalName: 'Quiriri Participações S.A.', cnpj: '11.222.333/0001-44' },
+    'empresa-1': { legalName: 'Caiçara Metalurgia LTDA', cnpj: '11.222.333/0002-25' },
+  }
+
+  const parent = row({ id: '1', companyId: 'empresa-9', companyName: 'Grupo Quiriri' })
+  const branchRow = row({
+    id: '2',
+    companyId: 'empresa-1',
+    companyName: 'Caiçara Metalurgia',
+    parentCompanyId: 'empresa-9',
+    parentCompanyName: 'Grupo Quiriri',
+  })
+
+  const empresaHits = (query: string) =>
+    searchQueue(query, [parent, branchRow], sections, registry).find(
+      (group) => group.category === 'empresa',
+    )?.hits
+
+  it('should label the result with the legal name when it is known', () => {
+    expect(empresaHits('quiriri')?.[0].label).toBe('Quiriri Participações S.A.')
+  })
+
+  it('should find a company by its legal name', () => {
+    expect(empresaHits('participações')?.[0].label).toBe('Quiriri Participações S.A.')
+  })
+
+  it('should find a company by the digits of its cnpj', () => {
+    expect(empresaHits('333/0002')?.[0].label).toBe('Caiçara Metalurgia LTDA')
+  })
+
+  /* The node filter matches a company or its parent, so a parent result opens
+     the branches too — the count has to say the same number. */
+  it('should count the branches under a parent result', () => {
+    expect(empresaHits('quiriri')?.[0].count).toBe(2)
+  })
+
+  it('should count only itself on a branch result', () => {
+    expect(empresaHits('caicara')?.[0].count).toBe(1)
   })
 })

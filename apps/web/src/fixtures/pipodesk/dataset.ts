@@ -7,6 +7,7 @@
  * prototype repo.
  */
 
+import type { CompanyRecord } from '@/lib/pipodesk/search'
 import { isApiStatus, toDisplayStatus } from '@/lib/pipodesk/status'
 import type { StructureState } from '@/lib/pipodesk/structure'
 import type { Priority, Relationship, TicketRow } from '@/lib/pipodesk/ticket-row'
@@ -65,10 +66,13 @@ export const COMPANY_NAMES: Record<string, string> = Object.fromEntries(
   data.companies.map((company) => [company.id, company.tradeName]),
 )
 
-/** CNPJ by company id: the search needs it to tell apart the 116 trade names
- *  the dataset shares between different companies. */
-export const COMPANY_CNPJS: Record<string, string> = Object.fromEntries(
-  data.companies.map((company) => [company.id, company.cnpj]),
+/** Legal name and CNPJ by company id: the search needs both to tell apart the
+ *  116 trade names the dataset shares between different companies. */
+export const COMPANY_REGISTRY: Record<string, CompanyRecord> = Object.fromEntries(
+  data.companies.map((company) => [
+    company.id,
+    { legalName: company.legalName, cnpj: company.cnpj },
+  ]),
 )
 
 export const structureFixture: StructureState = data.structure

@@ -152,7 +152,7 @@ export default function QueuePage() {
       .filter((ticket) => transitionsFrom(ticket.status).includes(status))
       .map((ticket) => ticket.id)
     const kept = selected.length - movable.length
-    applyPatch(movable, { status })
+    if (movable.length > 0) applyPatch(movable, { status })
     setBatchMessage(kept > 0 ? constants.batchFinalKept(kept) : null)
   }
 
