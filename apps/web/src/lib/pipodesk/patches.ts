@@ -1,8 +1,8 @@
 /**
  * Mutation model while the backend does not exist (from the prototype): the
- * base never changes, actions become patches applied on read. When
- * `PATCH /tickets/:id` lands, the patch becomes the request body and this
- * state becomes optimistic cache — destination changes, shape does not.
+ * base never changes, actions become patches applied on read. When the routes
+ * land, `status` goes to `PATCH /tickets/:id/status`, which audits it, and the
+ * rest to `PATCH /tickets/:id` — destination changes, shape does not.
  */
 
 import { FINAL_STATUSES, toDisplayStatus, type ApiStatus } from './status'
