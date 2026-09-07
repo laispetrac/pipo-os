@@ -1,7 +1,7 @@
 import type { FastifyInstance } from 'fastify'
 import { afterAll, beforeAll, describe, expect, it } from 'vitest'
 import { buildApp } from '../../app.js'
-import { requirePrincipal } from './authenticate.js'
+import { requirePrincipal, requireUserId } from './authenticate.js'
 import { SESSION_COOKIE_NAME } from './session.js'
 
 function cookieValue(
@@ -13,6 +13,20 @@ function cookieValue(
 
 const DEV_LOGIN_USER_ID = 'dev@piposaude.com.br'
 const POLICIES = ['admin/allow/administrate/ticket/*']
+
+// The auth-service's access-token may carry no `sub`. Dev login always sets one,
+// so reaching requireUserId's refusal means minting the token by hand — the
+// cookie signature is what the API trusts, not the JWT's.
+function sessionWithoutSub(app: FastifyInstance): string {
+  const encode = (value: object): string => Buffer.from(JSON.stringify(value)).toString('base64url')
+  const claims = {
+    email: DEV_LOGIN_USER_ID,
+    policies: POLICIES,
+    exp: Math.floor(Date.now() / 1000) + 3600,
+  }
+  const token = `${encode({ alg: 'none', typ: 'JWT' })}.${encode(claims)}.not-a-signature`
+  return app.signCookie(token)
+}
 
 describe('authenticate hook', () => {
   let app: FastifyInstance
@@ -29,6 +43,7 @@ describe('authenticate hook', () => {
       return { email: principal.email, policies: principal.policies, sub: principal.sub ?? null }
     })
     app.get('/__test/public', { config: { public: true } }, async () => ({ ok: true }))
+    app.get('/__test/needs-user-id', async (request) => ({ userId: requireUserId(request) }))
     app.get('/__test/public-reading-principal', { config: { public: true } }, async (request) =>
       requirePrincipal(request),
     )
@@ -113,6 +128,46 @@ describe('authenticate hook', () => {
     expect(response.json()).toEqual({
       error: 'UnauthorizedError',
       message: 'Not authenticated',
+    })
+  })
+
+  it('hands the sub to a handler that demands a user id', async () => {
+    const response = await app.inject({
+      method: 'GET',
+      url: '/__test/needs-user-id',
+      cookies: { [SESSION_COOKIE_NAME]: sessionCookie },
+    })
+
+    expect(response.statusCode).toBe(200)
+    expect(response.json()).toEqual({ userId: DEV_LOGIN_USER_ID })
+  })
+
+  it('refuses a session with no sub where a user id is demanded', async () => {
+    const response = await app.inject({
+      method: 'GET',
+      url: '/__test/needs-user-id',
+      cookies: { [SESSION_COOKIE_NAME]: sessionWithoutSub(app) },
+    })
+
+    expect(response.statusCode).toBe(401)
+    expect(response.json()).toEqual({
+      error: 'UnauthorizedError',
+      message: 'Invalid session',
+    })
+  })
+
+  it('lets that same session through where no user id is demanded', async () => {
+    const response = await app.inject({
+      method: 'GET',
+      url: '/__test/protected',
+      cookies: { [SESSION_COOKIE_NAME]: sessionWithoutSub(app) },
+    })
+
+    expect(response.statusCode).toBe(200)
+    expect(response.json()).toEqual({
+      email: DEV_LOGIN_USER_ID,
+      policies: POLICIES,
+      sub: null,
     })
   })
 
