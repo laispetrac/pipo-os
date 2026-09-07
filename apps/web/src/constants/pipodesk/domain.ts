@@ -42,5 +42,6 @@ export const PRIORITY_COPY: Record<Priority, string> = {
  *  o par do contrato não entra no valor. */
 export const COMPANY_STRUCTURE_COPY = {
   parent: 'Matriz',
+  /** Labels a branch with the parent company that owns it. */
   branch: (parentName: string) => `Filial de ${parentName}`,
 }

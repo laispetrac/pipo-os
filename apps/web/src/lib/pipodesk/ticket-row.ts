@@ -80,6 +80,7 @@ export interface TicketRow {
 /** One derivation, three readers: the filter, the option counts, the grouping. */
 export const principalIdOf = (row: TicketRow): string => row.parentCompanyId ?? row.companyId
 
+/** Uses the parent company's name when the row belongs to a branch. */
 export const principalNameOf = (row: TicketRow): string | null =>
   row.parentCompanyName ?? row.companyName
 
@@ -140,6 +141,7 @@ function buildSubject(ticket: Ticket, snapshot: Record<string, unknown>): string
   return parts.length > 0 ? parts.join(' · ') : ticket.id
 }
 
+/** Projects an API ticket into the flat shape consumed by the queue. */
 export function toTicketRow(ticket: Ticket): TicketRow {
   const snapshot = isRecord(ticket.enrollmentSnapshot) ? ticket.enrollmentSnapshot : {}
   const { status: display, reason } = toDisplayStatus(ticket.status)

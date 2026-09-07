@@ -15,6 +15,7 @@ export default {
   liveCount: (count: number, label: string) =>
     `${count} ${count === 1 ? 'chamado' : 'chamados'} em ${label}`,
   free: 'Livre no pod',
+  /** Explains how many selected tickets a batch status change preserved. */
   batchFinalKept: (count: number) =>
     `${count} ${count === 1 ? 'chamado' : 'chamados'} em estado final ${
       count === 1 ? 'não muda' : 'não mudam'

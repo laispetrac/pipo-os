@@ -24,6 +24,7 @@ const CANONICAL_STATUS_RANK = new Map(
   DISPLAY_STATUSES.map((status, index) => [status as string, index] as const),
 )
 
+/** Resolves the stable key and visible label for a ticket group. */
 function keyAndLabelOf(
   ticket: TicketRow,
   groupBy: Exclude<GroupBy, 'none'>,

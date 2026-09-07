@@ -120,6 +120,7 @@ const missesCompany = (wanted: string[] | undefined, ticket: TicketRow): boolean
 const missesList = <T>(wanted: T[] | undefined, value: T | null): boolean =>
   !!wanted?.length && (value === null || !wanted.includes(value))
 
+/** Checks a row against every active queue filter. */
 export function matchesFilter(ticket: TicketRow, filter: TicketFilter, viewerId: string): boolean {
   if (filter.archived === false && ticket.closedAt !== null) return false
   if (filter.archived === true && ticket.closedAt === null) return false
