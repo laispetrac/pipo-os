@@ -52,7 +52,6 @@ function prazoOf(actionDate: string | null, today: string) {
   )
 }
 
-/** Renders one ticket using the queue's configured columns. */
 export function QueueRow({
   ticket,
   columns,

@@ -67,7 +67,6 @@ export interface CompanyRecord {
   cnpj: string
 }
 
-/** Removes CNPJ punctuation so digit-only queries use the same representation. */
 const digitsOf = (text: string): string => text.replace(/\D/g, '')
 
 /** Trade name, legal name, or the digits of the CNPJ — the dataset shares a
@@ -105,7 +104,6 @@ const treeNodes = (sections: TreeSection[]): TreeNode[] => {
   return out
 }
 
-/** Searches tickets, people, companies, and views and returns grouped queue targets. */
 export function searchQueue(
   query: string,
   rows: TicketRow[],

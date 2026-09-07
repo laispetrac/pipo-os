@@ -149,7 +149,6 @@ export default function QueuePage() {
     applyPatch(selectedVisible, patch)
   }
 
-  /** Applies a status only where allowed and reports the preserved final tickets. */
   const runStatusBatch = (status: ApiStatus) => {
     const selected = listed.filter((ticket) => selectedVisible.includes(ticket.id))
     const movable = selected

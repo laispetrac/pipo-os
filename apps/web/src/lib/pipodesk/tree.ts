@@ -97,7 +97,6 @@ const countIn = (base: TicketRow[], filter: TicketFilter, viewerId: string): num
 const groupByOf = (queue: Queue): { groupBy?: GroupBy } =>
   queue.groupBy ? { groupBy: queue.groupBy } : {}
 
-/** Builds the sidebar sections and their ticket counts from the current dataset. */
 export function buildTree(tickets: TicketRow[], options: BuildTreeOptions): TreeSection[] {
   const { viewerId, viewerGroupId, structure, today } = options
   const inboxIds = options.inboxTicketIds ?? []

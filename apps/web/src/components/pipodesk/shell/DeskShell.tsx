@@ -58,7 +58,6 @@ const iniciaisDe = (name: string): string =>
     .map((part) => part[0]?.toUpperCase() ?? '')
     .join('')
 
-/** Provides the fixture-backed navigation and queue state for Pipodesk routes. */
 export function DeskShell() {
   const navigate = useNavigate()
   const email = useSessionStore((state) => state.user?.email) ?? ''
