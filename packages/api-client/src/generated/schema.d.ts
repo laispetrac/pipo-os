@@ -172,6 +172,15 @@ export interface paths {
                     };
                 };
                 /** @description Default Response */
+                400: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ErrorResponse"];
+                    };
+                };
+                /** @description Default Response */
                 401: {
                     headers: {
                         [name: string]: unknown;
@@ -1216,6 +1225,15 @@ export interface paths {
                     };
                 };
                 /** @description Default Response */
+                400: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ErrorResponse"];
+                    };
+                };
+                /** @description Default Response */
                 401: {
                     headers: {
                         [name: string]: unknown;
@@ -1247,6 +1265,15 @@ export interface paths {
                     };
                     content: {
                         "application/json": components["schemas"]["Ticket"];
+                    };
+                };
+                /** @description Default Response */
+                400: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ErrorResponse"];
                     };
                 };
                 /** @description Default Response */
@@ -1373,6 +1400,15 @@ export interface paths {
                     };
                     content: {
                         "application/json": components["schemas"]["Ticket"];
+                    };
+                };
+                /** @description Default Response */
+                400: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ErrorResponse"];
                     };
                 };
                 /** @description Default Response */
@@ -1756,9 +1792,15 @@ export interface components {
             page: number;
             pageSize: number;
         };
+        ErrorDetail: {
+            field: string;
+            message: string;
+            code: string;
+        };
         ErrorResponse: {
             error: string;
             message: string;
+            details?: components["schemas"]["ErrorDetail"][];
         };
         TicketComment: {
             /** Format: uuid */

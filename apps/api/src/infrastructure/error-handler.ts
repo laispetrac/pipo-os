@@ -1,9 +1,23 @@
 import {
   hasZodFastifySchemaValidationErrors,
   isResponseSerializationError,
+  type ZodFastifySchemaValidationError,
 } from '@fastify/type-provider-zod'
 import fp from 'fastify-plugin'
-import { DomainError } from '../shared/errors.js'
+import { DomainError, type ErrorDetail } from '../shared/errors.js'
+
+// The raw entries carry ajv/zod internals (schemaPath, params) that have no
+// business in a published contract, so only these three cross the border.
+function toErrorDetails(
+  validation: ZodFastifySchemaValidationError[],
+  context: string | undefined,
+): ErrorDetail[] {
+  return validation.map((entry) => ({
+    field: entry.instancePath.slice(1).split('/').join('.') || (context ?? 'body'),
+    message: entry.message ?? 'Invalid value',
+    code: entry.keyword,
+  }))
+}
 
 export default fp(
   async function errorHandlerPlugin(app) {
@@ -12,7 +26,7 @@ export default fp(
         reply.status(400).send({
           error: 'RequestValidationError',
           message: 'Request validation failed',
-          details: error.validation,
+          details: toErrorDetails(error.validation, error.validationContext),
         })
         return
       }
@@ -30,6 +44,7 @@ export default fp(
         reply.status(error.statusCode).send({
           error: error.name,
           message: error.message,
+          details: error.details,
         })
         return
       }

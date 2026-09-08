@@ -20,7 +20,12 @@ export function registerCommentRoutes(app: FastifyInstance, service: CommentsSer
     {
       schema: {
         params: ticketParamsSchema,
-        response: { 200: commentListSchema, 401: errorResponseSchema, 404: errorResponseSchema },
+        response: {
+          200: commentListSchema,
+          400: errorResponseSchema,
+          401: errorResponseSchema,
+          404: errorResponseSchema,
+        },
       },
     },
     async (request) => {
