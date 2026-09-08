@@ -10,6 +10,8 @@ const raw = (overrides: Record<string, unknown> = {}) => ({
   beneficiaryName: 'Ana',
   taxId: null,
   companyName: 'Caiçara',
+  parentCompanyId: null,
+  parentCompanyName: null,
   porte: 'pme',
   carrierId: 'sulamerica',
   carrierName: 'SulAmérica',

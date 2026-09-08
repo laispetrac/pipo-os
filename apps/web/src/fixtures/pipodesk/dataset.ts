@@ -3,10 +3,10 @@
  * with the vocabulary translated on the way out (6 statuses+reason → the 8 API
  * ones, audited pair by pair). Same counts, people and companies, so both apps
  * can be compared side by side. Replaced by the API once PD-043/PD-050 land.
- * Regenerate: `pnpm exec tsx scripts/export-pipo-os.ts <path>` in the
- * prototype repo.
+ * How to regenerate lives in `apps/web/README.md`, and only there.
  */
 
+import type { CompanyRecord } from '@/lib/pipodesk/search'
 import { isApiStatus, toDisplayStatus } from '@/lib/pipodesk/status'
 import type { StructureState } from '@/lib/pipodesk/structure'
 import type { Priority, Relationship, TicketRow } from '@/lib/pipodesk/ticket-row'
@@ -21,6 +21,8 @@ interface RawRow {
   beneficiaryName: string | null
   taxId: string | null
   companyName: string | null
+  parentCompanyId: string | null
+  parentCompanyName: string | null
   porte: string | null
   carrierId: string | null
   carrierName: string | null
@@ -61,6 +63,15 @@ export const FIXTURE_USER_NAMES: Record<string, string> = Object.fromEntries(
  *  triage and the Carteiras tab show. */
 export const COMPANY_NAMES: Record<string, string> = Object.fromEntries(
   data.companies.map((company) => [company.id, company.tradeName]),
+)
+
+/** Legal name and CNPJ by company id: the search needs both to tell apart the
+ *  116 trade names the dataset shares between different companies. */
+export const COMPANY_REGISTRY: Record<string, CompanyRecord> = Object.fromEntries(
+  data.companies.map((company) => [
+    company.id,
+    { legalName: company.legalName, cnpj: company.cnpj },
+  ]),
 )
 
 export const structureFixture: StructureState = data.structure

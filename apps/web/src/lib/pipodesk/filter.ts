@@ -1,6 +1,6 @@
 import type { TicketFilter as ApiTicketFilter } from '@pipo-os/api-client'
 import { businessDay } from '@/lib/date'
-import type { TicketRow } from './ticket-row'
+import { principalIdOf, type TicketRow } from './ticket-row'
 
 /**
  * Queue filtering, plus the alive/awake window rules.
@@ -27,6 +27,9 @@ export interface TicketFilter extends ApiTicketFilter {
   /** Computed per render from a query result; never a saved filter. */
   ticketIds?: string[]
   taxIds?: string[]
+  /** These companies and not their branches. `companyIds` reaches the branches
+   *  through the parent; a derived cut must not. */
+  companyIdsExact?: string[]
 }
 
 export type FilterField = {
@@ -107,6 +110,13 @@ export const valuesOf = (filter: TicketFilter, field: FilterField): readonly (st
 export const storedOf = (field: FilterField, token: string): string | null =>
   token === NULL_TOKEN && NULLABLE_FIELDS.has(field) ? null : token
 
+/** Matches by the ticket's own company or by its parent (DSP-36). */
+const missesCompany = (wanted: string[] | undefined, ticket: TicketRow): boolean =>
+  wanted !== undefined &&
+  wanted.length > 0 &&
+  !wanted.includes(ticket.companyId) &&
+  !wanted.includes(principalIdOf(ticket))
+
 const missesList = <T>(wanted: T[] | undefined, value: T | null): boolean =>
   !!wanted?.length && (value === null || !wanted.includes(value))
 
@@ -119,7 +129,8 @@ export function matchesFilter(ticket: TicketRow, filter: TicketFilter, viewerId:
   if (filter.createdSince && businessDay(ticket.createdAt) < filter.createdSince) return false
 
   if (missesList(filter.statuses, ticket.status)) return false
-  if (missesList(filter.companyIds, ticket.companyId)) return false
+  if (missesCompany(filter.companyIds, ticket)) return false
+  if (missesList(filter.companyIdsExact, ticket.companyId)) return false
   if (missesList(filter.carrierIds, ticket.carrierId)) return false
   if (missesList(filter.products, ticket.product)) return false
   if (missesList(filter.types, ticket.enrollmentType)) return false
@@ -183,7 +194,7 @@ const optionKeysOf = (ticket: TicketRow, field: FilterField): string[] => {
     case 'statuses':
       return [ticket.status]
     case 'companyIds':
-      return [ticket.companyId]
+      return [principalIdOf(ticket)]
     case 'carrierIds':
       return ticket.carrierId ? [ticket.carrierId] : []
     case 'products':

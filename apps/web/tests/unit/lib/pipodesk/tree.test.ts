@@ -24,6 +24,8 @@ const row = (overrides: Partial<TicketRow> & Pick<TicketRow, 'id'>): TicketRow =
   beneficiaryName: null,
   taxId: null,
   companyName: null,
+  parentCompanyId: null,
+  parentCompanyName: null,
   companySize: null,
   carrierId: null,
   carrierName: null,
@@ -175,6 +177,21 @@ describe('buildTree — Triagem', () => {
 
     // Only the first: no portfolio AND still in the root. Without the group
     // clause, moving the ticket would not clear the row.
+    expect(nodeById(sections, TRIAGE_NODE_ID)?.count).toBe(1)
+  })
+
+  it('should keep a branch of an allocated matriz in Triagem while nobody carries the branch', () => {
+    // The portfolio is per company, not per matriz: `allocate-company` carries
+    // one id, so a branch outside every portfolio is triage of its own.
+    const sections = build([
+      row({
+        id: '1',
+        companyId: 'filial-sem-carteira',
+        parentCompanyId: 'empresa-a',
+        groupId: 'geben',
+      }),
+    ])
+
     expect(nodeById(sections, TRIAGE_NODE_ID)?.count).toBe(1)
   })
 })

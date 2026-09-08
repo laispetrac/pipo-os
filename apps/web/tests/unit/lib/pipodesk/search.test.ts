@@ -16,6 +16,8 @@ const row = (overrides: Partial<TicketRow> & Pick<TicketRow, 'id'>): TicketRow =
     beneficiaryName: null,
     taxId: null,
     companyName: 'Caiçara Metalurgia',
+    parentCompanyId: null,
+    parentCompanyName: null,
     companySize: null,
     carrierId: null,
     carrierName: null,
@@ -146,5 +148,108 @@ describe('defaultHits', () => {
 
     expect(hits.length).toBeGreaterThan(0)
     expect(hits[0].label).toBe('Meus tickets')
+  })
+})
+
+describe('detail da empresa na busca', () => {
+  const branch = row({
+    id: '1',
+    companyId: 'empresa-1',
+    companyName: 'Caiçara Metalurgia',
+    parentCompanyId: 'empresa-9',
+    parentCompanyName: 'Grupo Quiriri',
+  })
+
+  it('should name the parent on a branch result', () => {
+    const groups = searchQueue('caicara', [branch], sections)
+
+    const empresas = groups.find((group) => group.category === 'empresa')
+    expect(empresas?.hits[0].detail).toBe('Filial de Grupo Quiriri')
+  })
+
+  it('should call a company with no parent a parent company', () => {
+    const groups = searchQueue(
+      'caicara',
+      [row({ id: '1', companyName: 'Caiçara Metalurgia' })],
+      sections,
+    )
+
+    const empresas = groups.find((group) => group.category === 'empresa')
+    expect(empresas?.hits[0].detail).toBe('Matriz')
+  })
+
+  /* The fixture shares a trade name between 116 companies, so two branches of
+     the same parent read identically without it. */
+  it('should tell two companies apart by the cnpj when it is known', () => {
+    const other = row({
+      id: '2',
+      companyId: 'empresa-2',
+      companyName: 'Caiçara Metalurgia',
+      parentCompanyId: 'empresa-9',
+      parentCompanyName: 'Grupo Quiriri',
+    })
+
+    const groups = searchQueue('caicara', [branch, other], sections, {
+      'empresa-1': { legalName: 'Caiçara Metalurgia LTDA', cnpj: '11.222.333/0001-44' },
+      'empresa-2': { legalName: 'Caiçara Metalurgia ME', cnpj: '11.222.333/0002-25' },
+    })
+
+    const details = groups
+      .find((group) => group.category === 'empresa')
+      ?.hits.map((hit) => hit.detail)
+    expect(details).toEqual([
+      'Filial de Grupo Quiriri · 11.222.333/0001-44',
+      'Filial de Grupo Quiriri · 11.222.333/0002-25',
+    ])
+  })
+
+  it('should keep the structure alone when the cnpj is unknown', () => {
+    const groups = searchQueue('caicara', [branch], sections, {})
+
+    const empresas = groups.find((group) => group.category === 'empresa')
+    expect(empresas?.hits[0].detail).toBe('Filial de Grupo Quiriri')
+  })
+})
+
+describe('empresa na busca: rótulo, casamento e contagem', () => {
+  const registry = {
+    'empresa-9': { legalName: 'Quiriri Participações S.A.', cnpj: '11.222.333/0001-44' },
+    'empresa-1': { legalName: 'Caiçara Metalurgia LTDA', cnpj: '11.222.333/0002-25' },
+  }
+
+  const parent = row({ id: '1', companyId: 'empresa-9', companyName: 'Grupo Quiriri' })
+  const branchRow = row({
+    id: '2',
+    companyId: 'empresa-1',
+    companyName: 'Caiçara Metalurgia',
+    parentCompanyId: 'empresa-9',
+    parentCompanyName: 'Grupo Quiriri',
+  })
+
+  const empresaHits = (query: string) =>
+    searchQueue(query, [parent, branchRow], sections, registry).find(
+      (group) => group.category === 'empresa',
+    )?.hits
+
+  it('should label the result with the legal name when it is known', () => {
+    expect(empresaHits('quiriri')?.[0].label).toBe('Quiriri Participações S.A.')
+  })
+
+  it('should find a company by its legal name', () => {
+    expect(empresaHits('participações')?.[0].label).toBe('Quiriri Participações S.A.')
+  })
+
+  it('should find a company by the digits of its cnpj', () => {
+    expect(empresaHits('333/0002')?.[0].label).toBe('Caiçara Metalurgia LTDA')
+  })
+
+  /* The node filter matches a company or its parent, so a parent result opens
+     the branches too — the count has to say the same number. */
+  it('should count the branches under a parent result', () => {
+    expect(empresaHits('quiriri')?.[0].count).toBe(2)
+  })
+
+  it('should count only itself on a branch result', () => {
+    expect(empresaHits('caicara')?.[0].count).toBe(1)
   })
 })

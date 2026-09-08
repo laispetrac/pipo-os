@@ -2,7 +2,7 @@ import { DISPLAY_STATUS_COPY } from '@/constants/pipodesk/status'
 import { PRODUCT_COPY } from '@/constants/pipodesk/domain'
 import { DISPLAY_STATUSES, type DisplayStatus } from './status'
 import { NULL_TOKEN } from './filter'
-import type { TicketRow } from './ticket-row'
+import { principalIdOf, principalNameOf, type TicketRow } from './ticket-row'
 
 /**
  * Queue grouping. Grouping never reorders: rows keep the incoming order and
@@ -32,8 +32,10 @@ function keyAndLabelOf(
   switch (groupBy) {
     case 'status':
       return { key: ticket.display, label: DISPLAY_STATUS_COPY[ticket.display] }
-    case 'company':
-      return { key: ticket.companyId, label: ticket.companyName ?? ticket.companyId }
+    case 'company': {
+      const key = principalIdOf(ticket)
+      return { key, label: principalNameOf(ticket) ?? key }
+    }
     case 'product':
       return ticket.product
         ? { key: ticket.product, label: PRODUCT_COPY[ticket.product] ?? ticket.product }
