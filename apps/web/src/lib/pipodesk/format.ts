@@ -138,7 +138,11 @@ export function formatCpf(cpf: string): string {
   return `${digits.slice(0, 3)}.${digits.slice(3, 6)}.${digits.slice(6, 9)}-${digits.slice(9)}`
 }
 
-export const formatZip = (zip: string): string => `${zip.slice(0, 5)}-${zip.slice(5)}`
+export function formatZip(zip: string): string {
+  const digits = zip.replace(/\D/g, '')
+  if (digits.length !== 8) return zip
+  return `${digits.slice(0, 5)}-${digits.slice(5)}`
+}
 
 export const formatSalary = (cents: number): string =>
   (cents / 100).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })

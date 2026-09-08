@@ -255,15 +255,19 @@ describe('formatCpf', () => {
 })
 
 describe('formatZip', () => {
-  it('should split the CEP as 00000-000', () => {
+  it('should split the CEP as 00000-000, and leave anything that is not eight digits as it came', () => {
     expect(formatZip('23303021')).toBe('23303-021')
+    expect(formatZip('23303-021')).toBe('23303-021')
+    expect(formatZip('123')).toBe('123')
   })
 })
 
 describe('formatSalary', () => {
+  /** `toLocaleString` puts a no-break space after `R$`; written out so an
+   *  edit with a plain space does not fail on an invisible diff. */
   it('should print cents as BRL currency', () => {
-    expect(formatSalary(180000)).toBe('R$ 1.800,00')
-    expect(formatSalary(0)).toBe('R$ 0,00')
+    expect(formatSalary(180000)).toBe('R$\u00a01.800,00')
+    expect(formatSalary(0)).toBe('R$\u00a00,00')
   })
 })
 
