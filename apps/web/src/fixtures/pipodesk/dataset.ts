@@ -1,8 +1,8 @@
 /**
- * The prototype's dataset, exported by `scripts/export-pipo-os.ts` over there
- * with the vocabulary translated on the way out (6 statuses+reason → the 8 API
- * ones, audited pair by pair). Same counts, people and companies, so both apps
- * can be compared side by side. Replaced by the API once PD-043/PD-050 land.
+ * The prototype's dataset, exported by `scripts/export-fixture.mts` with the
+ * vocabulary translated on the way out (6 statuses+reason → the 8 API ones,
+ * audited pair by pair). Same counts, people and companies, so both apps can
+ * be compared side by side. Replaced by the API once PD-043/PD-050 land.
  * How to regenerate lives in `apps/web/README.md`, and only there.
  */
 
