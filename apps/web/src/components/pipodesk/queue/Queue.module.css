@@ -224,7 +224,11 @@
   white-space: nowrap;
 }
 
+/* The header opts out of the cell clipping the body needs: the funnel's panel
+   is absolutely positioned inside the cell, and `hidden` swallowed it whole.
+   Truncation did not move — it lives on `.headerLabel`, which owns the text. */
 .table thead th {
+  overflow: visible;
   position: sticky;
   top: 0;
   z-index: var(--desk-z-table-header);
