@@ -235,6 +235,15 @@
   font-weight: var(--pipo-fw-semibold);
 }
 
+/* The header cell owns the hover explanation, so it must be a box the title
+   can hang on — a bare `<th>` would put it on the whole column. */
+.headerCell {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--pipo-space-xxsmall);
+  max-width: 100%;
+}
+
 .headerButton {
   display: inline-flex;
   align-items: center;

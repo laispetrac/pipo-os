@@ -10,6 +10,8 @@ export interface QueueColumn {
   /** `'auto'` only for the flexible column. */
   width: string
   align?: 'left' | 'right'
+  /** Header hover, for a column the label alone does not teach. */
+  title?: string
 }
 
 /** The select column never hides or moves. */
@@ -99,7 +101,18 @@ export const columnsFor = (showAssignee: boolean): QueueColumn[] =>
     { key: 'status', label: 'Status', width: '150px' },
     { key: 'createdAt', label: 'Criação', width: '110px' },
     { key: 'updatedAt', label: 'Parado', width: '110px' },
-    { key: 'prazo', label: 'Prazo', width: '86px', align: 'right' },
+    // The cell shows two different counts with the same `d` suffix, so the
+    // label alone cannot say which one is on screen.
+    {
+      key: 'prazo',
+      label: 'Prazo',
+      width: '86px',
+      align: 'right',
+      title:
+        'A data de ação da movimentação, contada contra hoje: vermelho venceu, ' +
+        'âmbar é hoje, cinza ainda vem. Sem data de ação, a célula mostra há ' +
+        'quantos dias o chamado está aberto.',
+    },
   ] satisfies QueueColumn[]
 
 export function applyColumnPrefs(base: QueueColumn[], prefs: ColumnPrefs): QueueColumn[] {

@@ -387,3 +387,19 @@ describe('sair', () => {
     })
   })
 })
+
+/**
+ * The header cell also carries what the label alone does not teach.
+ */
+describe('cabeçalho da fila', () => {
+  /** The Prazo cell shows two different counts with the same `d` suffix, and
+   *  the label alone does not say which is which. */
+  it('should explain the Prazo column on hover', async () => {
+    await renderQueue()
+
+    const prazo = screen
+      .getAllByRole('columnheader')
+      .find((cell) => cell.textContent?.startsWith('Prazo'))
+    expect(prazo?.querySelector('[title]')?.getAttribute('title')).toMatch(/data de ação/i)
+  })
+})
