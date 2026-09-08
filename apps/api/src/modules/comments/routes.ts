@@ -1,12 +1,12 @@
 import type { ZodTypeProvider } from '@fastify/type-provider-zod'
 import type { FastifyInstance } from 'fastify'
 import { requireUserId } from '../auth/authenticate.js'
+import { errorResponseSchema } from '../../shared/schemas.js'
 import { ticketParamsSchema } from '../tickets/schemas.js'
 import {
   commentListSchema,
   commentSchema,
   createCommentBodySchema,
-  errorResponseSchema,
   timelineQuerySchema,
   timelineSchema,
 } from './schemas.js'

@@ -1750,15 +1750,15 @@ export interface components {
             /** Format: date-time */
             updatedAt: string;
         };
-        ErrorResponse: {
-            error: string;
-            message: string;
-        };
         TicketList: {
             data: components["schemas"]["Ticket"][];
             total: number;
             page: number;
             pageSize: number;
+        };
+        ErrorResponse: {
+            error: string;
+            message: string;
         };
         TicketComment: {
             /** Format: uuid */

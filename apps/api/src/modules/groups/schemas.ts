@@ -27,10 +27,6 @@ export const groupMemberSchema = z
   })
   .meta({ id: 'GroupMember' })
 
-export const errorResponseSchema = z
-  .object({ error: z.string(), message: z.string() })
-  .meta({ id: 'ErrorResponse' })
-
 export const groupParamsSchema = z.object({
   id: z.uuid(),
 })

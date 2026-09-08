@@ -29,10 +29,6 @@ export const commentListSchema = z
   })
   .meta({ id: 'CommentList' })
 
-export const errorResponseSchema = z
-  .object({ error: z.string(), message: z.string() })
-  .meta({ id: 'ErrorResponse' })
-
 /**
  * The unified chronology of a ticket: manual comments and automated events
  * from `ticket_comments`, status changes from `ticket_status_history`.

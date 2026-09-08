@@ -13,10 +13,6 @@ export const queueSchema = z
   })
   .meta({ id: 'Queue' })
 
-export const errorResponseSchema = z
-  .object({ error: z.string(), message: z.string() })
-  .meta({ id: 'ErrorResponse' })
-
 export const queueParamsSchema = z.object({
   id: z.uuid(),
 })

@@ -2,10 +2,10 @@ import type { ZodTypeProvider } from '@fastify/type-provider-zod'
 import type { FastifyInstance } from 'fastify'
 import { requirePrincipal, requireUserId } from '../auth/authenticate.js'
 import { businessToday } from '../../shared/business-date.js'
+import { errorResponseSchema } from '../../shared/schemas.js'
 import { ticketRowsQuerySchema, ticketRowsSchema } from './rows-schema.js'
 import {
   createTicketBodySchema,
-  errorResponseSchema,
   listTicketsQuerySchema,
   ticketListSchema,
   ticketParamsSchema,

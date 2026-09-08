@@ -2,10 +2,10 @@ import type { ZodTypeProvider } from '@fastify/type-provider-zod'
 import type { FastifyInstance } from 'fastify'
 import { z } from 'zod'
 import { requireUserId } from '../auth/authenticate.js'
+import { errorResponseSchema } from '../../shared/schemas.js'
 import {
   addMemberBodySchema,
   createGroupBodySchema,
-  errorResponseSchema,
   groupListSchema,
   groupMemberSchema,
   groupParamsSchema,
