@@ -98,9 +98,11 @@ export function CompanyTab({ companyId, policyId, records, capturedAt, today }: 
   const branches = records.branchesOf(company.id)
   const contracts = records.contractsOf(company.id)
   const companyPlans = records.policiesOf(company.id)
-  // Only the moved policy; the whole list is the fallback for a policy of another company.
+  // Only the moved policy; the whole list is the fallback for a policy of another
+  // company (a branch on the parent's), and the section says so instead of hiding it.
   const currentPlan = companyPlans.find((plan) => plan.id === policyId)
   const plans = currentPlan ? [currentPlan] : companyPlans
+  const plansNotCut = policyId !== undefined && currentPlan === undefined && plans.length > 0
   const files = records.documentsOf('company', company.id)
 
   return (
@@ -171,6 +173,7 @@ export function CompanyTab({ companyId, policyId, records, capturedAt, today }: 
             ))}
           </ul>
         )}
+        {plansNotCut && <RecordNote>{copy.plans.otherCompany}</RecordNote>}
       </RecordSection>
 
       <RecordSection level="h2" title={copy.sections.files}>

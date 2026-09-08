@@ -6,6 +6,7 @@ import { queueSeed } from '@/fixtures/pipodesk/dataset'
 import { records } from '@/fixtures/pipodesk/records'
 import { displayNameOf, historyOf } from '@/lib/pipodesk/record'
 import { formatCpf, formatLongDate, formatNumericDate } from '@/lib/pipodesk/format'
+import { documentLabel } from '@/constants/pipodesk/domain'
 import companyCopy from '@/constants/pages/pipodesk/ticket/company'
 import documentsCopy from '@/constants/pages/pipodesk/ticket/documents'
 import historyCopy from '@/constants/pages/pipodesk/ticket/history'
@@ -286,6 +287,21 @@ describe('aba Documentos', () => {
       .getByRole('heading', { level: 2, name: documentsCopy.fromPipo.title })
       .closest('section')!
     expect(within(generated).getByText('Ficha de adesão.pdf')).toBeInTheDocument()
+  })
+
+  /** The two-word key with an accent: matched on the normalised key, so a
+   *  change to the label cannot silently stop marking what arrived. */
+  it('should mark the proof of address as arrived, though key and file name spell it differently', async () => {
+    const { panel } = await openTab('/tickets/700139', 'Documentos')
+
+    const missing = within(panel)
+      .getByRole('heading', { level: 2, name: documentsCopy.missing.title })
+      .closest('section')!
+    expect(
+      within(missing)
+        .getAllByRole('listitem')
+        .map((item) => item.textContent),
+    ).toEqual([`${documentLabel('comprovante-residencia')} — ${documentsCopy.missing.arrived}`])
   })
 
   /** An exclusion never has an adhesion form; the empty group says why

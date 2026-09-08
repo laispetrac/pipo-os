@@ -61,4 +61,66 @@ describe('PersonTab', () => {
 
     expect(screen.getByText(recordCopy.outage.title)).toBeInTheDocument()
   })
+
+  /** The badge and the note say the account is the holder's. They must read
+   *  whose account it is, not the role: a dependent may have one of their own. */
+  it("should not call the account the holder's when the dependent has one", () => {
+    const account = {
+      holderName: 'Dep',
+      holderCpf: '00000000000',
+      bank: '033 - BANCO SANTANDER S.A.',
+      agency: '0001',
+      account: '12345-6',
+    }
+    const records = recordsWith({
+      beneficiaries: [
+        person('holder', { bankAccount: { ...account, holderName: 'Titular' } }),
+        person('dep', { role: 'dependent', holderId: 'holder', bankAccount: account }),
+      ],
+    })
+    render(
+      <PersonTab
+        personId="dep"
+        records={records}
+        capturedAt="2026-08-01T12:00:00.000Z"
+        onSelectPerson={() => {}}
+      />,
+    )
+
+    const refund = screen
+      .getByRole('heading', { level: 3, name: copy.sections.refund })
+      .closest('section')!
+    expect(
+      within(refund).getByText(copy.refund.fields.holderName).nextElementSibling,
+    ).toHaveTextContent('Dep')
+    expect(screen.queryByText(copy.refund.holderBadge)).not.toBeInTheDocument()
+    expect(screen.queryByText(copy.refund.dependentNote[1])).not.toBeInTheDocument()
+  })
+
+  it("should say the account is the holder's when the dependent has none", () => {
+    const account = {
+      holderName: 'Titular',
+      holderCpf: '00000000000',
+      bank: '033 - BANCO SANTANDER S.A.',
+      agency: '0001',
+      account: '12345-6',
+    }
+    const records = recordsWith({
+      beneficiaries: [
+        person('holder', { bankAccount: account }),
+        person('dep', { role: 'dependent', holderId: 'holder' }),
+      ],
+    })
+    render(
+      <PersonTab
+        personId="dep"
+        records={records}
+        capturedAt="2026-08-01T12:00:00.000Z"
+        onSelectPerson={() => {}}
+      />,
+    )
+
+    expect(screen.getByText(copy.refund.holderBadge)).toBeInTheDocument()
+    expect(screen.getByText(copy.refund.dependentNote[1])).toBeInTheDocument()
+  })
 })

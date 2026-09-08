@@ -55,8 +55,10 @@ export function PersonTab({ personId, records, capturedAt, onSelectPerson }: Per
   // The section is the holder's job whoever is on screen; never trust the copy on a dependent.
   const link = holder?.link ?? person.link
   const company = records.companyById.get(link.companyId)
-  // A dependent has no account: the refund lands on the holder's, and the tab says so.
+  // A dependent usually has no account: the refund lands on the holder's, and the
+  // tab says so — but only when the account really is the holder's, not by role.
   const account = person.bankAccount ?? holder?.bankAccount ?? null
+  const accountIsHolders = person.bankAccount === null && account !== null
 
   return (
     <div className={styles.tab}>
@@ -148,7 +150,9 @@ export function PersonTab({ personId, records, capturedAt, onSelectPerson }: Per
       <RecordSection
         title={copy.sections.refund}
         badge={
-          isDependent ? <Status variant="neutral">{copy.refund.holderBadge}</Status> : undefined
+          accountIsHolders ? (
+            <Status variant="neutral">{copy.refund.holderBadge}</Status>
+          ) : undefined
         }
       >
         {account === null ? (
@@ -164,7 +168,7 @@ export function PersonTab({ personId, records, capturedAt, onSelectPerson }: Per
             <RecordField label={copy.refund.fields.account}>{account.account}</RecordField>
           </RecordFields>
         )}
-        {isDependent && account !== null && (
+        {accountIsHolders && (
           <RecordNote>
             <Emphasis text={copy.refund.dependentNote} />
           </RecordNote>

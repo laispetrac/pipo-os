@@ -65,6 +65,8 @@ export default {
   },
   plans: {
     empty: 'Nenhum prêmio cadastrado para esta empresa.',
+    otherCompany:
+      'A apólice deste chamado não está entre as desta empresa, então a lista abaixo é a da empresa inteira — não o prêmio do chamado.',
   },
   files: {
     empty: 'Nenhum arquivo da empresa.',

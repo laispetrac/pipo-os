@@ -1,5 +1,5 @@
 import { DeskIcon } from '@/components/pipodesk/icons'
-import { ENROLLMENT_TYPE_COPY, documentLabel } from '@/constants/pipodesk/domain'
+import { ENROLLMENT_TYPE_COPY, documentKey, documentLabel } from '@/constants/pipodesk/domain'
 import copy from '@/constants/pages/pipodesk/ticket/documents'
 import { formatLongDate } from '@/lib/pipodesk/format'
 import type { RecordDocument, TicketRecords } from '@/lib/pipodesk/record'
@@ -58,11 +58,13 @@ export function DocumentsTab({ ticket, pendingDocumentation, records }: Document
   const fromClient = documents.filter((doc) => doc.origin === 'client')
 
   // What is missing comes from the ticket, not from what arrived: both facts show.
-  const received = new Set(fromClient.map((doc) => doc.kind))
-  const missing = (pendingDocumentation ?? []).map((key) => {
-    const label = documentLabel(key)
-    return { key, label, arrived: received.has(label) }
-  })
+  // Matched on the normalised key, never on the label — copy must not steer it.
+  const received = new Set(fromClient.map((doc) => documentKey(doc.kind)))
+  const missing = (pendingDocumentation ?? []).map((key) => ({
+    key,
+    label: documentLabel(key),
+    arrived: received.has(documentKey(key)),
+  }))
 
   // Only an inclusion goes through Adobe Sign; the empty group says so instead of vanishing.
   const pipoEmpty =
