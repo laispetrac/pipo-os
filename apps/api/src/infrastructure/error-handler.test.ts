@@ -63,6 +63,17 @@ describe('error handler', () => {
       },
     )
 
+    server.get(
+      '/__test/boom',
+      {
+        config: { public: true },
+        schema: { response: { 500: errorResponseSchema } },
+      },
+      async () => {
+        throw new Error('a connection pool detail nobody outside should read')
+      },
+    )
+
     await app.ready()
   })
 
@@ -132,5 +143,36 @@ describe('error handler', () => {
     expect(response.json().details).toEqual([
       { field: 'body', message: expect.any(String), code: 'unrecognized_keys' },
     ])
+  })
+
+  it('answers 413, not 500, when the body is larger than the limit', async () => {
+    const response = await app.inject({
+      method: 'POST',
+      url: '/__test/movement',
+      payload: { enrollmentId: 'a'.repeat(2 * 1024 * 1024) },
+    })
+
+    expect(response.statusCode).toBe(413)
+  })
+
+  it('answers 415 for a content type no parser accepts', async () => {
+    const response = await app.inject({
+      method: 'POST',
+      url: '/__test/movement',
+      headers: { 'content-type': 'application/xml' },
+      payload: '<movement />',
+    })
+
+    expect(response.statusCode).toBe(415)
+  })
+
+  it('keeps an unexpected failure at the generic body, without its message', async () => {
+    const response = await app.inject({ method: 'GET', url: '/__test/boom' })
+
+    expect(response.statusCode).toBe(500)
+    expect(response.json()).toEqual({
+      error: 'InternalServerError',
+      message: 'Something went wrong',
+    })
   })
 })
