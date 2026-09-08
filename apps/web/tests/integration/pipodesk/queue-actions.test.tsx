@@ -422,6 +422,24 @@ describe('funil por coluna', () => {
     expect(within(painel).queryByRole('button', { name: /Aberto em/ })).not.toBeInTheDocument()
   })
 
+  /** The panel keeps a Voltar when it came from the field list. From a funnel
+   *  there is no list behind it, and the button would go nowhere. */
+  it('should offer no way back when the field came from a funnel', async () => {
+    await renderQueue()
+    const user = userEvent.setup()
+
+    await user.click(screen.getByRole('button', { name: 'Filtrar por Tipo' }))
+    const doFunil = screen.getByRole('dialog', { name: /filtros/i })
+    expect(within(doFunil).queryByRole('button', { name: 'Voltar' })).not.toBeInTheDocument()
+
+    // ...and the toolbar panel, which does have a list behind it, keeps it.
+    await user.keyboard('{Escape}')
+    await user.click(screen.getByRole('button', { name: 'Filtros' }))
+    await user.click(screen.getByRole('button', { name: 'Tipo' }))
+    const daBarra = screen.getByRole('dialog', { name: /filtros/i })
+    expect(within(daBarra).getByRole('button', { name: 'Voltar' })).toBeInTheDocument()
+  })
+
   it('should cut the queue from the column funnel, growing the same chip as the panel', async () => {
     await renderQueue()
     const user = userEvent.setup()
