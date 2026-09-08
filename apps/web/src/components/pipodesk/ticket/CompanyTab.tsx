@@ -142,11 +142,15 @@ export function CompanyTab({ companyId, policyId, records, capturedAt, today }: 
       )}
 
       <RecordSection level="h2" title={copy.sections.contracts}>
-        <ul className={styles.list}>
-          {contracts.map((contract) => (
-            <ContractCard key={contract.id} contract={contract} records={records} today={today} />
-          ))}
-        </ul>
+        {contracts.length === 0 ? (
+          <RecordEmpty>{copy.contract.empty}</RecordEmpty>
+        ) : (
+          <ul className={styles.list}>
+            {contracts.map((contract) => (
+              <ContractCard key={contract.id} contract={contract} records={records} today={today} />
+            ))}
+          </ul>
+        )}
         <RecordNote>
           <Emphasis text={copy.contract.note} />
           {parent && <Emphasis text={copy.contract.branchNote(parent.tradeName)} />}
@@ -154,27 +158,35 @@ export function CompanyTab({ companyId, policyId, records, capturedAt, today }: 
       </RecordSection>
 
       <RecordSection level="h2" title={copy.sections.plans}>
-        <ul className={styles.list}>
-          {plans.map((plan) => (
-            <li key={plan.id} className={styles.row}>
-              <span>{plan.name}</span>
-              <span className={styles.code}>{plan.code}</span>
-              <span>{PRODUCT_COPY[plan.product] ?? plan.product}</span>
-            </li>
-          ))}
-        </ul>
+        {plans.length === 0 ? (
+          <RecordEmpty>{copy.plans.empty}</RecordEmpty>
+        ) : (
+          <ul className={styles.list}>
+            {plans.map((plan) => (
+              <li key={plan.id} className={styles.row}>
+                <span>{plan.name}</span>
+                <span className={styles.code}>{plan.code}</span>
+                <span>{PRODUCT_COPY[plan.product] ?? plan.product}</span>
+              </li>
+            ))}
+          </ul>
+        )}
       </RecordSection>
 
       <RecordSection level="h2" title={copy.sections.files}>
-        <ul className={styles.list}>
-          {files.map((file) => (
-            <li key={file.id} className={styles.row}>
-              <span>{file.name}</span>
-              <span>{formatLongDate(file.at)}</span>
-              <span>{copy.files.size(file.sizeKb)}</span>
-            </li>
-          ))}
-        </ul>
+        {files.length === 0 ? (
+          <RecordEmpty>{copy.files.empty}</RecordEmpty>
+        ) : (
+          <ul className={styles.list}>
+            {files.map((file) => (
+              <li key={file.id} className={styles.row}>
+                <span>{file.name}</span>
+                <span>{formatLongDate(file.at)}</span>
+                <span>{copy.files.size(file.sizeKb)}</span>
+              </li>
+            ))}
+          </ul>
+        )}
         <RecordNote>{copy.files.note}</RecordNote>
       </RecordSection>
     </div>

@@ -28,6 +28,7 @@ export default {
     `${hasPenalty ? ', com multa.' : '.'} Este dado vive na planilha de particularidades, não em sistema (contexto-produto §6), então não é campo de sistema — é particularidade que alguém mantém à mão.`,
   ],
   contract: {
+    empty: 'Nenhum contrato cadastrado para esta empresa.',
     active: 'Ativo',
     expired: 'Vencido',
     expiredWarning: 'Contrato com vigência vencida',
@@ -62,7 +63,11 @@ export default {
       ': matriz e filial podem ter contratos e benefícios diferentes. Se a regra real for a da apólice da matriz, contrato, prêmios e acesso ao portal passam a ser os da matriz — a confirmar com a Juka.',
     ],
   },
+  plans: {
+    empty: 'Nenhum prêmio cadastrado para esta empresa.',
+  },
   files: {
+    empty: 'Nenhum arquivo da empresa.',
     size: (kb: number) => `${kb} KB`,
     note: 'Estes são os documentos da empresa. Os da movimentação estão na aba Documentos, e os de contrato ficam com o contrato acima.',
   },
