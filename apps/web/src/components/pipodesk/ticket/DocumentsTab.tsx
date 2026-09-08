@@ -5,7 +5,7 @@ import { formatLongDate } from '@/lib/pipodesk/format'
 import type { RecordDocument, TicketRecords } from '@/lib/pipodesk/record'
 import type { TicketRow } from '@/lib/pipodesk/ticket-row'
 import { OutageNotice } from './OutageNotice'
-import { RecordCard, RecordEmpty, RecordNote } from './RecordSection'
+import { RecordBlock, RecordEmpty, RecordNote } from './RecordSection'
 import styles from './DocumentsTab.module.css'
 
 export interface DocumentsTabProps {
@@ -24,7 +24,7 @@ function DocumentGroup({
   documents: RecordDocument[]
 }) {
   return (
-    <RecordCard>
+    <RecordBlock>
       <h2 className={styles.title}>{title}</h2>
       {documents.length === 0 ? (
         <RecordEmpty>{empty}</RecordEmpty>
@@ -48,7 +48,7 @@ function DocumentGroup({
           ))}
         </ul>
       )}
-    </RecordCard>
+    </RecordBlock>
   )
 }
 
@@ -77,7 +77,7 @@ export function DocumentsTab({ ticket, pendingDocumentation, records }: Document
       {records.isBackofficeDown(ticket.companyId) && <OutageNotice capturedAt={ticket.createdAt} />}
 
       {missing.length > 0 && (
-        <RecordCard>
+        <RecordBlock>
           <h2 className={styles.title}>{copy.missing.title}</h2>
           <ul className={styles.missing}>
             {missing.map(({ key, label, arrived }) => (
@@ -87,7 +87,7 @@ export function DocumentsTab({ ticket, pendingDocumentation, records }: Document
               </li>
             ))}
           </ul>
-        </RecordCard>
+        </RecordBlock>
       )}
 
       <DocumentGroup

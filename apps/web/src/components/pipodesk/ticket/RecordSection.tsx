@@ -43,9 +43,9 @@ export function RecordField({ label, children }: { label: string; children: Reac
   )
 }
 
-/** The bordered card, same as the page's blocks. */
-export function RecordCard({ children }: { children: ReactNode }) {
-  return <section className={styles.card}>{children}</section>
+/** A titled block without a card: the prototype's `.ticket-block` draws no border. */
+export function RecordBlock({ children }: { children: ReactNode }) {
+  return <section className={styles.block}>{children}</section>
 }
 
 /** Gray note under the data: what the system says about itself, not a fact about this case. */

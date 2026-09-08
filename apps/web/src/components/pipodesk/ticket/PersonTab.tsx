@@ -23,7 +23,7 @@ import { displayNameOf, type Person, type TicketRecords } from '@/lib/pipodesk/r
 import { OutageNotice } from './OutageNotice'
 import {
   Emphasis,
-  RecordCard,
+  RecordBlock,
   RecordEmpty,
   RecordField,
   RecordFields,
@@ -61,7 +61,7 @@ export function PersonTab({ personId, records, capturedAt, onSelectPerson }: Per
       {/* The company is the shown person's, not the ticket's. */}
       {records.isBackofficeDown(person.link.companyId) && <OutageNotice capturedAt={capturedAt} />}
 
-      <RecordCard>
+      <RecordBlock>
         <div className={styles.head}>
           <h2 className={styles.name}>{displayNameOf(person)}</h2>
           <Status variant="neutral">{isDependent ? copy.role.dependent : copy.role.holder}</Status>
@@ -83,7 +83,7 @@ export function PersonTab({ personId, records, capturedAt, onSelectPerson }: Per
             <Emphasis text={copy.dependentContact} />
           </RecordNote>
         )}
-      </RecordCard>
+      </RecordBlock>
 
       <RecordSection title={copy.sections.personal}>
         <RecordFields>
