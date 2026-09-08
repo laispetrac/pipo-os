@@ -226,7 +226,8 @@
 
 /* The header opts out of the cell clipping the body needs: the funnel's panel
    is absolutely positioned inside the cell, and `hidden` swallowed it whole.
-   Truncation did not move — it lives on `.headerLabel`, which owns the text. */
+   Nothing in the header clips — a box tight around the label would also cut
+   the sort button, whose hover pill and focus ring hang 4px outside it. */
 .table thead th {
   overflow: visible;
   position: sticky;
@@ -279,23 +280,12 @@
   color: var(--pipo-brand-primary);
 }
 
-/* The header cell owns the hover explanation, so it must be a box the title
-   can hang on — a bare `<th>` would put it on the whole column. */
+/* Label and funnel side by side; the title hangs on the label alone (see
+   QueueTable), so the cell is a box and not a bare `<th>`. */
 .headerCell {
   display: inline-flex;
   align-items: center;
   gap: var(--pipo-space-xxsmall);
-  max-width: 100%;
-}
-
-/* Only the label, so the ellipsis still measures against the text and not
-   against the text plus the funnel. */
-.headerLabel {
-  display: inline-flex;
-  min-width: 0;
-  align-items: center;
-  overflow: hidden;
-  text-overflow: ellipsis;
 }
 
 .headerButton {

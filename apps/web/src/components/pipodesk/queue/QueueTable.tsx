@@ -143,7 +143,7 @@ export function QueueTable({
                     <span className={styles.headerCell}>
                       {/* The title hangs on the label alone: with the funnel inside
                           it, a column carrying both would nest two tooltips. */}
-                      <span className={styles.headerLabel} title={column.title}>
+                      <span title={column.title}>
                         {SORTABLE[column.key] ? (
                           <button
                             type="button"
