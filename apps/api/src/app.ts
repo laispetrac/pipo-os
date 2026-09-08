@@ -19,6 +19,7 @@ import { sql } from 'kysely'
 import { z } from 'zod'
 import dbPlugin from './infrastructure/db.js'
 import errorHandlerPlugin from './infrastructure/error-handler.js'
+import authenticatePlugin from './modules/auth/authenticate.js'
 
 function corsOrigins(): string[] {
   return (process.env.CORS_ORIGIN ?? 'http://localhost:5173')
@@ -71,6 +72,7 @@ export function buildApp(): FastifyInstance {
 
   app.register(cors, { origin: corsOrigins() })
   app.register(cookie, { secret: cookieSecret() })
+  app.register(authenticatePlugin)
   app.register(metricsPlugin)
   app.register(dbPlugin)
   app.register(errorHandlerPlugin)
@@ -89,12 +91,21 @@ export function buildApp(): FastifyInstance {
   })
 
   if (process.env.NODE_ENV !== 'production' && process.env.NODE_ENV !== 'test') {
-    app.register(swaggerUi, { routePrefix: '/docs' })
+    // Swagger-ui owns its routes, so they cannot carry `config: { public: true }`
+    // themselves. Stamping it here, in a scope of their own, is what keeps the
+    // auth hook down to one rule: a route is public because it says so.
+    app.register(async (docs) => {
+      docs.addHook('onRoute', (route) => {
+        route.config = { ...route.config, public: true }
+      })
+      await docs.register(swaggerUi, { routePrefix: '/docs' })
+    })
   }
 
   app.withTypeProvider<ZodTypeProvider>().get(
     '/health',
     {
+      config: { public: true },
       schema: {
         response: {
           200: z.object({ status: z.literal('ok') }),

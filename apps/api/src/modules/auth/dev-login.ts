@@ -64,6 +64,7 @@ export function registerDevLoginRoute(app: FastifyInstance, config: AuthConfig):
   server.post(
     '/api/auth/dev-login',
     {
+      config: { public: true },
       schema: {
         body: devLoginBodySchema,
         response: { 204: z.null() },
