@@ -60,8 +60,8 @@ export function PersonTab({ personId, records, capturedAt, onSelectPerson }: Per
 
   return (
     <div className={styles.tab}>
-      {/* The company is the shown person's, not the ticket's. */}
-      {records.isBackofficeDown(person.link.companyId) && <OutageNotice capturedAt={capturedAt} />}
+      {/* The company of the shown person's holder, not the ticket's. */}
+      {records.isBackofficeDown(link.companyId) && <OutageNotice capturedAt={capturedAt} />}
 
       <RecordBlock>
         <div className={styles.head}>
