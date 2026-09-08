@@ -3,6 +3,7 @@ import { Banner, Breadcrumb, BreadcrumbItem, Button, Heading, Tabs } from '@pipo
 import { Link, useParams } from '@tanstack/react-router'
 import { useDesk } from '@/components/pipodesk/shell/desk-context'
 import { SidebarToggle } from '@/components/pipodesk/shell/SidebarToggle'
+import { CompanyTab } from '@/components/pipodesk/ticket/CompanyTab'
 import { CopyButton } from '@/components/pipodesk/ticket/CopyButton'
 import { PersonTab } from '@/components/pipodesk/ticket/PersonTab'
 import { RecordEmpty } from '@/components/pipodesk/ticket/RecordSection'
@@ -351,6 +352,16 @@ export default function TicketPage() {
       />
     )
 
+  const empresa = (
+    <CompanyTab
+      companyId={ticket.companyId}
+      policyId={movement?.policyId}
+      records={records}
+      capturedAt={ticket.createdAt}
+      today={today}
+    />
+  )
+
   const pendingTab = (
     <div className={styles.body}>
       <section className={styles.block}>
@@ -411,7 +422,7 @@ export default function TicketPage() {
             ),
           },
           { key: 'pessoa', label: constants.tabs.pessoa, content: withAside(pessoa) },
-          { key: 'empresa', label: constants.tabs.empresa, content: pendingTab },
+          { key: 'empresa', label: constants.tabs.empresa, content: withAside(empresa) },
           { key: 'documentos', label: constants.tabs.documentos, content: pendingTab },
           { key: 'historico', label: constants.tabs.historico, content: pendingTab },
         ]}

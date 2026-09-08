@@ -1,0 +1,183 @@
+import { CarrierLogo, DescriptionItem, DescriptionList, Status } from '@piposaude/design-system'
+import { COMPANY_SIZE_COPY, PRODUCT_COPY } from '@/constants/pipodesk/domain'
+import copy from '@/constants/pages/pipodesk/ticket/company'
+import recordCopy from '@/constants/pages/pipodesk/ticket/record'
+import { carrierSlug } from '@/lib/pipodesk/carrier'
+import { formatLongDate, formatLongDateWithYear } from '@/lib/pipodesk/format'
+import type { Contract, TicketRecords } from '@/lib/pipodesk/record'
+import { CopyButton } from './CopyButton'
+import { OutageNotice } from './OutageNotice'
+import { Emphasis, RecordEmpty, RecordNote, RecordSection } from './RecordSection'
+import { Secret } from './Secret'
+import styles from './CompanyTab.module.css'
+
+export interface CompanyTabProps {
+  companyId: string
+  /** The policy this ticket moves: Prêmios cuts to it. Absent, the list is whole. */
+  policyId: string | undefined
+  records: TicketRecords
+  capturedAt: string
+  /** Date-only; a contract whose term ended before it is expired. */
+  today: string
+}
+
+function ContractCard({
+  contract,
+  records,
+  today,
+}: {
+  contract: Contract
+  records: TicketRecords
+  today: string
+}) {
+  const carrier = records.carrierById.get(contract.carrierId)
+  const carrierName = carrier?.name ?? contract.carrierId
+  const expired = contract.endDate < today
+  const attached = records.documentsOf('contract', contract.id).length
+  const { access } = contract
+
+  return (
+    <li className={styles.contract}>
+      <div className={styles.contractHead}>
+        <CarrierLogo carrier={carrierSlug(carrierName)} size="xs" />
+        <strong>{PRODUCT_COPY[contract.product] ?? contract.product}</strong>
+        <span>{carrierName}</span>
+        {/* Derived from the term, never stored: a stored badge lied on 318 of 842. */}
+        <Status variant={expired ? 'alert' : 'success'}>
+          {expired ? copy.contract.expired : copy.contract.active}
+        </Status>
+      </div>
+      <p className={styles.line}>
+        {copy.contract.number} <span className={styles.number}>{contract.number}</span>
+        <CopyButton value={contract.number} label={copy.contract.copyNumber(contract.number)} />
+      </p>
+      <p className={styles.muted}>
+        {formatLongDateWithYear(contract.startDate)} — {formatLongDateWithYear(contract.endDate)}
+      </p>
+      {expired && <p className={styles.warn}>{copy.contract.expiredWarning}</p>}
+      <p className={styles.muted}>
+        {copy.contract.files(attached)}
+        {contract.hasPendingFile && (
+          <span className={styles.warn}>{copy.contract.pendingFile}</span>
+        )}
+      </p>
+      <div className={styles.vault}>
+        {access ? (
+          <>
+            <p className={styles.line}>
+              {copy.contract.portal} <span className={styles.value}>{carrier?.portal ?? '—'}</span>
+              {carrier?.portal && (
+                <CopyButton value={carrier.portal} label={copy.contract.copyPortal} />
+              )}
+            </p>
+            <p className={styles.line}>
+              {copy.contract.login} <span className={styles.value}>{access.login}</span>
+              <CopyButton value={access.login} label={copy.contract.copyLogin} />
+            </p>
+            <p className={styles.line}>
+              {copy.contract.password}{' '}
+              <Secret value={access.password} label={copy.contract.passwordLabel} />
+              <CopyButton value={access.password} label={copy.contract.copyPassword} />
+            </p>
+            <p className={styles.muted}>
+              {copy.contract.passwordUpdated(formatLongDateWithYear(access.updatedAt))}
+            </p>
+          </>
+        ) : (
+          <p className={styles.warn}>{copy.contract.noAccess}</p>
+        )}
+      </div>
+    </li>
+  )
+}
+
+export function CompanyTab({ companyId, policyId, records, capturedAt, today }: CompanyTabProps) {
+  const company = records.companyById.get(companyId)
+  if (!company) return <RecordEmpty>{recordCopy.notFound.company}</RecordEmpty>
+
+  const parent = company.parentId ? records.companyById.get(company.parentId) : undefined
+  const branches = records.branchesOf(company.id)
+  const contracts = records.contractsOf(company.id)
+  const companyPlans = records.policiesOf(company.id)
+  // Only the moved policy; the whole list is the fallback for a policy of another company.
+  const currentPlan = companyPlans.find((plan) => plan.id === policyId)
+  const plans = currentPlan ? [currentPlan] : companyPlans
+  const files = records.documentsOf('company', company.id)
+
+  return (
+    <div className={styles.tab}>
+      {records.isBackofficeDown(company.id) && <OutageNotice capturedAt={capturedAt} />}
+
+      <RecordSection title={copy.sections.data}>
+        <DescriptionList>
+          <DescriptionItem label={copy.fields.legalName}>{company.legalName}</DescriptionItem>
+          <DescriptionItem label={copy.fields.tradeName}>{company.tradeName}</DescriptionItem>
+          <DescriptionItem label={copy.fields.cnpj}>{company.cnpj}</DescriptionItem>
+          <DescriptionItem label={copy.fields.porte}>
+            {COMPANY_SIZE_COPY[company.porte] ?? company.porte}
+          </DescriptionItem>
+          <DescriptionItem label={copy.fields.structure}>
+            {parent ? copy.structure.branchOf(parent.tradeName) : copy.structure.parent}
+          </DescriptionItem>
+        </DescriptionList>
+        {company.contractualSla && (
+          <RecordNote>
+            <Emphasis
+              text={copy.slaNote(company.contractualSla.hours, company.contractualSla.hasPenalty)}
+            />
+          </RecordNote>
+        )}
+      </RecordSection>
+
+      {branches.length > 0 && (
+        <RecordSection title={copy.sections.branches}>
+          <ul className={styles.list}>
+            {branches.map((branch) => (
+              <li key={branch.id} className={styles.row}>
+                <span>{branch.legalName}</span>
+                <span>{branch.cnpj}</span>
+              </li>
+            ))}
+          </ul>
+        </RecordSection>
+      )}
+
+      <RecordSection title={copy.sections.contracts}>
+        <ul className={styles.list}>
+          {contracts.map((contract) => (
+            <ContractCard key={contract.id} contract={contract} records={records} today={today} />
+          ))}
+        </ul>
+        <RecordNote>
+          <Emphasis text={copy.contract.note} />
+          {parent && <Emphasis text={copy.contract.branchNote(parent.tradeName)} />}
+        </RecordNote>
+      </RecordSection>
+
+      <RecordSection title={copy.sections.plans}>
+        <ul className={styles.list}>
+          {plans.map((plan) => (
+            <li key={plan.id} className={styles.row}>
+              <span>{plan.name}</span>
+              <span className={styles.code}>{plan.code}</span>
+              <span>{PRODUCT_COPY[plan.product] ?? plan.product}</span>
+            </li>
+          ))}
+        </ul>
+      </RecordSection>
+
+      <RecordSection title={copy.sections.files}>
+        <ul className={styles.list}>
+          {files.map((file) => (
+            <li key={file.id} className={styles.row}>
+              <span>{file.name}</span>
+              <span>{formatLongDate(file.at)}</span>
+              <span>{copy.files.size(file.sizeKb)}</span>
+            </li>
+          ))}
+        </ul>
+        <RecordNote>{copy.files.note}</RecordNote>
+      </RecordSection>
+    </div>
+  )
+}

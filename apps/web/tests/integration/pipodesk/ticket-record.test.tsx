@@ -6,6 +6,7 @@ import { queueSeed } from '@/fixtures/pipodesk/dataset'
 import { records } from '@/fixtures/pipodesk/records'
 import { displayNameOf } from '@/lib/pipodesk/record'
 import { formatCpf, formatLongDate } from '@/lib/pipodesk/format'
+import companyCopy from '@/constants/pages/pipodesk/ticket/company'
 import personCopy from '@/constants/pages/pipodesk/ticket/person'
 import recordCopy from '@/constants/pages/pipodesk/ticket/record'
 
@@ -159,5 +160,91 @@ describe('aba Dados pessoais', () => {
     expect(
       within(panel).getByRole('complementary', { name: 'Contexto do chamado' }),
     ).toBeInTheDocument()
+  })
+})
+
+describe('aba Sobre a empresa', () => {
+  /** Caiçara Metalurgia (705639): a parent with branches, two contracts — one
+   *  expired with a pending file, one active — two plans and the two company
+   *  files the Backoffice generates. */
+  it('should show the company data, its branches, the contracts with a derived badge and the vault', async () => {
+    const { panel, user } = await openTab('/tickets/705639', 'Sobre a empresa')
+    const company = records.companyById.get(rowOf('705639').companyId)!
+
+    expect(fieldValue(panel, companyCopy.fields.legalName)).toHaveTextContent(company.legalName)
+    expect(fieldValue(panel, companyCopy.fields.cnpj)).toHaveTextContent(company.cnpj)
+    expect(fieldValue(panel, companyCopy.fields.porte)).toHaveTextContent('Empresarial')
+    expect(fieldValue(panel, companyCopy.fields.structure)).toHaveTextContent(
+      companyCopy.structure.parent,
+    )
+
+    const [firstBranch] = records.branchesOf(company.id)
+    expect(within(panel).getByText(firstBranch.legalName)).toBeInTheDocument()
+    expect(within(panel).getByText(firstBranch.cnpj)).toBeInTheDocument()
+
+    // The badge is derived from the term, never stored: 957445 ended in 2025.
+    const expired = within(panel).getByText('957445').closest('li')!
+    expect(within(expired).getByText(companyCopy.contract.expired)).toBeInTheDocument()
+    expect(within(expired).getByText(companyCopy.contract.expiredWarning)).toBeInTheDocument()
+    expect(within(expired).getByText(/Sem arquivo anexado/)).toHaveTextContent('Arquivo pendente')
+    expect(
+      within(expired).getByRole('button', { name: companyCopy.contract.copyNumber('957445') }),
+    ).toBeInTheDocument()
+    const active = within(panel).getByText('124588').closest('li')!
+    expect(within(active).getByText(companyCopy.contract.active)).toBeInTheDocument()
+    expect(within(active).getByText('1 arquivo anexado')).toBeInTheDocument()
+    expect(within(active).getByText('Petlove')).toBeInTheDocument()
+
+    // The vault: portal and login copyable, the password masked until the eye.
+    expect(within(expired).getByText('portal.unimedmineira.com.br/rh')).toBeInTheDocument()
+    expect(within(expired).getByText('pipo.caicara-metalurgia')).toBeInTheDocument()
+    expect(within(expired).queryByText('34q5-EM7J-68!')).not.toBeInTheDocument()
+    await user.click(within(expired).getByRole('button', { name: 'Mostrar a senha do portal' }))
+    expect(within(expired).getByText('34q5-EM7J-68!')).toBeInTheDocument()
+    expect(
+      within(expired).getByRole('button', { name: companyCopy.contract.copyPassword }),
+    ).toBeInTheDocument()
+    expect(within(expired).getByText('Senha atualizada em 26 de Julho de 2025')).toBeInTheDocument()
+
+    // Prêmios shows only the policy this ticket moves, not every plan of the company.
+    expect(within(panel).getByText('Unimed Mineira — Básico E4')).toBeInTheDocument()
+    expect(within(panel).getByText('6082')).toBeInTheDocument()
+    expect(within(panel).queryByText('Petlove — Pleno A2')).not.toBeInTheDocument()
+
+    expect(within(panel).getByText('Cartão CNPJ — Caiçara Metalurgia.pdf')).toBeInTheDocument()
+    expect(within(panel).getByText('798 KB')).toBeInTheDocument()
+  })
+
+  it('should name the parent of a branch and say the contracts shown belong to the branch', async () => {
+    const { panel } = await openTab('/tickets/700007', 'Sobre a empresa')
+    const company = records.companyById.get(rowOf('700007').companyId)!
+    const parent = records.companyById.get(company.parentId!)!
+
+    expect(fieldValue(panel, companyCopy.fields.structure)).toHaveTextContent(
+      companyCopy.structure.branchOf(parent.tradeName),
+    )
+    expect(
+      within(panel).getByText(companyCopy.contract.branchNote(parent.tradeName)[1]),
+    ).toBeInTheDocument()
+  })
+
+  it('should say a contract has no vault instead of showing empty lines', async () => {
+    const { panel } = await openTab('/tickets/700000', 'Sobre a empresa')
+
+    expect(within(panel).getAllByText(companyCopy.contract.noAccess).length).toBeGreaterThan(0)
+  })
+
+  it('should tell the contractual SLA apart as a spreadsheet fact, not a system field', async () => {
+    const { panel } = await openTab('/tickets/700032', 'Sobre a empresa')
+
+    const lead = within(panel).getByText(companyCopy.slaNote(48, true)[1])
+    expect(lead.tagName).toBe('STRONG')
+    expect(lead.closest('p')).toHaveTextContent('com multa')
+  })
+
+  it('should warn about the saved picture when the Backoffice is down for the company', async () => {
+    const { panel } = await openTab('/tickets/700127', 'Sobre a empresa')
+
+    expect(within(panel).getByText(recordCopy.outage.title)).toBeInTheDocument()
   })
 })

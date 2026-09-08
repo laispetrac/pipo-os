@@ -1,5 +1,5 @@
-/** A sentence with one emphasised phrase: lead, the strong part, the rest. */
-export type Emphasized = readonly [string, string, string]
+/** A sentence in segments; the odd positions are emphasised. */
+export type Emphasized = readonly string[]
 
 /** Copy the four record tabs share. */
 export default {

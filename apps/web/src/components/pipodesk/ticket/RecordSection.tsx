@@ -54,12 +54,12 @@ export function RecordEmpty({ children }: { children: ReactNode }) {
   return <p className={styles.empty}>{children}</p>
 }
 
-export function Emphasis({ text: [lead, strong, rest] }: { text: Emphasized }) {
+export function Emphasis({ text }: { text: Emphasized }) {
   return (
     <>
-      {lead}
-      <strong>{strong}</strong>
-      {rest}
+      {text.map((segment, index) =>
+        index % 2 === 1 ? <strong key={index}>{segment}</strong> : segment,
+      )}
     </>
   )
 }

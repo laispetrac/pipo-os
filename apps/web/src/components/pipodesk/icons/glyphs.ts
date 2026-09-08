@@ -295,6 +295,61 @@ export const GLYPHS: Record<string, Glyph> = {
       },
     ],
   },
+  download: {
+    viewBox: '0 0 24 24',
+    nodes: [
+      {
+        tag: 'path',
+        attrs: {
+          d: 'M12 15V3M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4M7 10l5 5 5-5',
+          stroke: 'currentColor',
+          strokeWidth: '2',
+          strokeLinecap: 'round',
+          strokeLinejoin: 'round',
+        },
+      },
+    ],
+  },
+  eye: {
+    viewBox: '0 0 24 24',
+    nodes: [
+      {
+        tag: 'path',
+        attrs: {
+          d: 'M2.062 12.348a1 1 0 0 1 0-.696 10.75 10.75 0 0 1 19.876 0 1 1 0 0 1 0 .696 10.75 10.75 0 0 1-19.876 0',
+          stroke: 'currentColor',
+          strokeWidth: '2',
+          strokeLinecap: 'round',
+          strokeLinejoin: 'round',
+        },
+      },
+      {
+        tag: 'circle',
+        attrs: {
+          cx: '12',
+          cy: '12',
+          r: '3',
+          stroke: 'currentColor',
+          strokeWidth: '2',
+        },
+      },
+    ],
+  },
+  'eye-off': {
+    viewBox: '0 0 24 24',
+    nodes: [
+      {
+        tag: 'path',
+        attrs: {
+          d: 'M10.733 5.076a10.744 10.744 0 0 1 11.205 6.575 1 1 0 0 1 0 .696 10.747 10.747 0 0 1-1.444 2.49M14.084 14.158a3 3 0 0 1-4.242-4.242M17.479 17.499a10.75 10.75 0 0 1-15.417-5.151 1 1 0 0 1 0-.696 10.75 10.75 0 0 1 4.446-5.143M2 2l20 20',
+          stroke: 'currentColor',
+          strokeWidth: '2',
+          strokeLinecap: 'round',
+          strokeLinejoin: 'round',
+        },
+      },
+    ],
+  },
   cube: {
     viewBox: '0 0 16 16',
     nodes: [
