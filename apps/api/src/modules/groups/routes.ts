@@ -1,8 +1,7 @@
 import type { ZodTypeProvider } from '@fastify/type-provider-zod'
 import type { FastifyInstance } from 'fastify'
 import { z } from 'zod'
-import { UnauthorizedError } from '../../shared/errors.js'
-import { getSession } from '../auth/session.js'
+import { requireUserId } from '../auth/authenticate.js'
 import {
   addMemberBodySchema,
   createGroupBodySchema,
@@ -30,11 +29,7 @@ export function registerGroupRoutes(app: FastifyInstance, service: GroupsService
       },
     },
     async (request, reply) => {
-      const claims = getSession(request)
-      const createdBy = claims.sub?.trim()
-      if (!createdBy) {
-        throw new UnauthorizedError('Invalid session')
-      }
+      const createdBy = requireUserId(request)
       const group = await service.create(request.body, createdBy)
       reply.status(201)
       return group
@@ -50,7 +45,6 @@ export function registerGroupRoutes(app: FastifyInstance, service: GroupsService
       },
     },
     async (request) => {
-      getSession(request)
       return service.list(request.query)
     },
   )
@@ -64,7 +58,6 @@ export function registerGroupRoutes(app: FastifyInstance, service: GroupsService
       },
     },
     async (request) => {
-      getSession(request)
       return service.get(request.params.id)
     },
   )
@@ -84,9 +77,7 @@ export function registerGroupRoutes(app: FastifyInstance, service: GroupsService
       },
     },
     async (request) => {
-      const claims = getSession(request)
-      const updatedBy = claims.sub?.trim()
-      if (!updatedBy) throw new UnauthorizedError('Invalid session')
+      const updatedBy = requireUserId(request)
       return service.update(request.params.id, request.body, updatedBy)
     },
   )
@@ -105,7 +96,6 @@ export function registerGroupRoutes(app: FastifyInstance, service: GroupsService
       },
     },
     async (request, reply) => {
-      getSession(request)
       await service.delete(request.params.id)
       reply.status(204)
       return null
@@ -128,7 +118,6 @@ export function registerGroupRoutes(app: FastifyInstance, service: GroupsService
       },
     },
     async (request, reply) => {
-      getSession(request)
       const member = await service.addMember(request.params.id, request.body)
       reply.status(201)
       return member
@@ -144,7 +133,6 @@ export function registerGroupRoutes(app: FastifyInstance, service: GroupsService
       },
     },
     async (request, reply) => {
-      getSession(request)
       await service.removeMember(request.params.id, request.params.memberId)
       reply.status(204)
       return null
@@ -166,7 +154,6 @@ export function registerGroupRoutes(app: FastifyInstance, service: GroupsService
       },
     },
     async (request) => {
-      getSession(request)
       return service.updateMember(request.params.id, request.params.memberId, request.body)
     },
   )
