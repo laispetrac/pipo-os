@@ -1,9 +1,9 @@
-import { useEffect, useMemo, useRef, useState } from 'react'
+import { useMemo, useRef, useState } from 'react'
 import { Banner, Breadcrumb, BreadcrumbItem, Button, Heading, Tabs } from '@piposaude/design-system'
 import { Link, useParams } from '@tanstack/react-router'
 import { useDesk } from '@/components/pipodesk/shell/desk-context'
 import { SidebarToggle } from '@/components/pipodesk/shell/SidebarToggle'
-import { DeskIcon } from '@/components/pipodesk/icons'
+import { CopyButton } from '@/components/pipodesk/ticket/CopyButton'
 import { Popover } from '@/components/pipodesk/primitives'
 import { DISPLAY_STATUS_COPY, PENDING_REASON_COPY } from '@/constants/pipodesk/status'
 import {
@@ -51,7 +51,6 @@ export default function TicketPage() {
 
   const ticket = useMemo(() => rows.find((row) => row.id === id), [rows, id])
 
-  const [copied, setCopied] = useState(false)
   const [priorityOpen, setPriorityOpen] = useState(false)
   const [ownerOpen, setOwnerOpen] = useState(false)
   const priorityTrigger = useRef<HTMLButtonElement>(null)
@@ -74,14 +73,6 @@ export default function TicketPage() {
     [ticket?.groupId],
   )
 
-  const copiedTimer = useRef<ReturnType<typeof setTimeout> | null>(null)
-  useEffect(
-    () => () => {
-      if (copiedTimer.current !== null) clearTimeout(copiedTimer.current)
-    },
-    [],
-  )
-
   if (!ticket) {
     return (
       <div className={`${styles.screen} ${styles.missing}`}>
@@ -95,19 +86,6 @@ export default function TicketPage() {
      date is not an overdue deadline. */
   const overdue = ticket.actionDate === null ? null : daysOverdue(ticket.actionDate, today)
   const activeChannel = CHANNELS[channel]
-
-  const copyId = async () => {
-    try {
-      await navigator.clipboard.writeText(ticket.id)
-      setCopied(true)
-      /* Cleared before rearming and on unmount: copying and leaving inside the
-         window used to set state on a gone component. */
-      if (copiedTimer.current !== null) clearTimeout(copiedTimer.current)
-      copiedTimer.current = setTimeout(() => setCopied(false), 1500)
-    } catch {
-      // No clipboard (permission, iframe): the id stays selectable on screen.
-    }
-  }
 
   const situacao = ticket.reason
     ? `${DISPLAY_STATUS_COPY[ticket.display]} · ${PENDING_REASON_COPY[ticket.reason]}`
@@ -393,34 +371,8 @@ export default function TicketPage() {
         <Heading level="h1">{personName}</Heading>
         <p className={styles.subtitle}>
           <span className={styles.ticketId}>{ticket.id}</span>
-          {/* Hidden at rest, shown on hover of the header, on focus and while
-              copied — as in the prototype. The glyph morphs to a check and a
-              balloon says "Copiado"; the live region is always mounted so the
-              announcement is not lost when the text appears. */}
-          <button
-            type="button"
-            className={styles.copy}
-            aria-label={constants.copyId(ticket.id)}
-            title={copied ? constants.copied : constants.copyId(ticket.id)}
-            data-copied={copied ? 'true' : undefined}
-            onClick={copyId}
-          >
-            <span className={styles.copyGlyphs}>
-              <DeskIcon
-                name="copy"
-                size={14}
-                className={`${styles.copyGlyph} ${styles.copyIcon}`}
-              />
-              <DeskIcon
-                name="check"
-                size={14}
-                className={`${styles.copyGlyph} ${styles.checkIcon}`}
-              />
-            </span>
-            <span className={styles.copiedTip} role="status" aria-live="polite">
-              {copied ? constants.copied : ''}
-            </span>
-          </button>
+          {/* Revealed on hover of the header (`.pagehead`), as in the prototype. */}
+          <CopyButton value={ticket.id} label={constants.copyId(ticket.id)} />
         </p>
       </div>
 
