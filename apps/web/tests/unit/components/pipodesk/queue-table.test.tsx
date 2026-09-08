@@ -1,4 +1,4 @@
-import { render, screen } from '@testing-library/react'
+import { render, screen, within } from '@testing-library/react'
 import { QueueTable } from '@/components/pipodesk/queue/QueueTable'
 import { FILTER_BY_COLUMN, SORTABLE } from '@/lib/pipodesk/columns'
 import type { TicketGroup } from '@/lib/pipodesk/group'
@@ -91,5 +91,42 @@ describe('sort and filter are exclusive', () => {
   it('should give no column both a sort arrow and a funnel', () => {
     const both = Object.keys(FILTER_BY_COLUMN).filter((key) => key in SORTABLE)
     expect(both).toEqual([])
+  })
+})
+
+/**
+ * The hover explanation belongs to the label, not to the whole header cell:
+ * with the funnel inside the titled box, a column carrying both would nest two
+ * tooltips and the inner one would win by depth alone.
+ */
+describe('header cell', () => {
+  it('should keep the funnel outside the element that carries the title', () => {
+    render(
+      <QueueTable
+        groups={threeRows}
+        columns={[
+          { key: 'select', label: '', width: '36px' },
+          { key: 'classification', label: 'Classificação', width: '132px', title: 'o que é' },
+        ]}
+        sort={{ by: 'actionDate', direction: 'asc' }}
+        onSort={() => {}}
+        collapsedGroups={[]}
+        onToggleGroup={() => {}}
+        selectedIds={[]}
+        onToggleTicket={() => {}}
+        onSelectAll={() => {}}
+        onOpenTicket={() => {}}
+        today="2026-08-07"
+        resolveName={(id) => id}
+        columnFilter={() => <button type="button">funil</button>}
+      />,
+    )
+
+    const titled = document.querySelector('[title="o que é"]')
+    expect(titled).not.toBeNull()
+    expect(titled?.textContent).toContain('Classificação')
+    expect(within(titled as HTMLElement).queryByRole('button', { name: 'funil' })).toBeNull()
+    // ...and the funnel is still on screen, in the cell next to the label.
+    expect(screen.getByRole('button', { name: 'funil' })).toBeInTheDocument()
   })
 })

@@ -284,6 +284,16 @@
   max-width: 100%;
 }
 
+/* Only the label, so the ellipsis still measures against the text and not
+   against the text plus the funnel. */
+.headerLabel {
+  display: inline-flex;
+  min-width: 0;
+  align-items: center;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
 .headerButton {
   display: inline-flex;
   align-items: center;

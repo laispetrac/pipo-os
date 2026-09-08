@@ -135,25 +135,29 @@ export function QueueTable({
                     aria-sort={sortOf(column.key)}
                     className={column.align === 'right' ? styles.right : undefined}
                   >
-                    <span className={styles.headerCell} title={column.title}>
-                      {SORTABLE[column.key] ? (
-                        <button
-                          type="button"
-                          className={styles.headerButton}
-                          onClick={() => toggleSort(column.key)}
-                        >
-                          {column.label}
-                          <span aria-hidden="true" className={styles.sortGlyph}>
-                            {sortOf(column.key) === 'ascending'
-                              ? '↑'
-                              : sortOf(column.key) === 'descending'
-                                ? '↓'
-                                : '↕'}
-                          </span>
-                        </button>
-                      ) : (
-                        column.label
-                      )}
+                    <span className={styles.headerCell}>
+                      {/* The title hangs on the label alone: with the funnel inside
+                          it, a column carrying both would nest two tooltips. */}
+                      <span className={styles.headerLabel} title={column.title}>
+                        {SORTABLE[column.key] ? (
+                          <button
+                            type="button"
+                            className={styles.headerButton}
+                            onClick={() => toggleSort(column.key)}
+                          >
+                            {column.label}
+                            <span aria-hidden="true" className={styles.sortGlyph}>
+                              {sortOf(column.key) === 'ascending'
+                                ? '↑'
+                                : sortOf(column.key) === 'descending'
+                                  ? '↓'
+                                  : '↕'}
+                            </span>
+                          </button>
+                        ) : (
+                          column.label
+                        )}
+                      </span>
                       {columnFilter && filterField ? columnFilter(filterField) : null}
                     </span>
                   </th>
