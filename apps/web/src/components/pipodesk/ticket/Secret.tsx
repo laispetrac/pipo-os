@@ -30,7 +30,7 @@ export function Secret({ value, label }: SecretProps) {
         type="button"
         className={styles.eye}
         aria-pressed={visible}
-        aria-label={visible ? constants.hide(label) : constants.show(label)}
+        aria-label={constants.show(label)}
         title={visible ? constants.hideTitle : constants.showTitle}
         onClick={() => setVisible((current) => !current)}
       >

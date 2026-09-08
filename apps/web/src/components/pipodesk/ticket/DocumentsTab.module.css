@@ -47,8 +47,13 @@
   font-weight: var(--pipo-fw-medium);
 }
 
+/* 24px is the smallest target that meets WCAG 2.5.8; the glyph stays 14px. */
 .download {
   display: inline-flex;
+  min-width: 24px;
+  min-height: 24px;
+  align-items: center;
+  justify-content: center;
   padding: var(--pipo-space-xxsmall);
   border: 0;
   border-radius: var(--pipo-radius-xsmall);

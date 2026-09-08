@@ -13,6 +13,7 @@ describe('Secret', () => {
     expect(screen.getByText(constants.mask)).toHaveAttribute('aria-hidden', 'true')
     expect(screen.getByText('senha do portal oculta')).toBeInTheDocument()
     expect(screen.queryByText('34q5-EM7J-68!')).not.toBeInTheDocument()
+    // A toggle keeps its name and changes its state: one signal, not two.
     const eye = screen.getByRole('button', { name: 'Mostrar a senha do portal' })
     expect(eye).toHaveAttribute('aria-pressed', 'false')
 
@@ -20,13 +21,12 @@ describe('Secret', () => {
 
     expect(screen.getByText('34q5-EM7J-68!')).toBeInTheDocument()
     expect(screen.queryByText('senha do portal oculta')).not.toBeInTheDocument()
-    expect(screen.getByRole('button', { name: 'Ocultar a senha do portal' })).toHaveAttribute(
-      'aria-pressed',
-      'true',
-    )
+    expect(eye).toHaveAccessibleName('Mostrar a senha do portal')
+    expect(eye).toHaveAttribute('aria-pressed', 'true')
 
-    await user.click(screen.getByRole('button', { name: 'Ocultar a senha do portal' }))
+    await user.click(eye)
 
     expect(screen.queryByText('34q5-EM7J-68!')).not.toBeInTheDocument()
+    expect(eye).toHaveAttribute('aria-pressed', 'false')
   })
 })

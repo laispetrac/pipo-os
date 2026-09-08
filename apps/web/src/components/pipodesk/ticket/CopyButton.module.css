@@ -1,9 +1,13 @@
 /* Ported from the prototype's `.copy-button` (ticket.css). */
 
+/* 24px is the smallest target that meets WCAG 2.5.8; the glyph stays 14px. */
 .button {
   position: relative;
   display: inline-flex;
+  min-width: 24px;
+  min-height: 24px;
   align-items: center;
+  justify-content: center;
   padding: var(--pipo-space-xxsmall);
   border: none;
   border-radius: var(--pipo-radius-xsmall);
