@@ -12,8 +12,9 @@
   gap: 12px;
 }
 
-/* One step above the 16px sections, one below the ticket's H1. */
-.name {
+/* One step above the 16px sections, one below the ticket's H1. Two classes:
+   the DS base sheet sizes every `.pipo-base h2`, and one class loses to it. */
+.head .name {
   margin: 0;
   font-family: var(--pipo-font-display);
   font-size: 18px;

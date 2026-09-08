@@ -6,7 +6,8 @@
   gap: var(--pipo-space-xlarge);
 }
 
-.title {
+/* Two classes: the DS base sheet sizes every `.pipo-base h2`. */
+.tab .title {
   margin: 0;
   font-family: var(--pipo-font-ui);
   font-size: var(--pipo-fs-medium);
