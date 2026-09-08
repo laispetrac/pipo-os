@@ -4,65 +4,16 @@ import {
   displayNameOf,
   historyOf,
   indexRecords,
-  type Company,
-  type Person,
   type RecordSource,
 } from '@/lib/pipodesk/record'
 import type { TicketRow } from '@/lib/pipodesk/ticket-row'
-
-const person = (id: string, overrides: Partial<Person> = {}): Person => ({
-  id,
-  name: `Pessoa ${id}`,
-  socialName: null,
-  cpf: '00000000000',
-  birthDate: '1990-01-01',
-  sex: 'f',
-  email: `${id}@exemplo.com`,
-  phone: '(11) 90000-0000',
-  maritalStatus: 'single',
-  weightKg: null,
-  heightCm: null,
-  motherName: 'Mãe',
-  address: {
-    zip: '01000000',
-    street: 'R. UM',
-    district: 'CENTRO',
-    number: '1',
-    complement: null,
-    uf: 'SP',
-    city: 'São Paulo',
-  },
-  bankAccount: null,
-  role: 'holder',
-  holderId: null,
-  link: {
-    companyId: 'company-1',
-    contractType: 'clt',
-    admissionDate: '2020-01-01',
-    salaryCents: 0,
-    registration: '1',
-    jobTitle: null,
-    costCenter: null,
-  },
-  cards: [],
-  ...overrides,
-})
-
-const company = (id: string, parentId: string | null): Company => ({
-  id,
-  tradeName: `Empresa ${id}`,
-  legalName: `Empresa ${id} ME`,
-  cnpj: '00.000.000/0001-00',
-  parentId,
-  porte: 'pme',
-  contractualSla: null,
-})
+import { company, person } from '../../../helpers/records'
 
 const source: RecordSource = {
   companies: [
-    company('company-1', null),
-    company('company-2', 'company-1'),
-    company('company-3', 'company-1'),
+    company('company-1'),
+    company('company-2', { parentId: 'company-1' }),
+    company('company-3', { parentId: 'company-1' }),
   ],
   carriers: [{ id: 'carrier-1', name: 'Amil', portal: 'portal.amil.exemplo' }],
   policies: [

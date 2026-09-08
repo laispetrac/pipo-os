@@ -277,6 +277,8 @@ describe('formatWeight and formatHeight', () => {
     expect(formatWeight(null)).toBe('-')
     expect(formatHeight(175)).toBe('1,75 m')
     expect(formatHeight(203)).toBe('2,03 m')
+    // The API may send a decimal; the record shows whole centimetres.
+    expect(formatHeight(175.5)).toBe('1,76 m')
     expect(formatHeight(null)).toBe('-')
   })
 })

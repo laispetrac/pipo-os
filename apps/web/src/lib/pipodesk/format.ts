@@ -151,7 +151,8 @@ export const formatWeight = (kg: number | null): string => (kg === null ? RECORD
 
 export function formatHeight(cm: number | null): string {
   if (cm === null) return RECORD_EMPTY
-  return `${Math.floor(cm / 100)},${String(cm % 100).padStart(2, '0')} m`
+  const whole = Math.round(cm)
+  return `${Math.floor(whole / 100)},${String(whole % 100).padStart(2, '0')} m`
 }
 
 /* ── SLA contratual ────────────────────────────────────────────────────────── */
