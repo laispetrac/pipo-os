@@ -58,6 +58,9 @@ export function registerCommentRoutes(app: FastifyInstance, service: CommentsSer
   server.post(
     '/api/tickets/:id/comments',
     {
+      // A quarter of the global limit: a comment is text, and the caller that
+      // needs more than this is sending a file, which is not this route.
+      bodyLimit: 262_144,
       schema: {
         params: ticketParamsSchema,
         body: createCommentBodySchema,
@@ -66,6 +69,7 @@ export function registerCommentRoutes(app: FastifyInstance, service: CommentsSer
           400: errorResponseSchema,
           401: errorResponseSchema,
           404: errorResponseSchema,
+          413: errorResponseSchema,
         },
       },
     },

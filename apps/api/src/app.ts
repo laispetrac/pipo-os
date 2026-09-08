@@ -65,6 +65,9 @@ export function buildApp(): FastifyInstance {
     // A member id is an e-mail capped at 255 in addMemberBodySchema; the router
     // default of 100 answered 414 for a member the POST had just accepted.
     routerOptions: { maxParamLength: 255 },
+    // Fastify's own default, written down: it is the ceiling the nginx-ingress
+    // also applies, and no route should inherit it by accident.
+    bodyLimit: 1_048_576,
   })
 
   app.setValidatorCompiler(validatorCompiler)

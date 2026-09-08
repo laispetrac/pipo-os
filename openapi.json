@@ -214,7 +214,8 @@
           },
           "body": {
             "type": "string",
-            "minLength": 1
+            "minLength": 1,
+            "maxLength": 100000
           }
         },
         "required": [
@@ -2012,6 +2013,16 @@
             }
           },
           "404": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "413": {
             "description": "Default Response",
             "content": {
               "application/json": {

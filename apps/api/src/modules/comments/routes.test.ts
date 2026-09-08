@@ -178,5 +178,43 @@ describe('comments routes', () => {
       expect(response.statusCode).toBe(201)
       expect(response.json().visibility).toBe('private')
     })
+
+    it('accepts a long comment under the limit', async () => {
+      const response = await app.inject({
+        method: 'POST',
+        url: `/api/tickets/${ticketId}/comments`,
+        cookies: { [SESSION_COOKIE_NAME]: sessionCookie },
+        payload: { visibility: 'private', body: 'a'.repeat(50_000) },
+      })
+
+      expect(response.statusCode).toBe(201)
+    })
+
+    it('refuses a comment past the field limit with 400, naming the field', async () => {
+      const response = await app.inject({
+        method: 'POST',
+        url: `/api/tickets/${ticketId}/comments`,
+        cookies: { [SESSION_COOKIE_NAME]: sessionCookie },
+        payload: { visibility: 'private', body: 'a'.repeat(150_000) },
+      })
+
+      expect(response.statusCode).toBe(400)
+      expect(response.json().details).toEqual([
+        { field: 'body', message: expect.any(String), code: 'too_big' },
+      ])
+    })
+
+    // Past the route's own bodyLimit the payload never reaches the schema, so
+    // this is the only refusal the caller can get without the field name.
+    it('refuses a payload past the route limit with 413', async () => {
+      const response = await app.inject({
+        method: 'POST',
+        url: `/api/tickets/${ticketId}/comments`,
+        cookies: { [SESSION_COOKIE_NAME]: sessionCookie },
+        payload: { visibility: 'private', body: 'a'.repeat(300_000) },
+      })
+
+      expect(response.statusCode).toBe(413)
+    })
   })
 })
