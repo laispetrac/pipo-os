@@ -1,4 +1,5 @@
 import { useRef, useState } from 'react'
+import { DeskIcon } from '@/components/pipodesk/icons'
 import type { PopoverAlign } from '@/components/pipodesk/primitives'
 import { FILTER_FIELD_COPY, type LabelContext } from '@/lib/pipodesk/filter-copy'
 import { valuesOf, type FilterField, type TicketFilter } from '@/lib/pipodesk/filter'
@@ -46,14 +47,7 @@ export function ColumnFilter({ field, align, ...panel }: ColumnFilterProps) {
           setOpen((current) => !current)
         }}
       >
-        <svg width="12" height="12" viewBox="0 0 16 16" fill="none" aria-hidden="true">
-          <path
-            d="M2 3.5h12L9.5 8.5v4l-3 1.5v-5.5L2 3.5Z"
-            stroke="currentColor"
-            strokeWidth="1.4"
-            strokeLinejoin="round"
-          />
-        </svg>
+        <DeskIcon name="funnel" size={12} />
         {valuesOf(panel.filter, field).length > 0 && (
           <span className={styles.funnelDot} data-active="true" aria-hidden="true" />
         )}

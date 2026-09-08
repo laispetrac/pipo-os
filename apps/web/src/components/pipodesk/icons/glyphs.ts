@@ -355,6 +355,23 @@ export const GLYPHS: Record<string, Glyph> = {
       },
     ],
   },
+  funnel: {
+    viewBox: '0 0 16 16',
+    nodes: [
+      {
+        tag: 'path',
+        attrs: {
+          d: 'M2 3.5h12L9.5 8.5v4l-3 1.5v-5.5L2 3.5Z',
+          stroke: 'currentColor',
+          strokeWidth: '1.2',
+          strokeLinejoin: 'round',
+          // Drawn at 16 in the toolbar and 12 in the column header: the same
+          // hairline at both, instead of a stroke that thins with the box.
+          vectorEffect: 'non-scaling-stroke',
+        },
+      },
+    ],
+  },
   history: {
     viewBox: '0 0 24 24',
     nodes: [
