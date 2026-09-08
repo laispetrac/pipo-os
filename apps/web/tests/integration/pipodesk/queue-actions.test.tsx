@@ -573,4 +573,18 @@ describe('funil por coluna', () => {
     expect(within(painel).getByRole('button', { name: /^Unimed Mineira/ })).toBeInTheDocument()
   })
 
+  /** The toolbar panel hangs to the left of its trigger, which sits at the
+   *  right edge. From the first data column that same alignment pushed 190 of
+   *  the panel's 274px past the table edge, where `overflow-x: hidden` ate them. */
+  it('should open the panel toward the side of the table with room for it', async () => {
+    await renderQueue()
+    const user = userEvent.setup()
+
+    await user.click(screen.getByRole('button', { name: 'Filtrar por Prioridade' }))
+    expect(screen.getByRole('dialog', { name: /filtros/i })).toHaveAttribute('data-align', 'left')
+
+    await user.keyboard('{Escape}')
+    await user.click(screen.getByRole('button', { name: 'Filtrar por Vínculo' }))
+    expect(screen.getByRole('dialog', { name: /filtros/i })).toHaveAttribute('data-align', 'right')
+  })
 })

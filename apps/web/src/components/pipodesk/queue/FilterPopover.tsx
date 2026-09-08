@@ -1,5 +1,5 @@
 import { useMemo, useState, type RefObject } from 'react'
-import { Popover } from '@/components/pipodesk/primitives'
+import { Popover, type PopoverAlign } from '@/components/pipodesk/primitives'
 import {
   DATE_WINDOWS,
   FILTER_FIELDS,
@@ -45,6 +45,9 @@ export interface FilterPopoverProps {
   /** Set by a column funnel: the panel opens on this field's options and has
    *  no field list to go back to. */
   lockedField?: FilterField
+  /** Defaults to `right`, the toolbar's side: its trigger sits at the table's
+   *  right edge, so the panel must grow leftwards. */
+  align?: PopoverAlign
 }
 
 export function FilterPopover({
@@ -60,6 +63,7 @@ export function FilterPopover({
   onSetDateWindow,
   anchor,
   lockedField,
+  align = 'right',
 }: FilterPopoverProps) {
   const [field, setField] = useState<FilterField | null>(lockedField ?? null)
   const [query, setQuery] = useState('')
@@ -105,7 +109,7 @@ export function FilterPopover({
   }
 
   return (
-    <Popover open={open} onClose={close} label="Filtros" align="right" anchor={anchor}>
+    <Popover open={open} onClose={close} label="Filtros" align={align} anchor={anchor}>
       <div className={styles.panelBody}>
         {onDateWindow ? (
           <>

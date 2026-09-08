@@ -244,9 +244,10 @@ export default function QueuePage() {
         onOpenTicket={(id) => navigate({ to: '/tickets/$id', params: { id } })}
         today={today}
         resolveName={resolveName}
-        columnFilter={(field) => (
+        columnFilter={(field, align) => (
           <ColumnFilter
             field={field}
+            align={align}
             base={base}
             filter={view.filter}
             viewerId={viewerId}

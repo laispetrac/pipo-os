@@ -83,6 +83,47 @@ describe('QueueTable', () => {
 })
 
 /**
+ * A panel is wider than most columns, so it must open toward the side of the
+ * table that has room: to the right of a funnel in the left half, to the left
+ * of a funnel in the right half. Position, not column key — the person can
+ * reorder columns.
+ */
+describe('column funnel side', () => {
+  it('should hand the funnel the side its panel opens toward, by column position', () => {
+    const sides: Record<string, string> = {}
+    render(
+      <QueueTable
+        groups={threeRows}
+        columns={[
+          { key: 'select', label: '', width: '36px' },
+          { key: 'id', label: 'ID.', width: '84px' },
+          { key: 'classification', label: 'Classificação', width: '132px' },
+          { key: 'company', label: 'Empresa', width: '190px' },
+          { key: 'status', label: 'Status', width: '150px' },
+          { key: 'relationship', label: 'Vínculo', width: '104px' },
+        ]}
+        sort={{ by: 'actionDate', direction: 'asc' }}
+        onSort={() => {}}
+        collapsedGroups={[]}
+        onToggleGroup={() => {}}
+        selectedIds={[]}
+        onToggleTicket={() => {}}
+        onSelectAll={() => {}}
+        onOpenTicket={() => {}}
+        today="2026-08-07"
+        resolveName={(id) => id}
+        columnFilter={(field, align) => {
+          sides[field] = align
+          return null
+        }}
+      />,
+    )
+
+    expect(sides).toEqual({ priorities: 'left', types: 'left', relationships: 'right' })
+  })
+})
+
+/**
  * The rule the header design rests on: a column either sorts or it filters,
  * never both. It is stated in a comment on FILTER_BY_COLUMN; this is what
  * keeps a future column from quietly getting two controls.

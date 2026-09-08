@@ -1,4 +1,5 @@
 import { useEffect, useLayoutEffect, useRef, useState, type ReactNode } from 'react'
+import type { PopoverAlign } from '@/components/pipodesk/primitives'
 import { FILTER_BY_COLUMN, SORTABLE, type QueueColumn } from '@/lib/pipodesk/columns'
 import type { FilterField } from '@/lib/pipodesk/filter'
 import type { TicketGroup } from '@/lib/pipodesk/group'
@@ -28,8 +29,9 @@ export interface QueueTableProps {
   today: string
   resolveName: (userId: string) => string
   /** The funnel a filtering column shows. A render prop so the table stays
-   *  ignorant of the filter panel and its state. */
-  columnFilter?: (field: FilterField) => ReactNode
+   *  ignorant of the filter panel and its state; `align` is the side the panel
+   *  grows toward. */
+  columnFilter?: (field: FilterField, align: PopoverAlign) => ReactNode
 }
 
 export function QueueTable({
@@ -116,8 +118,11 @@ export function QueueTable({
           </colgroup>
           <thead>
             <tr>
-              {columns.map((column) => {
+              {columns.map((column, index) => {
                 const filterField = FILTER_BY_COLUMN[column.key]
+                // The panel is wider than most columns, so it grows toward the
+                // half of the table with room. By position, not key: columns move.
+                const align: PopoverAlign = index < columns.length / 2 ? 'left' : 'right'
                 return column.key === 'select' ? (
                   <th key="select" scope="col">
                     <input
@@ -158,7 +163,7 @@ export function QueueTable({
                           column.label
                         )}
                       </span>
-                      {columnFilter && filterField ? columnFilter(filterField) : null}
+                      {columnFilter && filterField ? columnFilter(filterField, align) : null}
                     </span>
                   </th>
                 )

@@ -1,13 +1,16 @@
 import { useEffect, useRef, type ReactNode, type RefObject } from 'react'
 import styles from './Popover.module.css'
 
+/** Which edge of the trigger the panel shares: `left` grows rightwards. */
+export type PopoverAlign = 'left' | 'right'
+
 export interface PopoverProps {
   open: boolean
   onClose: () => void
   /** Accessible name — the popover is a `dialog` with no visible title. */
   label: string
   /** Alignment relative to the trigger. */
-  align?: 'left' | 'right'
+  align?: PopoverAlign
   /** Which side to open on. `top` is for the batch bar, pinned to the bottom. */
   side?: 'top' | 'bottom'
   /** The trigger. Pointer events on it belong to it: without this, closing
@@ -78,6 +81,9 @@ export function Popover({
       ref={panel}
       role="dialog"
       aria-label={label}
+      // The side is a CSS class jsdom cannot see; this is how a caller proves
+      // it asked for the right one.
+      data-align={align}
       className={[
         styles.panel,
         align === 'right' ? styles.right : styles.left,

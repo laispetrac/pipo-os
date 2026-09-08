@@ -1,4 +1,5 @@
 import { useRef, useState } from 'react'
+import type { PopoverAlign } from '@/components/pipodesk/primitives'
 import { FILTER_FIELD_COPY, type LabelContext } from '@/lib/pipodesk/filter-copy'
 import { valuesOf, type FilterField, type TicketFilter } from '@/lib/pipodesk/filter'
 import type { TicketRow } from '@/lib/pipodesk/ticket-row'
@@ -12,6 +13,8 @@ import styles from './Queue.module.css'
  */
 export interface ColumnFilterProps {
   field: FilterField
+  /** The side the panel grows toward — the table decides, by column position. */
+  align: PopoverAlign
   base: TicketRow[]
   filter: TicketFilter
   viewerId: string
@@ -22,7 +25,7 @@ export interface ColumnFilterProps {
   onSetDateWindow: (days: number | null) => void
 }
 
-export function ColumnFilter({ field, ...panel }: ColumnFilterProps) {
+export function ColumnFilter({ field, align, ...panel }: ColumnFilterProps) {
   const [open, setOpen] = useState(false)
   const trigger = useRef<HTMLButtonElement>(null)
   const name = `Filtrar por ${FILTER_FIELD_COPY[field]}`
@@ -63,6 +66,7 @@ export function ColumnFilter({ field, ...panel }: ColumnFilterProps) {
           anchor={trigger}
           onClose={() => setOpen(false)}
           lockedField={field}
+          align={align}
           {...panel}
         />
       )}
