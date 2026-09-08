@@ -2,12 +2,12 @@ import type { FastifyInstance } from 'fastify'
 import { afterAll, afterEach, beforeAll, describe, expect, it } from 'vitest'
 import { buildApp } from '../../app.js'
 import { SESSION_COOKIE_NAME } from '../auth/session.js'
-import { CLOSED_STATUSES, updateTicketBodySchema } from './schemas.js'
+import { CLOSED_STATUSES, type TicketStatus, updateTicketBodySchema } from './schemas.js'
 
 // DSP-19: a terminal status is terminal. The rule has to hold on every route
 // that writes state, not only on the audited one.
 
-const OPEN_STATUS = 'broker-open-issue'
+const OPEN_STATUS = 'broker-open-issue' satisfies TicketStatus
 
 const validTicketBody = {
   enrollmentId: '00000000-0000-4000-8000-000000000001',
@@ -19,7 +19,7 @@ const validTicketBody = {
 
 describe('a closed ticket does not go back to an open state', () => {
   let app: FastifyInstance
-  let sessionCookie: string
+  let cookies: Record<string, string>
   let previousDevLoginEnabled: string | undefined
   const createdTicketIds: string[] = []
 
@@ -34,7 +34,8 @@ describe('a closed ticket does not go back to an open state', () => {
       url: '/api/auth/dev-login',
       payload: { policies: ['admin/allow/administrate/ticket/*'] },
     })
-    sessionCookie = login.cookies.find((c) => c.name === SESSION_COOKIE_NAME)!.value
+    const sessionCookie = login.cookies.find((c) => c.name === SESSION_COOKIE_NAME)!.value
+    cookies = { [SESSION_COOKIE_NAME]: sessionCookie }
   })
 
   afterAll(async () => {
@@ -58,8 +59,7 @@ describe('a closed ticket does not go back to an open state', () => {
     expect(CLOSED_STATUSES.has(OPEN_STATUS)).toBe(false)
   })
 
-  async function createClosedTicket(closingStatus: string): Promise<string> {
-    const cookies = { [SESSION_COOKIE_NAME]: sessionCookie }
+  async function createClosedTicket(closingStatus: TicketStatus): Promise<string> {
     const created = await app.inject({
       method: 'POST',
       url: '/api/tickets',
@@ -83,7 +83,6 @@ describe('a closed ticket does not go back to an open state', () => {
 
   /** The audited door. Guarded since #35; asserted here so the rule reads as one. */
   it.each([...CLOSED_STATUSES])('refuses via PATCH /:id/status when %s', async (closingStatus) => {
-    const cookies = { [SESSION_COOKIE_NAME]: sessionCookie }
     const id = await createClosedTicket(closingStatus)
 
     const response = await app.inject({
@@ -96,28 +95,31 @@ describe('a closed ticket does not go back to an open state', () => {
     expect(response.statusCode).toBe(422)
   })
 
-  /** The unaudited door: it wrote the column directly and left no history row. */
-  it.each([...CLOSED_STATUSES])('refuses via PATCH /:id when %s', async (closingStatus) => {
-    const cookies = { [SESSION_COOKIE_NAME]: sessionCookie }
-    const id = await createClosedTicket(closingStatus)
+  /** The unaudited door. Its 400 is the field being gone, not a state check;
+   *  the shape case below is what keeps it that way. */
+  it.each([...CLOSED_STATUSES])(
+    'keeps a %s ticket closed when PATCH /:id carries status',
+    async (closingStatus) => {
+      const id = await createClosedTicket(closingStatus)
 
-    const response = await app.inject({
-      method: 'PATCH',
-      url: `/api/tickets/${id}`,
-      payload: { status: OPEN_STATUS },
-      cookies,
-    })
+      const response = await app.inject({
+        method: 'PATCH',
+        url: `/api/tickets/${id}`,
+        payload: { status: OPEN_STATUS },
+        cookies,
+      })
 
-    expect(response.statusCode).toBe(400)
+      expect(response.statusCode).toBe(400)
 
-    const after = await app.inject({ method: 'GET', url: `/api/tickets/${id}`, cookies })
-    expect(after.json().status).toBe(closingStatus)
-    expect(after.json().closedAt).not.toBeNull()
-  })
+      const after = await app.inject({ method: 'GET', url: `/api/tickets/${id}`, cookies })
+      const ticket = after.json()
+      expect(ticket.status).toBe(closingStatus)
+      expect(ticket.closedAt).not.toBeNull()
+    },
+  )
 
   /** Clearing `closedAt` alone left a closed status with no closing date. */
-  it('refuses to clear closedAt via PATCH /:id', async () => {
-    const cookies = { [SESSION_COOKIE_NAME]: sessionCookie }
+  it('keeps closedAt when PATCH /:id tries to clear it', async () => {
     const id = await createClosedTicket('completed')
 
     const response = await app.inject({
