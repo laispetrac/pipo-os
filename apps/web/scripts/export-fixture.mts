@@ -206,6 +206,18 @@ const translate = (table: Record<string, string>, value: string, what: string): 
   return translated
 }
 
+/* The record's closed unions: the fixture enters the app by cast, so this is
+   the only place a value outside them can still be caught. */
+const SEX = ['f', 'm'] as const
+const MARITAL_STATUS = ['single', 'married', 'divorced', 'widowed', 'domestic-partnership'] as const
+
+const oneOf = <T extends string>(values: readonly T[], value: string, what: string): T => {
+  if (!(values as readonly string[]).includes(value)) {
+    throw new Error(`${what} fora do vocabulário: ${value}`)
+  }
+  return value as T
+}
+
 /* ── Reading the prototype at the pinned commit. ── */
 
 function extractPrototype(repo: string, sha: string): string {
@@ -390,10 +402,10 @@ async function main(): Promise<void> {
         socialName: person.socialName,
         cpf: person.cpf,
         birthDate: person.birthDate,
-        sex: person.sex,
+        sex: oneOf(SEX, person.sex, `sexo de ${person.id}`),
         email: person.email,
         phone: person.phone,
-        maritalStatus: person.maritalStatus,
+        maritalStatus: oneOf(MARITAL_STATUS, person.maritalStatus, `estado civil de ${person.id}`),
         weightKg: person.weightKg,
         heightCm: person.heightCm,
         motherName: person.motherName,
