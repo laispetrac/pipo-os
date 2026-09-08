@@ -1,8 +1,8 @@
 import { useEffect, useLayoutEffect, useRef, useState, type ReactNode } from 'react'
-import { FILTER_BY_COLUMN, type QueueColumn } from '@/lib/pipodesk/columns'
+import { FILTER_BY_COLUMN, SORTABLE, type QueueColumn } from '@/lib/pipodesk/columns'
 import type { FilterField } from '@/lib/pipodesk/filter'
 import type { TicketGroup } from '@/lib/pipodesk/group'
-import type { TicketSort, SortField } from '@/lib/pipodesk/sort'
+import type { TicketSort } from '@/lib/pipodesk/sort'
 import { computeWindow, flattenGroups, ROW_HEIGHT } from '@/lib/pipodesk/virtual'
 import constants from '@/constants/pages/pipodesk/queue'
 import { QueueRow } from './QueueRow'
@@ -30,16 +30,6 @@ export interface QueueTableProps {
   /** The funnel a filtering column shows. A render prop so the table stays
    *  ignorant of the filter panel and its state. */
   columnFilter?: (field: FilterField) => ReactNode
-}
-
-/** Sortable columns. Making the rest clickable would promise a sort
- *  `sortTickets` cannot do. */
-const SORTABLE: Record<string, SortField> = {
-  createdAt: 'createdAt',
-  updatedAt: 'updatedAt',
-  company: 'company',
-  status: 'status',
-  prazo: 'actionDate',
 }
 
 export function QueueTable({
@@ -126,8 +116,9 @@ export function QueueTable({
           </colgroup>
           <thead>
             <tr>
-              {columns.map((column) =>
-                column.key === 'select' ? (
+              {columns.map((column) => {
+                const filterField = FILTER_BY_COLUMN[column.key]
+                return column.key === 'select' ? (
                   <th key="select" scope="col">
                     <input
                       ref={selectAll}
@@ -163,13 +154,11 @@ export function QueueTable({
                       ) : (
                         column.label
                       )}
-                      {columnFilter && FILTER_BY_COLUMN[column.key] !== undefined
-                        ? columnFilter(FILTER_BY_COLUMN[column.key]!)
-                        : null}
+                      {columnFilter && filterField ? columnFilter(filterField) : null}
                     </span>
                   </th>
-                ),
-              )}
+                )
+              })}
             </tr>
           </thead>
           <tbody>

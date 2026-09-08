@@ -1,4 +1,15 @@
 import type { FilterField } from './filter'
+import type { SortField } from './sort'
+
+/** Sortable columns. Making the rest clickable would promise a sort
+ *  `sortTickets` cannot do. */
+export const SORTABLE: Record<string, SortField> = {
+  createdAt: 'createdAt',
+  updatedAt: 'updatedAt',
+  company: 'company',
+  status: 'status',
+  prazo: 'actionDate',
+}
 
 /**
  * Queue columns: which exist, which show, in what order and width. Preferences
@@ -18,8 +29,8 @@ export interface QueueColumn {
 
 /**
  * Which field each column's funnel opens. The prototype's rule is exclusive —
- * a column either sorts or it filters — so no key here appears in the table's
- * SORTABLE map. The funnel is a shortcut into the panel that already exists,
+ * a column either sorts or it filters — so no key here appears in `SORTABLE`
+ * above, and a unit test holds the two apart. The funnel is a shortcut into the panel that already exists,
  * never a second filtering surface.
  *
  * Two entries do not name their own column, and both are deliberate: `subject`

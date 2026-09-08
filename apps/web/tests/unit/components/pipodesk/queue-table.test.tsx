@@ -1,5 +1,6 @@
 import { render, screen } from '@testing-library/react'
 import { QueueTable } from '@/components/pipodesk/queue/QueueTable'
+import { FILTER_BY_COLUMN, SORTABLE } from '@/lib/pipodesk/columns'
 import type { TicketGroup } from '@/lib/pipodesk/group'
 import { queueSeed } from '@/fixtures/pipodesk/dataset'
 import constants from '@/constants/pages/pipodesk/queue'
@@ -78,5 +79,17 @@ describe('QueueTable', () => {
     const selectAll = screen.getByRole('checkbox', { name: constants.selectAll })
     expect((selectAll as HTMLInputElement).indeterminate).toBe(false)
     expect(selectAll).toBeChecked()
+  })
+})
+
+/**
+ * The rule the header design rests on: a column either sorts or it filters,
+ * never both. It is stated in a comment on FILTER_BY_COLUMN; this is what
+ * keeps a future column from quietly getting two controls.
+ */
+describe('sort and filter are exclusive', () => {
+  it('should give no column both a sort arrow and a funnel', () => {
+    const both = Object.keys(FILTER_BY_COLUMN).filter((key) => key in SORTABLE)
+    expect(both).toEqual([])
   })
 })
