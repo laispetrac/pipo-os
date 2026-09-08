@@ -44,6 +44,7 @@ describe('CopyButton timing', () => {
   it('should keep saying Copiado for the full window after a second click', async () => {
     vi.useFakeTimers()
     // fireEvent, not userEvent: its pointer delays and the fake clock deadlock.
+    const clipboard = Object.getOwnPropertyDescriptor(navigator, 'clipboard')
     Object.defineProperty(navigator, 'clipboard', {
       value: { writeText: vi.fn().mockResolvedValue(undefined) },
       configurable: true,
@@ -65,6 +66,8 @@ describe('CopyButton timing', () => {
       expect(button).not.toHaveAttribute('data-copied')
     } finally {
       vi.useRealTimers()
+      if (clipboard) Object.defineProperty(navigator, 'clipboard', clipboard)
+      else Reflect.deleteProperty(navigator, 'clipboard')
     }
   })
 })

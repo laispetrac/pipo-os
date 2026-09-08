@@ -12,6 +12,7 @@ import { daysOverdue, formatLongDate } from '@/lib/pipodesk/format'
 import type { TicketRow } from '@/lib/pipodesk/ticket-row'
 import { analystsOf } from '@/lib/pipodesk/permissions'
 import constants from '@/constants/pages/pipodesk/ticket'
+import copyButton from '@/constants/pipodesk/copy-button'
 
 /**
  * The first drawn row — the table is virtualized, so only the visible window
@@ -296,7 +297,7 @@ describe('detalhe do chamado', () => {
     await user.click(await screen.findByRole('button', { name: constants.copyId('700003') }))
 
     await expect(navigator.clipboard.readText()).resolves.toBe('700003')
-    expect(screen.getByText(constants.copied)).toBeInTheDocument()
+    expect(screen.getByText(copyButton.copied)).toBeInTheDocument()
   })
 
   /** As in the prototype: the control is an icon that swaps to a check, and
@@ -317,7 +318,7 @@ describe('detalhe do chamado', () => {
 
     await user.click(button)
 
-    expect(status).toHaveTextContent(constants.copied)
+    expect(status).toHaveTextContent(copyButton.copied)
     expect(button).toHaveAttribute('data-copied', 'true')
   })
 

@@ -213,9 +213,14 @@ function extractPrototype(repo: string, sha: string): string {
     maxBuffer: 256 * 1024 * 1024,
   })
   const dir = mkdtempSync(join(tmpdir(), 'pipodesk-'))
-  execFileSync('tar', ['-x', '-C', dir], { input: tar })
-  // The mock modules are ESM without a package.json of their own.
-  writeFileSync(join(dir, 'package.json'), '{"type":"module"}')
+  try {
+    execFileSync('tar', ['-x', '-C', dir], { input: tar })
+    // The mock modules are ESM without a package.json of their own.
+    writeFileSync(join(dir, 'package.json'), '{"type":"module"}')
+  } catch (error) {
+    rmSync(dir, { recursive: true, force: true })
+    throw error
+  }
   return dir
 }
 
