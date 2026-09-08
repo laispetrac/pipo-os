@@ -275,10 +275,12 @@ describe('aba Documentos', () => {
       .closest('section')!
     expect(within(received).getByText('RG.jpg')).toBeInTheDocument()
     expect(within(received).getByText('1590 KB')).toBeInTheDocument()
-    // No file behind the fixture: the control shows where the action lives, and says it is off.
+    // No file behind the fixture: the control shows where the action lives, off,
+    // and the reason is on screen — a disabled button takes no focus.
     expect(
       within(received).getByRole('button', { name: documentsCopy.download('RG.jpg') }),
     ).toBeDisabled()
+    expect(within(panel).getByText(documentsCopy.downloadUnavailable)).toBeInTheDocument()
 
     const generated = within(panel)
       .getByRole('heading', { level: 2, name: documentsCopy.fromPipo.title })

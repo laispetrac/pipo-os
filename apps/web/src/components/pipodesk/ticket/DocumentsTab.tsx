@@ -5,7 +5,7 @@ import { formatLongDate } from '@/lib/pipodesk/format'
 import type { RecordDocument, TicketRecords } from '@/lib/pipodesk/record'
 import type { TicketRow } from '@/lib/pipodesk/ticket-row'
 import { OutageNotice } from './OutageNotice'
-import { RecordCard, RecordEmpty } from './RecordSection'
+import { RecordCard, RecordEmpty, RecordNote } from './RecordSection'
 import styles from './DocumentsTab.module.css'
 
 export interface DocumentsTabProps {
@@ -40,7 +40,6 @@ function DocumentGroup({
                 type="button"
                 className={styles.download}
                 aria-label={copy.download(doc.name)}
-                title={copy.downloadUnavailable}
                 disabled
               >
                 <DeskIcon name="download" size={14} />
@@ -97,6 +96,8 @@ export function DocumentsTab({ ticket, pendingDocumentation, records }: Document
         documents={fromClient}
       />
       <DocumentGroup title={copy.fromPipo.title} empty={pipoEmpty} documents={fromPipo} />
+      {/* On screen, not in a title: a disabled button takes no focus. */}
+      {documents.length > 0 && <RecordNote>{copy.downloadUnavailable}</RecordNote>}
     </div>
   )
 }
