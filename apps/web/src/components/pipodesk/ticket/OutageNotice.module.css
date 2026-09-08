@@ -1,0 +1,4 @@
+/* Pulls the first block closer: the notice qualifies it, it is not a sibling. */
+.notice {
+  margin-bottom: calc(-1 * var(--pipo-space-medium));
+}

@@ -4,6 +4,8 @@ import { Link, useParams } from '@tanstack/react-router'
 import { useDesk } from '@/components/pipodesk/shell/desk-context'
 import { SidebarToggle } from '@/components/pipodesk/shell/SidebarToggle'
 import { CopyButton } from '@/components/pipodesk/ticket/CopyButton'
+import { PersonTab } from '@/components/pipodesk/ticket/PersonTab'
+import { RecordEmpty } from '@/components/pipodesk/ticket/RecordSection'
 import { Popover } from '@/components/pipodesk/primitives'
 import { DISPLAY_STATUS_COPY, PENDING_REASON_COPY } from '@/constants/pipodesk/status'
 import {
@@ -16,6 +18,7 @@ import {
 import { ORIGIN_COPY } from '@/lib/pipodesk/filter-copy'
 import { analystsOf } from '@/lib/pipodesk/permissions'
 import { structureFixture } from '@/fixtures/pipodesk/dataset'
+import { records } from '@/fixtures/pipodesk/records'
 import { daysOverdue, formatDate, formatDayMonth, formatLongDate } from '@/lib/pipodesk/format'
 import {
   CHANNELS,
@@ -26,6 +29,7 @@ import {
 } from '@/lib/pipodesk/timeline'
 import { PRIORITIES } from '@/lib/pipodesk/ticket-row'
 import constants from '@/constants/pages/pipodesk/ticket'
+import recordCopy from '@/constants/pages/pipodesk/ticket/record'
 import styles from './style.module.css'
 
 /** One fact: label above, value below. */
@@ -57,6 +61,11 @@ export default function TicketPage() {
   const ownerTrigger = useRef<HTMLButtonElement>(null)
   const [channel, setChannel] = useState<CommentChannel>('internal')
   const [draft, setDraft] = useState('')
+  /* Keyed by ticket: the page does not remount between tickets, and a person
+     picked on one must not leak into the next. */
+  const [shownPerson, setShownPerson] = useState<{ ticketId: string; personId: string } | null>(
+    null,
+  )
 
   const events = useMemo(
     () => (ticket ? timelineOf(ticket, comments, resolveName) : []),
@@ -82,6 +91,9 @@ export default function TicketPage() {
   }
 
   const personName = ticket.beneficiaryName ?? ticket.subject
+  const movement = records.movementOf(ticket.id)
+  const shownPersonId =
+    shownPerson?.ticketId === ticket.id ? shownPerson.personId : (movement?.beneficiaryId ?? null)
   /* `null` for no action date AND for one that cannot be read — an unreadable
      date is not an overdue deadline. */
   const overdue = ticket.actionDate === null ? null : daysOverdue(ticket.actionDate, today)
@@ -327,8 +339,18 @@ export default function TicketPage() {
     </div>
   )
 
-  /* No context column here: the DS Tabs mounts every panel at once, and five
-       identical `complementary` landmarks would pile up (back with PD-111). */
+  const pessoa =
+    shownPersonId === null ? (
+      <RecordEmpty>{recordCopy.notFound.person}</RecordEmpty>
+    ) : (
+      <PersonTab
+        personId={shownPersonId}
+        records={records}
+        capturedAt={ticket.createdAt}
+        onSelectPerson={(personId) => setShownPerson({ ticketId: ticket.id, personId })}
+      />
+    )
+
   const pendingTab = (
     <div className={styles.body}>
       <section className={styles.block}>
@@ -388,7 +410,7 @@ export default function TicketPage() {
               </>,
             ),
           },
-          { key: 'pessoa', label: constants.tabs.pessoa, content: pendingTab },
+          { key: 'pessoa', label: constants.tabs.pessoa, content: withAside(pessoa) },
           { key: 'empresa', label: constants.tabs.empresa, content: pendingTab },
           { key: 'documentos', label: constants.tabs.documentos, content: pendingTab },
           { key: 'historico', label: constants.tabs.historico, content: pendingTab },

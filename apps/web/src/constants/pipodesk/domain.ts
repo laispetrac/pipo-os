@@ -23,6 +23,20 @@ export const COMPANY_SIZE_COPY: Record<string, string> = {
   enterprise: 'Empresarial',
 }
 
+export const MARITAL_STATUS_COPY: Record<string, string> = {
+  single: 'Solteiro(a)',
+  married: 'Casado(a)',
+  divorced: 'Divorciado(a)',
+  widowed: 'Viúvo(a)',
+  'domestic-partnership': 'União estável',
+}
+
+/** The Backoffice label is "Sexo atribuído ao nascimento"; the values are these two. */
+export const SEX_COPY: Record<string, string> = {
+  f: 'Feminino',
+  m: 'Masculino',
+}
+
 export const RELATIONSHIP_COPY: Record<string, string> = {
   holder: 'Titular',
   dependent: 'Dependente',
