@@ -221,8 +221,9 @@ function extractPrototype(repo: string, sha: string): string {
 
 async function main(): Promise<void> {
   const sha = process.argv[2]
-  if (!sha) {
-    console.error('uso: pnpm fixture:export <commit do protótipo>')
+  // A sha only: anything else (a flag, a ref) must not reach git archive.
+  if (!sha || !/^[0-9a-f]{7,40}$/i.test(sha)) {
+    console.error('uso: pnpm fixture:export <sha do commit do protótipo>')
     process.exit(1)
   }
   const out = resolve(process.cwd(), 'src/fixtures/pipodesk')
