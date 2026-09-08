@@ -113,6 +113,43 @@ export function formatDate(iso: string | null): string {
   return `${parts.day}/${parts.month}/${parts.year}`
 }
 
+/** `13 de Julho de 2026` — for spans measured in years (birth, contracts). */
+export function formatLongDateWithYear(iso: string | null): string {
+  const parts = partsOf(iso)
+  if (parts === null) return '—'
+  return `${parts.day} de ${MONTHS[Number(parts.month) - 1]} de ${parts.year}`
+}
+
+/** `12/07/26` — the compact form of the history table. */
+export function formatNumericDate(iso: string | null): string {
+  const parts = partsOf(iso)
+  if (parts === null) return '—'
+  return `${parts.day}/${parts.month}/${parts.year.slice(2)}`
+}
+
+/* ── The record tabs: values as the Backoffice prints them. ── */
+
+/** The Backoffice writes `-` for an empty field; `—` is the card convention. */
+export const RECORD_EMPTY = '-'
+
+export function formatCpf(cpf: string): string {
+  const digits = cpf.replace(/\D/g, '')
+  if (digits.length !== 11) return cpf
+  return `${digits.slice(0, 3)}.${digits.slice(3, 6)}.${digits.slice(6, 9)}-${digits.slice(9)}`
+}
+
+export const formatZip = (zip: string): string => `${zip.slice(0, 5)}-${zip.slice(5)}`
+
+export const formatSalary = (cents: number): string =>
+  (cents / 100).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })
+
+export const formatWeight = (kg: number | null): string => (kg === null ? RECORD_EMPTY : `${kg} kg`)
+
+export function formatHeight(cm: number | null): string {
+  if (cm === null) return RECORD_EMPTY
+  return `${Math.floor(cm / 100)},${String(cm % 100).padStart(2, '0')} m`
+}
+
 /* ── SLA contratual ────────────────────────────────────────────────────────── */
 
 export type SlaState = 'ok' | 'warning' | 'breached'

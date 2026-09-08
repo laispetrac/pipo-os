@@ -6,6 +6,7 @@
  * How to regenerate lives in `apps/web/README.md`, and only there.
  */
 
+import type { Company } from '@/lib/pipodesk/record'
 import type { CompanyRecord } from '@/lib/pipodesk/search'
 import { isApiStatus, toDisplayStatus } from '@/lib/pipodesk/status'
 import type { StructureState } from '@/lib/pipodesk/structure'
@@ -46,7 +47,7 @@ const data = raw as unknown as {
   viewerId: string
   inboxTicketIds: string[]
   users: { id: string; name: string }[]
-  companies: { id: string; tradeName: string; legalName: string; cnpj: string; porte: string }[]
+  companies: Company[]
   structure: StructureState
   rows: RawRow[]
 }
@@ -73,6 +74,10 @@ export const COMPANY_REGISTRY: Record<string, CompanyRecord> = Object.fromEntrie
     { legalName: company.legalName, cnpj: company.cnpj },
   ]),
 )
+
+/** The companies as exported, SLA and parent included — the record tabs
+ *  read them through `fixtures/pipodesk/records`. */
+export const companiesFixture: Company[] = data.companies
 
 export const structureFixture: StructureState = data.structure
 
