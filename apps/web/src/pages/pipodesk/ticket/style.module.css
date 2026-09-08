@@ -227,12 +227,6 @@
   font-weight: var(--pipo-fw-medium);
 }
 
-.pending {
-  margin: 0;
-  color: var(--pipo-text-secondary);
-  font-size: var(--pipo-fs-small);
-}
-
 /* Timeline. */
 .timeline {
   display: flex;

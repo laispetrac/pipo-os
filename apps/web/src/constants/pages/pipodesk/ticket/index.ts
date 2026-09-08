@@ -17,9 +17,6 @@ export default {
     documentos: 'Documentos',
     historico: 'Histórico',
   },
-  /** The four record tabs read the full EI snapshot — they arrive with PD-111. */
-  tabPending:
-    'Esta aba lê o retrato completo da movimentação (snapshot do EI), que chega com o PD-111.',
   facts: {
     heading: 'Movimentação',
     company: 'Empresa',

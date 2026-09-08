@@ -4,10 +4,11 @@ import { RouterProvider, createMemoryHistory, createRouter } from '@tanstack/rea
 import { routeTree } from '@/routeTree.gen'
 import { queueSeed } from '@/fixtures/pipodesk/dataset'
 import { records } from '@/fixtures/pipodesk/records'
-import { displayNameOf } from '@/lib/pipodesk/record'
-import { formatCpf, formatLongDate } from '@/lib/pipodesk/format'
+import { displayNameOf, historyOf } from '@/lib/pipodesk/record'
+import { formatCpf, formatLongDate, formatNumericDate } from '@/lib/pipodesk/format'
 import companyCopy from '@/constants/pages/pipodesk/ticket/company'
 import documentsCopy from '@/constants/pages/pipodesk/ticket/documents'
+import historyCopy from '@/constants/pages/pipodesk/ticket/history'
 import personCopy from '@/constants/pages/pipodesk/ticket/person'
 import recordCopy from '@/constants/pages/pipodesk/ticket/record'
 
@@ -298,5 +299,52 @@ describe('aba Documentos', () => {
     const { panel } = await openTab('/tickets/700127', 'Documentos')
 
     expect(within(panel).getByText(recordCopy.outage.title)).toBeInTheDocument()
+  })
+})
+
+describe('aba Histórico', () => {
+  /** Every ticket of the same person, open and closed, newest first — the
+   *  current one marked and not a link, the others links to their pages. */
+  it('should list the tickets of the beneficiary newest first, with the current one marked', async () => {
+    const { panel } = await openTab('/tickets/705639', 'Histórico')
+    const expected = historyOf(queueSeed, records, '705639')
+    expect(expected.length).toBeGreaterThan(1)
+
+    const table = within(panel).getByRole('table')
+    const [, ...rows] = within(table).getAllByRole('row')
+    expect(rows.map((row) => within(row).getAllByRole('cell')[0].textContent)).toEqual(
+      expected.map((row) => row.id),
+    )
+
+    const current = within(table).getByText('705639')
+    expect(current).toHaveAttribute('aria-current', 'page')
+    expect(current.closest('a')).toBeNull()
+
+    const other = expected.find((row) => row.id !== '705639')!
+    expect(within(table).getByRole('link', { name: other.id })).toHaveAttribute(
+      'href',
+      `/tickets/${other.id}`,
+    )
+
+    const closed = expected.find((row) => row.closedAt !== null)!
+    const closedRow = within(table).getByText(closed.id).closest('tr')!
+    expect(closedRow).toHaveTextContent(historyCopy.closedAt(formatNumericDate(closed.closedAt)))
+    const openRow = within(table).getByText('705639').closest('tr')!
+    expect(openRow).not.toHaveTextContent(/^.*em \d\d\/\d\d\/\d\d$/)
+  })
+
+  it('should open another ticket of the person from its id', async () => {
+    const { panel, user, router } = await openTab('/tickets/705639', 'Histórico')
+    const other = historyOf(queueSeed, records, '705639').find((row) => row.id !== '705639')!
+
+    await user.click(within(panel).getByRole('link', { name: other.id }))
+
+    expect(router.state.location.pathname).toBe(`/tickets/${other.id}`)
+    expect(
+      await screen.findByRole('heading', {
+        level: 1,
+        name: other.beneficiaryName ?? other.subject,
+      }),
+    ).toBeInTheDocument()
   })
 })

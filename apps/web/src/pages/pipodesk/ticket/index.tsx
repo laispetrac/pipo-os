@@ -6,6 +6,7 @@ import { SidebarToggle } from '@/components/pipodesk/shell/SidebarToggle'
 import { CompanyTab } from '@/components/pipodesk/ticket/CompanyTab'
 import { CopyButton } from '@/components/pipodesk/ticket/CopyButton'
 import { DocumentsTab } from '@/components/pipodesk/ticket/DocumentsTab'
+import { HistoryTab } from '@/components/pipodesk/ticket/HistoryTab'
 import { PersonTab } from '@/components/pipodesk/ticket/PersonTab'
 import { RecordEmpty } from '@/components/pipodesk/ticket/RecordSection'
 import { Popover } from '@/components/pipodesk/primitives'
@@ -48,8 +49,7 @@ function Fact({ label, value }: { label: string; value: string }) {
  * Ticket detail — the S3/PD-103 core. Person in the H1, copyable id below
  * (the analyst looks for the person; the number gets pasted elsewhere).
  * Priority and owner edit through the same patches as the queue. Missing:
- * the four record tabs (PD-111), completion form/gates, suggestions and
- * attachments (PD-112).
+ * completion form/gates, suggestions and attachments (PD-112).
  */
 export default function TicketPage() {
   const { id } = useParams({ from: '/_auth/_desk/tickets/$id' })
@@ -371,13 +371,7 @@ export default function TicketPage() {
     />
   )
 
-  const pendingTab = (
-    <div className={styles.body}>
-      <section className={styles.block}>
-        <p className={styles.pending}>{constants.tabPending}</p>
-      </section>
-    </div>
-  )
+  const historico = <HistoryTab ticket={ticket} rows={rows} records={records} />
 
   return (
     <div className={styles.screen}>
@@ -437,7 +431,7 @@ export default function TicketPage() {
             label: constants.tabs.documentos,
             content: withAside(documentos),
           },
-          { key: 'historico', label: constants.tabs.historico, content: pendingTab },
+          { key: 'historico', label: constants.tabs.historico, content: withAside(historico) },
         ]}
       />
     </div>
