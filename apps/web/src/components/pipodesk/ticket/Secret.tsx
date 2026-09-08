@@ -15,11 +15,16 @@ export function Secret({ value, label }: SecretProps) {
 
   return (
     <>
-      <span
-        className={visible ? `${styles.value} ${styles.visible}` : styles.value}
-        aria-label={visible ? undefined : constants.hidden(label)}
-      >
-        {visible ? value : constants.mask}
+      <span className={visible ? `${styles.value} ${styles.visible}` : styles.value}>
+        {visible ? (
+          value
+        ) : (
+          <>
+            {/* The dots are decoration; the hidden text is what gets announced. */}
+            <span aria-hidden="true">{constants.mask}</span>
+            <span className={styles.srOnly}>{constants.hidden(label)}</span>
+          </>
+        )}
       </span>
       <button
         type="button"
