@@ -164,7 +164,6 @@ export function QueueHeader({
                              screen, and a closed one would reopen on the last subpanel. */}
             {filtersOpen && (
               <FilterPopover
-                open={filtersOpen}
                 anchor={filtersTrigger}
                 onClose={() => setFiltersOpen(false)}
                 base={base}

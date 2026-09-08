@@ -51,7 +51,6 @@ export function ColumnFilter({ field, align, ...panel }: ColumnFilterProps) {
           keep the search box of the last visit. */}
       {open && (
         <FilterPopover
-          open={open}
           anchor={trigger}
           onClose={() => setOpen(false)}
           lockedField={field}

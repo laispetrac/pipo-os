@@ -29,7 +29,7 @@ import styles from './Queue.module.css'
 export interface FilterPopoverProps {
   /** The trigger, so its own click closes the panel. */
   anchor?: RefObject<HTMLElement | null>
-  open: boolean
+  /** Mounted only while open, so there is no `open`: closing unmounts. */
   onClose: () => void
   /** The node's tickets, before any chip. */
   base: TicketRow[]
@@ -51,7 +51,6 @@ export interface FilterPopoverProps {
 }
 
 export function FilterPopover({
-  open,
   onClose,
   base,
   filter,
@@ -68,15 +67,6 @@ export function FilterPopover({
   const [field, setField] = useState<FilterField | null>(lockedField ?? null)
   const [query, setQuery] = useState('')
   const [onDateWindow, setOnDateWindow] = useState(false)
-
-  /** Closing resets state: reopening must land on the field list, not the
-   *  previous field's options. A locked panel resets to its own field. */
-  const close = () => {
-    setField(lockedField ?? null)
-    setQuery('')
-    setOnDateWindow(false)
-    onClose()
-  }
 
   const options = useMemo(() => {
     if (field === null) return []
@@ -109,7 +99,7 @@ export function FilterPopover({
   }
 
   return (
-    <Popover open={open} onClose={close} label="Filtros" align={align} anchor={anchor}>
+    <Popover open onClose={onClose} label="Filtros" align={align} anchor={anchor}>
       <div className={styles.panelBody}>
         {onDateWindow ? (
           <>
