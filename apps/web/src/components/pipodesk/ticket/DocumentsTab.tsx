@@ -35,11 +35,13 @@ function DocumentGroup({
               <span className={styles.name}>{doc.name}</span>
               <span>{formatLongDate(doc.at)}</span>
               <span>{copy.size(doc.sizeKb)}</span>
-              {/* There is no file behind the fixture; the control marks where the action lives. */}
+              {/* No file behind the fixture: the control marks where the action lives, off. */}
               <button
                 type="button"
                 className={styles.download}
                 aria-label={copy.download(doc.name)}
+                title={copy.downloadUnavailable}
+                disabled
               >
                 <DeskIcon name="download" size={14} />
               </button>
@@ -60,7 +62,7 @@ export function DocumentsTab({ ticket, pendingDocumentation, records }: Document
   const received = new Set(fromClient.map((doc) => doc.kind))
   const missing = (pendingDocumentation ?? []).map((key) => {
     const label = documentLabel(key)
-    return { label, arrived: received.has(label) }
+    return { key, label, arrived: received.has(label) }
   })
 
   // Only an inclusion goes through Adobe Sign; the empty group says so instead of vanishing.
@@ -79,8 +81,8 @@ export function DocumentsTab({ ticket, pendingDocumentation, records }: Document
         <RecordCard>
           <h2 className={styles.title}>{copy.missing.title}</h2>
           <ul className={styles.missing}>
-            {missing.map(({ label, arrived }) => (
-              <li key={label}>
+            {missing.map(({ key, label, arrived }) => (
+              <li key={key}>
                 {label}
                 {arrived && <span className={styles.arrived}> — {copy.missing.arrived}</span>}
               </li>

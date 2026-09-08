@@ -56,7 +56,12 @@
   cursor: pointer;
 }
 
-.download:hover {
+.download:hover:not(:disabled) {
   background: var(--pipo-surface-subtle);
   color: var(--pipo-text-primary);
+}
+
+.download:disabled {
+  cursor: default;
+  opacity: 0.5;
 }

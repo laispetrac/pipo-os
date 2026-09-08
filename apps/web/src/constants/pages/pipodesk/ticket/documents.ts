@@ -16,5 +16,6 @@ export default {
       `${type} não gera ficha de adesão — só a inclusão passa pelo Adobe Sign.`,
   },
   download: (name: string) => `Baixar ${name}`,
+  downloadUnavailable: 'Ainda não há arquivo para baixar.',
   size: (kb: number) => `${kb} KB`,
 }

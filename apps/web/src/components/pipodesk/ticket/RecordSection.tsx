@@ -3,20 +3,23 @@ import { Heading } from '@piposaude/design-system'
 import type { Emphasized } from '@/constants/pages/pipodesk/ticket/record'
 import styles from './RecordSection.module.css'
 
-/** A titled section of a record tab; `badge` sits at the title's right. */
+/** A titled section of a record tab; `badge` sits at the title's right.
+ *  `level` follows the outline: h2 straight under the page title, h3 under a card. */
 export function RecordSection({
   title,
   badge,
+  level = 'h3',
   children,
 }: {
   title: string
   badge?: ReactNode
+  level?: 'h2' | 'h3'
   children: ReactNode
 }) {
   return (
     <section className={styles.section}>
       <header className={styles.head}>
-        <Heading level="h3" className={styles.title}>
+        <Heading level={level} className={styles.title}>
           {title}
         </Heading>
         {badge}

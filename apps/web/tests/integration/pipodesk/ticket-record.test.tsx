@@ -173,6 +173,10 @@ describe('aba Sobre a empresa', () => {
     const { panel, user } = await openTab('/tickets/705639', 'Sobre a empresa')
     const company = records.companyById.get(rowOf('705639').companyId)!
 
+    // Straight under the page's h1: the tab has no card of its own to carry an h2.
+    for (const title of Object.values(companyCopy.sections)) {
+      expect(within(panel).getByRole('heading', { level: 2, name: title })).toBeInTheDocument()
+    }
     expect(fieldValue(panel, companyCopy.fields.legalName)).toHaveTextContent(company.legalName)
     expect(fieldValue(panel, companyCopy.fields.cnpj)).toHaveTextContent(company.cnpj)
     expect(fieldValue(panel, companyCopy.fields.porte)).toHaveTextContent('Empresarial')
@@ -271,9 +275,10 @@ describe('aba Documentos', () => {
       .closest('section')!
     expect(within(received).getByText('RG.jpg')).toBeInTheDocument()
     expect(within(received).getByText('1590 KB')).toBeInTheDocument()
+    // No file behind the fixture: the control shows where the action lives, and says it is off.
     expect(
       within(received).getByRole('button', { name: documentsCopy.download('RG.jpg') }),
-    ).toBeInTheDocument()
+    ).toBeDisabled()
 
     const generated = within(panel)
       .getByRole('heading', { level: 2, name: documentsCopy.fromPipo.title })

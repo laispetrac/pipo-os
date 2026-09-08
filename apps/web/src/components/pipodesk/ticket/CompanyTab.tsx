@@ -108,7 +108,7 @@ export function CompanyTab({ companyId, policyId, records, capturedAt, today }: 
     <div className={styles.tab}>
       {records.isBackofficeDown(company.id) && <OutageNotice capturedAt={capturedAt} />}
 
-      <RecordSection title={copy.sections.data}>
+      <RecordSection level="h2" title={copy.sections.data}>
         <DescriptionList>
           <DescriptionItem label={copy.fields.legalName}>{company.legalName}</DescriptionItem>
           <DescriptionItem label={copy.fields.tradeName}>{company.tradeName}</DescriptionItem>
@@ -130,7 +130,7 @@ export function CompanyTab({ companyId, policyId, records, capturedAt, today }: 
       </RecordSection>
 
       {branches.length > 0 && (
-        <RecordSection title={copy.sections.branches}>
+        <RecordSection level="h2" title={copy.sections.branches}>
           <ul className={styles.list}>
             {branches.map((branch) => (
               <li key={branch.id} className={styles.row}>
@@ -142,7 +142,7 @@ export function CompanyTab({ companyId, policyId, records, capturedAt, today }: 
         </RecordSection>
       )}
 
-      <RecordSection title={copy.sections.contracts}>
+      <RecordSection level="h2" title={copy.sections.contracts}>
         <ul className={styles.list}>
           {contracts.map((contract) => (
             <ContractCard key={contract.id} contract={contract} records={records} today={today} />
@@ -154,7 +154,7 @@ export function CompanyTab({ companyId, policyId, records, capturedAt, today }: 
         </RecordNote>
       </RecordSection>
 
-      <RecordSection title={copy.sections.plans}>
+      <RecordSection level="h2" title={copy.sections.plans}>
         <ul className={styles.list}>
           {plans.map((plan) => (
             <li key={plan.id} className={styles.row}>
@@ -166,7 +166,7 @@ export function CompanyTab({ companyId, policyId, records, capturedAt, today }: 
         </ul>
       </RecordSection>
 
-      <RecordSection title={copy.sections.files}>
+      <RecordSection level="h2" title={copy.sections.files}>
         <ul className={styles.list}>
           {files.map((file) => (
             <li key={file.id} className={styles.row}>
