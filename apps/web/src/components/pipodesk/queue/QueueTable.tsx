@@ -1,5 +1,6 @@
-import { useEffect, useLayoutEffect, useRef, useState } from 'react'
-import type { QueueColumn } from '@/lib/pipodesk/columns'
+import { useEffect, useLayoutEffect, useRef, useState, type ReactNode } from 'react'
+import { FILTER_BY_COLUMN, type QueueColumn } from '@/lib/pipodesk/columns'
+import type { FilterField } from '@/lib/pipodesk/filter'
 import type { TicketGroup } from '@/lib/pipodesk/group'
 import type { TicketSort, SortField } from '@/lib/pipodesk/sort'
 import { computeWindow, flattenGroups, ROW_HEIGHT } from '@/lib/pipodesk/virtual'
@@ -26,6 +27,9 @@ export interface QueueTableProps {
   onOpenTicket: (id: string) => void
   today: string
   resolveName: (userId: string) => string
+  /** The funnel a filtering column shows. A render prop so the table stays
+   *  ignorant of the filter panel and its state. */
+  columnFilter?: (field: FilterField) => ReactNode
 }
 
 /** Sortable columns. Making the rest clickable would promise a sort
@@ -51,6 +55,7 @@ export function QueueTable({
   onOpenTicket,
   today,
   resolveName,
+  columnFilter,
 }: QueueTableProps) {
   const scrollRef = useRef<HTMLDivElement>(null)
   const [scrollTop, setScrollTop] = useState(0)
@@ -158,6 +163,9 @@ export function QueueTable({
                       ) : (
                         column.label
                       )}
+                      {columnFilter && FILTER_BY_COLUMN[column.key] !== undefined
+                        ? columnFilter(FILTER_BY_COLUMN[column.key]!)
+                        : null}
                     </span>
                   </th>
                 ),

@@ -42,6 +42,9 @@ export interface FilterPopoverProps {
   onRemove: (field: FilterField) => void
   dateWindowDays: number | null
   onSetDateWindow: (days: number | null) => void
+  /** Set by a column funnel: the panel opens on this field's options and has
+   *  no field list to go back to. */
+  lockedField?: FilterField
 }
 
 export function FilterPopover({
@@ -56,15 +59,16 @@ export function FilterPopover({
   dateWindowDays,
   onSetDateWindow,
   anchor,
+  lockedField,
 }: FilterPopoverProps) {
-  const [field, setField] = useState<FilterField | null>(null)
+  const [field, setField] = useState<FilterField | null>(lockedField ?? null)
   const [query, setQuery] = useState('')
   const [onDateWindow, setOnDateWindow] = useState(false)
 
   /** Closing resets state: reopening must land on the field list, not the
-   *  previous field's options. */
+   *  previous field's options. A locked panel resets to its own field. */
   const close = () => {
-    setField(null)
+    setField(lockedField ?? null)
     setQuery('')
     setOnDateWindow(false)
     onClose()
@@ -162,9 +166,13 @@ export function FilterPopover({
         ) : (
           <>
             <div className={styles.panelHead}>
-              <button type="button" className={styles.panelBack} onClick={() => setField(null)}>
-                Voltar
-              </button>
+              {/* No way back when the field came from a column funnel — there is
+                  no field list behind it. */}
+              {lockedField === undefined && (
+                <button type="button" className={styles.panelBack} onClick={() => setField(null)}>
+                  Voltar
+                </button>
+              )}
               <span>{FILTER_FIELD_COPY[field]}</span>
             </div>
             {/* `aria-label`, not a visible label — the field name is on the line above;

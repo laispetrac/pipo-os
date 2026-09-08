@@ -235,6 +235,46 @@
   font-weight: var(--pipo-fw-semibold);
 }
 
+/* The funnel of a filtering column. Dimmed at rest so it announces the
+   affordance without competing with the label; full ink on hover and while
+   its panel is open. */
+.columnFunnel {
+  display: inline-flex;
+  position: relative;
+  align-items: center;
+  padding: 0;
+  border: none;
+  background: transparent;
+  color: var(--pipo-text-secondary);
+  opacity: 0.55;
+  cursor: pointer;
+}
+
+.columnFunnel:hover,
+.columnFunnel[aria-expanded='true'],
+.columnFunnel:focus-visible {
+  opacity: 1;
+}
+
+/* Its own dot, not the toolbar's: that one is 6px at 3px from the edge, sized
+   for a 16px button, and would cover a 12px funnel almost whole. */
+.funnelDot {
+  position: absolute;
+  top: -1px;
+  right: -2px;
+  width: 4px;
+  height: 4px;
+  border-radius: var(--pipo-radius-pill);
+  background: var(--pipo-brand-primary);
+}
+
+/* A filtered column keeps the funnel lit even at rest — otherwise the only
+   sign that the column is cutting the queue is the chip, far from here. */
+.columnFunnel:has([data-active]) {
+  opacity: 1;
+  color: var(--pipo-brand-primary);
+}
+
 /* The header cell owns the hover explanation, so it must be a box the title
    can hang on — a bare `<th>` would put it on the whole column. */
 .headerCell {

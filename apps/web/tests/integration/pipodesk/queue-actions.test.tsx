@@ -403,3 +403,71 @@ describe('cabeçalho da fila', () => {
     expect(prazo?.querySelector('[title]')?.getAttribute('title')).toMatch(/data de ação/i)
   })
 })
+
+/**
+ * The header cell carries the per-column controls: a funnel on the columns
+ * that filter, the explanation on the ones a label alone does not teach.
+ * The prototype's rule is exclusive — a column either sorts or it filters.
+ */
+describe('funil por coluna', () => {
+  it('should open the panel already on the column field, skipping the field list', async () => {
+    await renderQueue()
+    const user = userEvent.setup()
+
+    await user.click(screen.getByRole('button', { name: 'Filtrar por Tipo' }))
+
+    // Straight to the options: no "Aberto em", no field list.
+    const painel = screen.getByRole('dialog', { name: /filtros/i })
+    expect(within(painel).getByRole('button', { name: /^Exclusão/ })).toBeInTheDocument()
+    expect(within(painel).queryByRole('button', { name: /Aberto em/ })).not.toBeInTheDocument()
+  })
+
+  it('should cut the queue from the column funnel, growing the same chip as the panel', async () => {
+    await renderQueue()
+    const user = userEvent.setup()
+    const antes = liveCount()
+
+    await user.click(screen.getByRole('button', { name: 'Filtrar por Tipo' }))
+    await user.click(await screen.findByRole('button', { name: /^Exclusão/ }))
+    await user.keyboard('{Escape}')
+
+    expect(screen.getByText('Tipo é Exclusão')).toBeInTheDocument()
+    expect(liveCount()).toBeLessThan(antes)
+  })
+
+  it('should light the dot only on the funnel of the filtered column', async () => {
+    await renderQueue()
+    const user = userEvent.setup()
+    const funil = () => screen.getByRole('button', { name: 'Filtrar por Tipo' })
+    const outro = () => screen.getByRole('button', { name: 'Filtrar por Operadora' })
+
+    expect(funil().querySelector('[data-active]')).toBeNull()
+
+    await user.click(funil())
+    await user.click(await screen.findByRole('button', { name: /^Exclusão/ }))
+    await user.keyboard('{Escape}')
+
+    expect(funil().querySelector('[data-active]')).not.toBeNull()
+    expect(outro().querySelector('[data-active]')).toBeNull()
+  })
+
+  /** A column either sorts or it filters. Empresa sorts, so it has no funnel —
+   *  even though `companyIds` is a field of the global panel. */
+  it('should not offer a funnel on a column that sorts', async () => {
+    await renderQueue()
+
+    expect(screen.queryByRole('button', { name: 'Filtrar por Empresa' })).not.toBeInTheDocument()
+    expect(screen.queryByRole('button', { name: 'Filtrar por Status' })).not.toBeInTheDocument()
+  })
+
+  it('should not change the sort when the funnel is clicked', async () => {
+    await renderQueue()
+    const user = userEvent.setup()
+    const before = screen.getAllByRole('columnheader').map((cell) => cell.getAttribute('aria-sort'))
+
+    await user.click(screen.getByRole('button', { name: 'Filtrar por Tipo' }))
+
+    const after = screen.getAllByRole('columnheader').map((cell) => cell.getAttribute('aria-sort'))
+    expect(after).toEqual(before)
+  })
+})
