@@ -141,28 +141,30 @@ export function QueueTable({
                     className={column.align === 'right' ? styles.right : undefined}
                   >
                     <span className={styles.headerCell}>
-                      {/* The title hangs on the label alone: with the funnel inside
-                          it, a column carrying both would nest two tooltips. */}
-                      <span title={column.title}>
-                        {SORTABLE[column.key] ? (
-                          <button
-                            type="button"
-                            className={styles.headerButton}
-                            onClick={() => toggleSort(column.key)}
-                          >
-                            {column.label}
-                            <span aria-hidden="true" className={styles.sortGlyph}>
-                              {sortOf(column.key) === 'ascending'
-                                ? '↑'
-                                : sortOf(column.key) === 'descending'
-                                  ? '↓'
-                                  : '↕'}
-                            </span>
-                          </button>
-                        ) : (
-                          column.label
-                        )}
-                      </span>
+                      {/* The title rides the label, never the cell: with the funnel
+                          inside it, a column carrying both would nest two tooltips.
+                          On the button when the column sorts — a `title` on a bare
+                          span is a mouse tooltip and nothing else, while on a button
+                          it is also the accessible description. */}
+                      {SORTABLE[column.key] ? (
+                        <button
+                          type="button"
+                          className={styles.headerButton}
+                          title={column.title}
+                          onClick={() => toggleSort(column.key)}
+                        >
+                          {column.label}
+                          <span aria-hidden="true" className={styles.sortGlyph}>
+                            {sortOf(column.key) === 'ascending'
+                              ? '↑'
+                              : sortOf(column.key) === 'descending'
+                                ? '↓'
+                                : '↕'}
+                          </span>
+                        </button>
+                      ) : (
+                        <span title={column.title}>{column.label}</span>
+                      )}
                       {columnFilter && filterField ? columnFilter(filterField, align) : null}
                     </span>
                   </th>

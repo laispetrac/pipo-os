@@ -170,4 +170,30 @@ describe('header cell', () => {
     // ...and the funnel is still on screen, in the cell next to the label.
     expect(screen.getByRole('button', { name: 'funil' })).toBeInTheDocument()
   })
+
+  /** A `title` on a bare span is a mouse tooltip and nothing else; on the sort
+   *  button it is also the accessible description a screen reader announces. */
+  it('should hang the title on the sort button when the column sorts', () => {
+    render(
+      <QueueTable
+        groups={threeRows}
+        columns={[
+          { key: 'select', label: '', width: '36px' },
+          { key: 'prazo', label: 'Prazo', width: '86px', align: 'right', title: 'o que é' },
+        ]}
+        sort={{ by: 'actionDate', direction: 'asc' }}
+        onSort={() => {}}
+        collapsedGroups={[]}
+        onToggleGroup={() => {}}
+        selectedIds={[]}
+        onToggleTicket={() => {}}
+        onSelectAll={() => {}}
+        onOpenTicket={() => {}}
+        today="2026-08-07"
+        resolveName={(id) => id}
+      />,
+    )
+
+    expect(screen.getByRole('button', { name: /Prazo/ })).toHaveAttribute('title', 'o que é')
+  })
 })
