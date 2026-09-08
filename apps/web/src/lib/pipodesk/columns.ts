@@ -3,7 +3,7 @@ import type { SortField } from './sort'
 
 /** Sortable columns. Making the rest clickable would promise a sort
  *  `sortTickets` cannot do. */
-export const SORTABLE: Record<string, SortField> = {
+export const SORTABLE: Partial<Record<string, SortField>> = {
   createdAt: 'createdAt',
   updatedAt: 'updatedAt',
   company: 'company',
@@ -30,14 +30,14 @@ export interface QueueColumn {
 /**
  * Which field each column's funnel opens. The prototype's rule is exclusive —
  * a column either sorts or it filters — so no key here appears in `SORTABLE`
- * above, and a unit test holds the two apart. The funnel is a shortcut into the panel that already exists,
- * never a second filtering surface.
+ * above, and a unit test holds the two apart. The funnel is a shortcut into
+ * the panel that already exists, never a second filtering surface.
  *
  * Two entries do not name their own column, and both are deliberate: `subject`
  * opens Operadora, the first thing its cell prints, and `id` opens Prioridade,
  * whose marker lives in that cell.
  */
-export const FILTER_BY_COLUMN: Record<string, FilterField> = {
+export const FILTER_BY_COLUMN: Partial<Record<string, FilterField>> = {
   id: 'priorities',
   subject: 'carrierIds',
   classification: 'types',
