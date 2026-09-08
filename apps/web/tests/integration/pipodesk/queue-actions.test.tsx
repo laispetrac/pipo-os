@@ -549,4 +549,28 @@ describe('funil por coluna', () => {
     const after = screen.getAllByRole('columnheader').map((cell) => cell.getAttribute('aria-sort'))
     expect(after).toEqual(before)
   })
+
+  /** The two mappings that do not name their own column: ID. opens Prioridade
+   *  because the priority marker lives in that cell, and Assunto opens
+   *  Operadora, the first thing its cell prints. */
+  it('should open Prioridade from the ID. funnel', async () => {
+    await renderQueue()
+    const user = userEvent.setup()
+
+    await user.click(screen.getByRole('button', { name: 'Filtrar por Prioridade' }))
+
+    const painel = screen.getByRole('dialog', { name: /filtros/i })
+    expect(within(painel).getByRole('button', { name: /^Sem prioridade/ })).toBeInTheDocument()
+  })
+
+  it('should open Operadora from the Assunto funnel', async () => {
+    await renderQueue()
+    const user = userEvent.setup()
+
+    await user.click(screen.getByRole('button', { name: 'Filtrar por Operadora' }))
+
+    const painel = screen.getByRole('dialog', { name: /filtros/i })
+    expect(within(painel).getByRole('button', { name: /^Unimed Mineira/ })).toBeInTheDocument()
+  })
+
 })
