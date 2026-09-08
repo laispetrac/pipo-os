@@ -1,5 +1,6 @@
 // @vitest-environment node
 import {
+  contractExpired,
   displayNameOf,
   historyOf,
   indexRecords,
@@ -248,5 +249,26 @@ describe('displayNameOf', () => {
   it('should prefer the social name when there is one', () => {
     expect(displayNameOf(person('a', { name: 'Carlos', socialName: 'Carla' }))).toBe('Carla')
     expect(displayNameOf(person('b', { name: 'Ana' }))).toBe('Ana')
+  })
+})
+
+describe('contractExpired', () => {
+  const today = '2026-08-07'
+
+  it('should expire a contract whose term ended before today, and keep one that ends today', () => {
+    expect(contractExpired('2026-08-06', today)).toBe(true)
+    expect(contractExpired('2026-08-07', today)).toBe(false)
+    expect(contractExpired('2027-01-01', today)).toBe(false)
+  })
+
+  /** The API may send an instant; a string comparison would call the day it
+   *  ends "expired" because `T` sorts after nothing. The day is what counts. */
+  it('should read an instant as its São Paulo day instead of comparing strings', () => {
+    expect(contractExpired('2026-08-07T12:00:00.000Z', today)).toBe(false)
+    expect(contractExpired('2026-08-06T23:00:00.000Z', today)).toBe(true)
+  })
+
+  it('should not call an unreadable date expired', () => {
+    expect(contractExpired('not-a-date', today)).toBe(false)
   })
 })

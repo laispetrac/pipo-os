@@ -1,7 +1,7 @@
 /** The full picture of a movement, as the record tabs read it. The tabs only
  *  know these types — never the fixture or the API snapshot shape. */
 
-import type { ContractualSla } from './format'
+import { daysBetween, type ContractualSla } from './format'
 import type { TicketRow } from './ticket-row'
 
 export interface Address {
@@ -103,6 +103,7 @@ export interface Contract {
   companyId: string
   carrierId: string
   product: string
+  /** A day or an instant; every reader goes through the day helpers. */
   startDate: string
   endDate: string
   hasPendingFile: boolean
@@ -200,6 +201,13 @@ export function indexRecords(source: RecordSource): TicketRecords {
 
 export const displayNameOf = (person: Pick<Person, 'name' | 'socialName'>): string =>
   person.socialName ?? person.name
+
+/** Derived from the term, never stored. By day, not by string: an instant
+ *  would sort after its own day. Unreadable is not expired. */
+export function contractExpired(endDate: string, today: string): boolean {
+  const days = daysBetween(endDate, today)
+  return days !== null && days > 0
+}
 
 /** Every ticket of the same beneficiary, open and closed, newest first —
  *  the current one included, so the table shows where the person is now. */

@@ -4,7 +4,7 @@ import copy from '@/constants/pages/pipodesk/ticket/company'
 import recordCopy from '@/constants/pages/pipodesk/ticket/record'
 import { carrierSlug } from '@/lib/pipodesk/carrier'
 import { formatLongDate, formatLongDateWithYear } from '@/lib/pipodesk/format'
-import type { Contract, TicketRecords } from '@/lib/pipodesk/record'
+import { contractExpired, type Contract, type TicketRecords } from '@/lib/pipodesk/record'
 import { CopyButton } from './CopyButton'
 import { OutageNotice } from './OutageNotice'
 import { Emphasis, RecordEmpty, RecordNote, RecordSection } from './RecordSection'
@@ -32,7 +32,7 @@ function ContractCard({
 }) {
   const carrier = records.carrierById.get(contract.carrierId)
   const carrierName = carrier?.name ?? contract.carrierId
-  const expired = contract.endDate < today
+  const expired = contractExpired(contract.endDate, today)
   const attached = records.documentsOf('contract', contract.id).length
   const { access } = contract
 
@@ -42,7 +42,6 @@ function ContractCard({
         <CarrierLogo carrier={carrierSlug(carrierName)} size="xs" />
         <strong>{PRODUCT_COPY[contract.product] ?? contract.product}</strong>
         <span>{carrierName}</span>
-        {/* Derived from the term, never stored: a stored badge lied on 318 of 842. */}
         <Status variant={expired ? 'alert' : 'success'}>
           {expired ? copy.contract.expired : copy.contract.active}
         </Status>
