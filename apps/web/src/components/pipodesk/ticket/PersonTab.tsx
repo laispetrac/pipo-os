@@ -52,7 +52,9 @@ export function PersonTab({ personId, records, capturedAt, onSelectPerson }: Per
   const isDependent = person.role === 'dependent'
   const holder = person.holderId ? records.personById.get(person.holderId) : undefined
   const dependents = records.dependentsOf(person.id)
-  const company = records.companyById.get(person.link.companyId)
+  // The section is the holder's job whoever is on screen; never trust the copy on a dependent.
+  const link = holder?.link ?? person.link
+  const company = records.companyById.get(link.companyId)
   // A dependent has no account: the refund lands on the holder's, and the tab says so.
   const account = person.bankAccount ?? holder?.bankAccount ?? null
 
@@ -116,17 +118,15 @@ export function PersonTab({ personId, records, capturedAt, onSelectPerson }: Per
           <RecordField label={copy.fields.company}>{or(company?.tradeName)}</RecordField>
           <RecordField label={copy.fields.cnpj}>{or(company?.cnpj)}</RecordField>
           <RecordField label={copy.fields.admissionDate}>
-            {formatLongDateWithYear(person.link.admissionDate)}
+            {formatLongDateWithYear(link.admissionDate)}
           </RecordField>
           <RecordField label={copy.fields.contractType}>
-            {person.link.contractType.toUpperCase()}
+            {link.contractType.toUpperCase()}
           </RecordField>
-          <RecordField label={copy.fields.salary}>
-            {formatSalary(person.link.salaryCents)}
-          </RecordField>
-          <RecordField label={copy.fields.registration}>{person.link.registration}</RecordField>
-          <RecordField label={copy.fields.jobTitle}>{or(person.link.jobTitle)}</RecordField>
-          <RecordField label={copy.fields.costCenter}>{or(person.link.costCenter)}</RecordField>
+          <RecordField label={copy.fields.salary}>{formatSalary(link.salaryCents)}</RecordField>
+          <RecordField label={copy.fields.registration}>{link.registration}</RecordField>
+          <RecordField label={copy.fields.jobTitle}>{or(link.jobTitle)}</RecordField>
+          <RecordField label={copy.fields.costCenter}>{or(link.costCenter)}</RecordField>
         </RecordFields>
       </RecordSection>
 
