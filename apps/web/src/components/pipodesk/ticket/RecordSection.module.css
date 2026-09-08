@@ -13,11 +13,13 @@
   gap: var(--pipo-space-small);
 }
 
-/* The DS h3 at the section step of this screen: 16px, one below the block title. */
+/* 16px, one step below the block title. `text-transform` because the DS h2 is
+   uppercase, normalised here as `.section-header` normalises it in the prototype. */
 .head .title {
   margin: 0;
   font-size: var(--pipo-fs-medium);
   line-height: var(--pipo-lh-headline);
+  text-transform: none;
 }
 
 .fields {
