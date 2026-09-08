@@ -4,6 +4,7 @@ import {
   API_STATUSES,
   DISPLAY_STATUSES,
   isOpen,
+  transitionsFrom,
   toApiStatus,
   toDisplayStatus,
 } from '@/lib/pipodesk/status'
@@ -105,5 +106,20 @@ describe('isOpen', () => {
       'incorrect-data',
     ]
     for (const status of working) expect(isOpen(status)).toBe(true)
+  })
+})
+
+describe('transitionsFrom', () => {
+  it('should offer nothing from a final status, so a closed ticket cannot reopen', () => {
+    expect(transitionsFrom('completed')).toEqual([])
+    expect(transitionsFrom('cancelled')).toEqual([])
+  })
+
+  it('should offer every status from an open one, including the current one', () => {
+    expect(transitionsFrom('broker-processing')).toEqual(API_STATUSES)
+  })
+
+  it('should offer transitions from a submitted cancellation, which is still in flight', () => {
+    expect(transitionsFrom('submitted-cancellation')).toEqual(API_STATUSES)
   })
 })

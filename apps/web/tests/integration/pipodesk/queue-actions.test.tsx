@@ -9,6 +9,7 @@ import {
   VIEWER_ID,
 } from '@/fixtures/pipodesk/dataset'
 import { isAuthenticated, logout } from '@/lib/auth'
+import constants from '@/constants/pages/pipodesk/queue'
 
 vi.mock('@/lib/auth', () => ({
   ensureSession: vi.fn().mockResolvedValue(undefined),
@@ -26,7 +27,15 @@ async function renderQueue() {
   return router
 }
 
-const liveCount = () => Number(screen.getByRole('status').textContent?.match(/^(\d+)/)?.[1])
+/** Named region, not DOM order: the batch Snackbar is also `role="status"` and
+ *  also opens with a number, so picking the first one made the assertion depend
+ *  on render order — and, when it lost, compare the batch number to itself. */
+const liveCount = () =>
+  Number(
+    screen
+      .getByRole('status', { name: constants.liveCountLabel })
+      .textContent?.match(/^(\d+)/)?.[1],
+  )
 
 describe('painel de filtros', () => {
   it('should apply a filter from the panel and grow a removable chip', async () => {
@@ -256,10 +265,62 @@ describe('barra de lote', () => {
 
     // Nothing leaves the queue (the cut is by owner, not status)…
     expect(liveCount()).toBe(antes)
-    // …mas `Em espera` agora conta a fila inteira.
+
+    // `archived` is `closedAt`, a separate axis: this cut carries final tickets.
+    const aviso = screen.getByText(/em estado final/)
+    const ficaram = Number(aviso.textContent?.match(/^(\d+)/)?.[1])
+    expect(ficaram).toBeGreaterThan(0)
     const sidebar = screen.getByRole('navigation', { name: /pipodesk/i })
     const emEspera = within(sidebar).getByText('Em espera').closest('button')
-    expect(emEspera?.textContent).toContain(String(antes))
+    expect(emEspera?.textContent).toContain(String(antes - ficaram))
+  })
+  it('should leave the final tickets untouched when the batch changes status', async () => {
+    await renderQueue()
+    const user = userEvent.setup()
+
+    const sidebar = screen.getByRole('navigation', { name: /pipodesk/i })
+    await user.click(within(sidebar).getByRole('button', { name: /^Cancelamentos/ }))
+    const naFila = liveCount()
+
+    await user.click(screen.getByRole('checkbox', { name: /selecionar todos/i }))
+    const barra = await screen.findByRole('group', { name: 'Ações em lote' })
+    await user.click(within(barra).getByRole('button', { name: 'Ações' }))
+    await user.click(screen.getByRole('button', { name: 'Mudar status' }))
+    await user.click(await screen.findByRole('button', { name: /Na operadora/ }))
+
+    // The cancelled ones are still here; only the in-flight half left the cut.
+    const ficaram = liveCount()
+    expect(ficaram).toBeGreaterThan(0)
+    expect(ficaram).toBeLessThan(naFila)
+
+    // And the screen says so, otherwise the selection just vanishes in silence.
+    expect(await screen.findByText(/em estado final/)).toHaveTextContent(new RegExp(`^${ficaram} `))
+  })
+
+  /** The notice belongs to the batch that produced it. Only the status batch
+   *  wrote it, so any other action left it on screen describing a selection
+   *  that had already moved. */
+  it('should drop the final-tickets notice when the next batch is not a status change', async () => {
+    await renderQueue()
+    const user = userEvent.setup()
+
+    const sidebar = screen.getByRole('navigation', { name: /pipodesk/i })
+    await user.click(within(sidebar).getByRole('button', { name: /^Cancelamentos/ }))
+
+    await user.click(screen.getByRole('checkbox', { name: /selecionar todos/i }))
+    const barra = await screen.findByRole('group', { name: 'Ações em lote' })
+    await user.click(within(barra).getByRole('button', { name: 'Ações' }))
+    await user.click(screen.getByRole('button', { name: 'Mudar status' }))
+    await user.click(await screen.findByRole('button', { name: /Na operadora/ }))
+
+    expect(await screen.findByText(/em estado final/)).toBeInTheDocument()
+
+    const colega = ANALYSTS_BY_POD[VIEWER_GROUP_ID].find((id) => id !== VIEWER_ID)!
+    await user.click(within(barra).getByRole('button', { name: 'Ações' }))
+    await user.click(screen.getByRole('button', { name: 'Reatribuir' }))
+    await user.click(await screen.findByRole('button', { name: FIXTURE_USER_NAMES[colega] }))
+
+    expect(screen.queryByText(/em estado final/)).not.toBeInTheDocument()
   })
 })
 
@@ -277,7 +338,7 @@ describe('busca global', () => {
     await user.paste('guaporé agropecuária')
     await user.click(
       await within(palette).findByRole('option', {
-        name: /^Guaporé Agropecuária Todos os chamados da empresa/,
+        name: /^Guaporé Agropecuária LTDA Matriz · \d/,
       }),
     )
 

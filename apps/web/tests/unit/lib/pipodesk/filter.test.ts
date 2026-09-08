@@ -27,6 +27,8 @@ function row(overrides: Partial<TicketRow> & { id: string }): TicketRow {
     beneficiaryName: null,
     taxId: null,
     companyName: null,
+    parentCompanyId: null,
+    parentCompanyName: null,
     companySize: null,
     carrierId: null,
     carrierName: null,
@@ -387,5 +389,37 @@ describe('applyFilter and countByOption', () => {
 
     expect(countByOption(rows, 'contractTypes').get('sem')).toBe(1)
     expect(countByOption(rows, 'contractTypes').get(NULL_TOKEN)).toBeUndefined()
+  })
+})
+
+describe('empresa pela matriz', () => {
+  const filial = row({ id: 'a', companyId: 'sub-1', parentCompanyId: 'matriz-1' })
+  const matriz = row({ id: 'b', companyId: 'matriz-1' })
+
+  it('should match a branch ticket when the filter names its parent', () => {
+    expect(matchesFilter(filial, { companyIds: ['matriz-1'] }, VIEWER)).toBe(true)
+  })
+
+  it('should still match a branch ticket when the filter names the branch itself', () => {
+    expect(matchesFilter(filial, { companyIds: ['sub-1'] }, VIEWER)).toBe(true)
+  })
+
+  it('should not match an unrelated company', () => {
+    expect(matchesFilter(filial, { companyIds: ['matriz-2'] }, VIEWER)).toBe(false)
+  })
+
+  it('should not reach a branch through its parent on an exact cut', () => {
+    expect(matchesFilter(filial, { companyIdsExact: ['matriz-1'] }, VIEWER)).toBe(false)
+  })
+
+  it('should still match the company itself on an exact cut', () => {
+    expect(matchesFilter(filial, { companyIdsExact: ['sub-1'] }, VIEWER)).toBe(true)
+  })
+
+  it('should count a branch under its parent in the option counts', () => {
+    const counts = countByOption([filial, matriz], 'companyIds')
+
+    expect(counts.get('matriz-1')).toBe(2)
+    expect(counts.has('sub-1')).toBe(false)
   })
 })

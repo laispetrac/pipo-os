@@ -5,10 +5,11 @@
  * `GET /api/search` (PD-080) takes over later without changing the palette.
  */
 
+import { COMPANY_STRUCTURE_COPY } from '@/constants/pipodesk/domain'
 import { toQueueNode } from './queue-node'
 import type { QueueNode } from './queue-view'
 import { SEARCH_NODE_PREFIX, type TreeNode, type TreeSection } from './tree'
-import type { TicketRow } from './ticket-row'
+import { principalIdOf, type TicketRow } from './ticket-row'
 
 export type SearchCategory = 'chamado' | 'beneficiario' | 'empresa' | 'visao'
 
@@ -59,6 +60,38 @@ const syntheticNode = (key: string, label: string, filter: QueueNode['filter']):
   sort: { by: 'updatedAt', direction: 'desc' },
 })
 
+/** What the row projection does not carry: the API has none of it until
+ *  PD-043, so every use degrades when the id is absent. */
+export interface CompanyRecord {
+  legalName: string
+  cnpj: string
+}
+
+const digitsOf = (text: string): string => text.replace(/\D/g, '')
+
+/** Trade name, legal name, or the digits of the CNPJ — the dataset shares a
+ *  trade name between companies, so the other two are how they are told apart. */
+const matchesCompany = (
+  row: TicketRow,
+  record: CompanyRecord | undefined,
+  needle: string,
+  digitsNeedle: string,
+): boolean => {
+  if (row.companyName && normalize(row.companyName).includes(needle)) return true
+  if (record && normalize(record.legalName).includes(needle)) return true
+  return (
+    digitsNeedle.length >= 3 && record !== undefined && digitsOf(record.cnpj).includes(digitsNeedle)
+  )
+}
+
+/** `Matriz` or `Filial de X`, plus the CNPJ when it is known. */
+const companyDetail = (parentName: string | null, cnpj: string | undefined): string => {
+  const structure = parentName
+    ? COMPANY_STRUCTURE_COPY.branch(parentName)
+    : COMPANY_STRUCTURE_COPY.parent
+  return cnpj ? `${structure} · ${cnpj}` : structure
+}
+
 const treeNodes = (sections: TreeSection[]): TreeNode[] => {
   const out: TreeNode[] = []
   const walk = (nodes: TreeNode[]) => {
@@ -75,13 +108,20 @@ export function searchQueue(
   query: string,
   rows: TicketRow[],
   sections: TreeSection[],
+  /** Legal name and CNPJ by company id. Optional: the row projection carries
+   *  neither until PD-043, and without them two branches of a parent read alike. */
+  companies: Record<string, CompanyRecord> = {},
 ): SearchGroup[] {
   const needle = normalize(query.trim())
   if (needle.length === 0) return []
 
   const chamados: SearchHit[] = []
   const porPessoa = new Map<string, TicketRow[]>()
-  const porEmpresa = new Map<string, { name: string; count: number }>()
+  const porEmpresa = new Map<string, { name: string; parentName: string | null }>()
+  /* Counted for every company, not only the matched ones, and under the parent
+     as well: the node filter opens a parent's branches, so the count says so. */
+  const ticketsPorEmpresa = new Map<string, number>()
+  const digitsNeedle = digitsOf(query)
 
   for (const row of rows) {
     // Both keys: the UUID (links, logs) and the number someone pastes from Slack.
@@ -105,12 +145,16 @@ export function searchQueue(
       if (bucket) bucket.push(row)
       else porPessoa.set(personKey, [row])
     }
-    if (row.companyName && normalize(row.companyName).includes(needle)) {
-      const atual = porEmpresa.get(row.companyId)
-      porEmpresa.set(row.companyId, {
-        name: row.companyName,
-        count: (atual?.count ?? 0) + 1,
-      })
+    const principal = principalIdOf(row)
+    ticketsPorEmpresa.set(row.companyId, (ticketsPorEmpresa.get(row.companyId) ?? 0) + 1)
+    if (principal !== row.companyId) {
+      ticketsPorEmpresa.set(principal, (ticketsPorEmpresa.get(principal) ?? 0) + 1)
+    }
+
+    const record = companies[row.companyId]
+    const name = record?.legalName ?? row.companyName
+    if (name && matchesCompany(row, record, needle, digitsNeedle)) {
+      porEmpresa.set(row.companyId, { name, parentName: row.parentCompanyName })
     }
   }
 
@@ -130,8 +174,8 @@ export function searchQueue(
     key: `company-${companyId}`,
     category: 'empresa',
     label: info.name,
-    detail: 'Todos os chamados da empresa',
-    count: info.count,
+    detail: companyDetail(info.parentName, companies[companyId]?.cnpj),
+    count: ticketsPorEmpresa.get(companyId) ?? 0,
     node: syntheticNode(`company-${companyId}`, info.name, { companyIds: [companyId] }),
   }))
 
