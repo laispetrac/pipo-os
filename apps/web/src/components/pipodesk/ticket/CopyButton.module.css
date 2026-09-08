@@ -23,6 +23,13 @@
   opacity: 1;
 }
 
+/* No hover to reveal it: an invisible control that still takes the tap. */
+@media (hover: none) {
+  .button {
+    opacity: 1;
+  }
+}
+
 .button:hover {
   background: var(--pipo-neutral-lightest);
   color: var(--pipo-text-primary);
