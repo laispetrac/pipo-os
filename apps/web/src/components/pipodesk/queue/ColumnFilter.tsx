@@ -40,12 +40,7 @@ export function ColumnFilter({ field, align, ...panel }: ColumnFilterProps) {
         aria-label={name}
         aria-expanded={open}
         title={name}
-        /* The whole header cell is not the sort trigger here — the button is —
-           but the funnel sits inside it, so a stray bubble must not sort. */
-        onClick={(event) => {
-          event.stopPropagation()
-          setOpen((current) => !current)
-        }}
+        onClick={() => setOpen((current) => !current)}
       >
         <DeskIcon name="funnel" size={12} />
         {valuesOf(panel.filter, field).length > 0 && (
