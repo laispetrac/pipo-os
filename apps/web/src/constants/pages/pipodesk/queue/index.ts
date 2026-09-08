@@ -14,6 +14,11 @@ export default {
    *  number left the visible header, not this. */
   liveCount: (count: number, label: string) =>
     `${count} ${count === 1 ? 'chamado' : 'chamados'} em ${label}`,
+  liveCountLabel: 'Total da fila',
   free: 'Livre no pod',
+  batchFinalKept: (count: number) =>
+    `${count} ${count === 1 ? 'chamado' : 'chamados'} em estado final ${
+      count === 1 ? 'não muda' : 'não mudam'
+    } de situação: concluído e cancelado não reabrem.`,
   empty_cell: '—',
 }

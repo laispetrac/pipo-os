@@ -52,6 +52,10 @@ export interface TicketRow {
   beneficiaryName: string | null
   taxId: string | null
   companyName: string | null
+  /** The parent company when this one is a branch, `null` when it already is
+   *  the parent. The key the queue filters and groups by (DSP-36). */
+  parentCompanyId: string | null
+  parentCompanyName: string | null
   companySize: string | null
   carrierId: string | null
   carrierName: string | null
@@ -72,6 +76,19 @@ export interface TicketRow {
   updatedAt: string
   closedAt: string | null
 }
+
+/** One derivation, three readers: the filter, the option counts, the grouping. */
+export const principalIdOf = (row: TicketRow): string => row.parentCompanyId ?? row.companyId
+
+export const principalNameOf = (row: TicketRow): string | null =>
+  row.parentCompanyName ?? row.companyName
+
+/** The Empresa cell hover: the branch is reachable here and nowhere else in
+ *  the table. Trade names — the row carries no legal name. */
+export const companyTitleOf = (row: TicketRow): string | undefined =>
+  row.parentCompanyName && row.companyName
+    ? `${row.parentCompanyName} › ${row.companyName}`
+    : (principalNameOf(row) ?? undefined)
 
 const isRecord = (value: unknown): value is Record<string, unknown> =>
   typeof value === 'object' && value !== null && !Array.isArray(value)
@@ -143,6 +160,9 @@ export function toTicketRow(ticket: Ticket): TicketRow {
     ),
     taxId: readString(snapshot, ['primary', 'profile', 'tax-id']),
     companyName: readString(snapshot, ['company', 'company-name'], ['company', 'name']),
+    // No column for the parent in `GET /tickets/rows` yet — PD-043 adds it.
+    parentCompanyId: null,
+    parentCompanyName: null,
     companySize: ticket.companySize,
     carrierId: ticket.carrierId,
     carrierName: ticket.carrierName,

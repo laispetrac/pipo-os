@@ -4,7 +4,7 @@ import { DISPLAY_STATUS_COPY, PENDING_REASON_COPY } from '@/constants/pipodesk/s
 import { ENROLLMENT_TYPE_COPY, PRODUCT_COPY, RELATIONSHIP_COPY } from '@/constants/pipodesk/domain'
 import type { QueueColumn } from '@/lib/pipodesk/columns'
 import { formatDayMonth, formatPrazo, prazoVariant } from '@/lib/pipodesk/format'
-import type { TicketRow } from '@/lib/pipodesk/ticket-row'
+import { companyTitleOf, principalNameOf, type TicketRow } from '@/lib/pipodesk/ticket-row'
 import constants from '@/constants/pages/pipodesk/queue'
 import styles from './Queue.module.css'
 
@@ -150,8 +150,8 @@ export function QueueRow({
       </td>
     ),
     company: (
-      <td key="company" title={ticket.companyName ?? undefined}>
-        {ticket.companyName ?? constants.empty_cell}
+      <td key="company" title={companyTitleOf(ticket)}>
+        {principalNameOf(ticket) ?? constants.empty_cell}
       </td>
     ),
     /* Internal copy, for the analyst. The reason lives ONLY in `title`, like

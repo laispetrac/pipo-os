@@ -87,3 +87,9 @@ export function toApiStatus(status: DisplayStatus, reason: PendingReason | null)
 export function isOpen(status: ApiStatus): boolean {
   return !FINAL_STATUSES.includes(status)
 }
+
+/** A final ticket does not reopen (DSP-19). Front half only — the API still
+ *  owes the same rule (ACE-55/56, PD-042). */
+export function transitionsFrom(status: ApiStatus): ApiStatus[] {
+  return isOpen(status) ? API_STATUSES : []
+}

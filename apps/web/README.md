@@ -94,7 +94,9 @@ O frontend ainda não está ligado à API de tickets. Fila, time e detalhe leem
 da API.
 
 - Regerar, a partir da raiz do `pipo-os`:
-  `cd ../prototipos/pipodesk && pnpm exec tsx scripts/export-pipo-os.ts <caminho-do-json>`
+  `cd ../prototipos/pipodesk && npx tsx scripts/export-pipo-os.ts ../../pipo-os/apps/web/src/fixtures/pipodesk/dataset.json`
+  O protótipo é projeto **npm**, não pnpm — rodar `pnpm` lá desloca os pacotes
+  instalados e quebra o `node_modules`.
 - Ações na tela (reatribuir, mudar status, prioridade, agendar) aplicam um patch
   local (`lib/pipodesk/patches.ts`); recarregar volta ao dataset.
 - O “hoje” é fixo (campo `today` do dataset), para a fila ser reproduzível em
@@ -105,10 +107,15 @@ da API.
 O comportamento-alvo é o protótipo `pipodesk`. Divergência visual ou de regra
 entre os dois é bug aqui, salvo decisão registrada no plano.
 
-**Base do protótipo: `44f1185` (3 set 2026)**, o commit com que a fixture e as
+**Base do protótipo: `79becc7` (5 set 2026)**, o commit com que a fixture e as
 telas foram sincronizadas pela última vez. Para re-sincronizar, ao menos uma vez
-por semana: `git log 44f1185..origin/main -- pipodesk/src` no repositório do
+por semana: `git log 79becc7..origin/main -- pipodesk/src` no repositório do
 protótipo lista o que mudou; regerar o dataset e atualizar este commit.
+
+O exportador vive no protótipo, e a conferência de que ele continua fiel é
+gerar no commit-base atual e comparar com o `dataset.json` commitado: os dois
+têm que sair idênticos. Foi assim que a reconstrução dele na ACE-193 se provou,
+e é assim que se descobre que uma tradução de borda mudou.
 
 Plano e backlog: [Pipodesk no Notion](https://app.notion.com/p/3cd4744bd8038168bb39d69ed7252d4d);
 tickets no Linear, projeto “Pipodesk no PipOS”.

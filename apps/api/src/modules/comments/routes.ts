@@ -1,7 +1,6 @@
 import type { ZodTypeProvider } from '@fastify/type-provider-zod'
 import type { FastifyInstance } from 'fastify'
-import { UnauthorizedError } from '../../shared/errors.js'
-import { getSession } from '../auth/session.js'
+import { requireUserId } from '../auth/authenticate.js'
 import { ticketParamsSchema } from '../tickets/schemas.js'
 import {
   commentListSchema,
@@ -25,7 +24,6 @@ export function registerCommentRoutes(app: FastifyInstance, service: CommentsSer
       },
     },
     async (request) => {
-      getSession(request)
       return service.list(request.params.id)
     },
   )
@@ -45,7 +43,6 @@ export function registerCommentRoutes(app: FastifyInstance, service: CommentsSer
       },
     },
     async (request) => {
-      getSession(request)
       // TODO: enforce tenant scope from session claims before this endpoint goes to production
       // Any authenticated user can currently read the chronology of any company's ticket,
       // including internal comments — the same gap as GET /api/tickets (ACE-147)
@@ -68,9 +65,7 @@ export function registerCommentRoutes(app: FastifyInstance, service: CommentsSer
       },
     },
     async (request, reply) => {
-      const claims = getSession(request)
-      const authorId = claims.sub?.trim()
-      if (!authorId) throw new UnauthorizedError('Invalid session')
+      const authorId = requireUserId(request)
       const comment = await service.add(request.params.id, request.body, authorId)
       reply.status(201)
       return comment

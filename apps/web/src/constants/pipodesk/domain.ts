@@ -37,3 +37,10 @@ export const PRIORITY_COPY: Record<Priority, string> = {
   medium: 'Média',
   low: 'Baixa',
 }
+
+/** A estrutura da empresa. Matriz é a estipulante, filial é a sub-estipulante;
+ *  o par do contrato não entra no valor. */
+export const COMPANY_STRUCTURE_COPY = {
+  parent: 'Matriz',
+  branch: (parentName: string) => `Filial de ${parentName}`,
+}

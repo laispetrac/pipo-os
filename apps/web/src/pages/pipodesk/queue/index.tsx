@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useState } from 'react'
 import { useNavigate } from '@tanstack/react-router'
+import { Snackbar } from '@piposaude/design-system'
 import { QueueHeader } from '@/components/pipodesk/queue/QueueHeader'
 import { QueueTable } from '@/components/pipodesk/queue/QueueTable'
 import { BatchBar, type PodOption } from '@/components/pipodesk/queue/BatchBar'
@@ -18,6 +19,8 @@ import type { LabelContext } from '@/lib/pipodesk/filter-copy'
 import { filterChipsOf } from '@/lib/pipodesk/filter-copy'
 import { groupTickets } from '@/lib/pipodesk/group'
 import { sortTickets } from '@/lib/pipodesk/sort'
+import { transitionsFrom } from '@/lib/pipodesk/status'
+import type { ApiStatus } from '@/lib/pipodesk/status'
 import { isSearchNode, pillsOf, type TreeNode, type TreeSection } from '@/lib/pipodesk/tree'
 import { toQueueNode } from '@/lib/pipodesk/queue-node'
 import { ANALYSTS_BY_POD, structureFixture, VIEWER_GROUP_ID } from '@/fixtures/pipodesk/dataset'
@@ -134,11 +137,26 @@ export default function QueuePage() {
 
   /* Effective selection = intersection with the listed rows: an action that
        removes rows from the queue empties the selection with them. */
+  const [batchMessage, setBatchMessage] = useState<string | null>(null)
+
   const listedIds = useMemo(() => new Set(listed.map((ticket) => ticket.id)), [listed])
   const selectedVisible = view.selectedIds.filter((id) => listedIds.has(id))
 
   const runBatch = (patch: Parameters<typeof applyPatch>[1]) => {
+    // Every batch answers for itself: without this the notice from a previous
+    // status batch stays on screen describing a selection that already moved.
+    setBatchMessage(null)
     applyPatch(selectedVisible, patch)
+  }
+
+  const runStatusBatch = (status: ApiStatus) => {
+    const selected = listed.filter((ticket) => selectedVisible.includes(ticket.id))
+    const movable = selected
+      .filter((ticket) => transitionsFrom(ticket.status).includes(status))
+      .map((ticket) => ticket.id)
+    const kept = selected.length - movable.length
+    if (movable.length > 0) applyPatch(movable, { status })
+    setBatchMessage(kept > 0 ? constants.batchFinalKept(kept) : null)
   }
 
   /* The pod the queue is showing, not the viewer's. Nodes outside a pod
@@ -208,7 +226,7 @@ export default function QueuePage() {
 
       {/* The total left the visible header (the sidebar shows it) but not the
                  screen reader. */}
-      <p className={styles.live} role="status">
+      <p className={styles.live} role="status" aria-label={constants.liveCountLabel}>
         {constants.liveCount(total, view.label)}
       </p>
 
@@ -242,8 +260,19 @@ export default function QueuePage() {
           onAssign={(userId) => runBatch({ assigneeId: userId })}
           pods={pods}
           onMoveToPod={(groupId, userId) => runBatch({ groupId, assigneeId: userId })}
-          onStatus={(status) => runBatch({ status })}
+          onStatus={runStatusBatch}
           onSchedule={(date) => runBatch({ actionDate: date })}
+        />
+      )}
+
+      {/* No wrapper role: the DS Snackbar is already `role="status"`, and an
+          `alert` around it nests two live regions with conflicting politeness. */}
+      {batchMessage !== null && (
+        <Snackbar
+          open
+          feedbackType="info"
+          message={batchMessage}
+          onClose={() => setBatchMessage(null)}
         />
       )}
     </div>
