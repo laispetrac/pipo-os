@@ -2,7 +2,7 @@ import { randomUUID } from 'node:crypto'
 import type { ZodTypeProvider } from '@fastify/type-provider-zod'
 import type { FastifyInstance } from 'fastify'
 import { z } from 'zod'
-import { UnauthorizedError } from '../../shared/errors.js'
+import { requirePrincipal } from './authenticate.js'
 import type { AuthConfig } from './config.js'
 import { googleCallbackQuerySchema, googleLoginQuerySchema, meResponseSchema } from './schemas.js'
 import { AuthService, IdentityNotFoundError } from './service.js'
@@ -65,7 +65,10 @@ export function registerAuthRoutes(
 
   server.get(
     '/api/auth/google',
-    { schema: { querystring: googleLoginQuerySchema, response: { 302: z.null() } } },
+    {
+      config: { public: true },
+      schema: { querystring: googleLoginQuerySchema, response: { 302: z.null() } },
+    },
     async (request, reply) => {
       const state: OAuthState = {
         state: randomUUID(),
@@ -83,7 +86,10 @@ export function registerAuthRoutes(
 
   server.get(
     '/api/auth/google/callback',
-    { schema: { querystring: googleCallbackQuerySchema, response: { 302: z.null() } } },
+    {
+      config: { public: true },
+      schema: { querystring: googleCallbackQuerySchema, response: { 302: z.null() } },
+    },
     async (request, reply) => {
       const rawStateCookie = request.cookies[OAUTH_STATE_COOKIE_NAME]
       reply.clearCookie(OAUTH_STATE_COOKIE_NAME, { path: '/' })
@@ -130,21 +136,14 @@ export function registerAuthRoutes(
     '/api/auth/me',
     { schema: { response: { 200: meResponseSchema } } },
     async (request) => {
-      const rawSessionCookie = request.cookies[SESSION_COOKIE_NAME]
-      const unsigned = rawSessionCookie ? request.unsignCookie(rawSessionCookie) : null
-      const claims = unsigned?.valid && unsigned.value ? extractSessionClaims(unsigned.value) : null
-
-      if (!claims) {
-        throw new UnauthorizedError('Not authenticated')
-      }
-
-      return { email: claims.email, policies: claims.policies }
+      const principal = requirePrincipal(request)
+      return { email: principal.email, policies: principal.policies }
     },
   )
 
   server.post(
     '/api/auth/logout',
-    { schema: { response: { 204: z.null() } } },
+    { config: { public: true }, schema: { response: { 204: z.null() } } },
     async (_request, reply) => {
       reply.clearCookie(SESSION_COOKIE_NAME, { path: '/' })
       reply.status(204)
