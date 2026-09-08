@@ -1,4 +1,4 @@
-import { render, screen, within } from '@testing-library/react'
+import { act, fireEvent, render, screen, within } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { CopyButton } from '@/components/pipodesk/ticket/CopyButton'
 
@@ -35,5 +35,36 @@ describe('CopyButton', () => {
 
     expect(button).toHaveAttribute('data-copy-button')
     expect(button).toHaveClass('extra')
+  })
+})
+
+describe('CopyButton timing', () => {
+  /** The page's inline button re-armed its timer on every copy; the shared
+   *  component must not lose that on the way. */
+  it('should keep saying Copiado for the full window after a second click', async () => {
+    vi.useFakeTimers()
+    // fireEvent, not userEvent: its pointer delays and the fake clock deadlock.
+    Object.defineProperty(navigator, 'clipboard', {
+      value: { writeText: vi.fn().mockResolvedValue(undefined) },
+      configurable: true,
+    })
+    try {
+      render(<CopyButton value="x" label="Copiar" />)
+      const button = screen.getByRole('button', { name: 'Copiar' })
+      const tick = (ms: number) => act(async () => void vi.advanceTimersByTime(ms))
+
+      await act(async () => void fireEvent.click(button))
+      await tick(1000)
+      await act(async () => void fireEvent.click(button))
+      await tick(1000)
+
+      expect(button).toHaveAttribute('data-copied', 'true')
+
+      await tick(500)
+
+      expect(button).not.toHaveAttribute('data-copied')
+    } finally {
+      vi.useRealTimers()
+    }
   })
 })

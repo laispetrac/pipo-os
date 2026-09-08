@@ -12,19 +12,21 @@ export interface CopyButtonProps {
 
 /** Hidden at rest; a parent reveals it with `:hover [data-copy-button]`. */
 export function CopyButton({ value, label, className }: CopyButtonProps) {
-  const [copied, setCopied] = useState(false)
+  // Copies inside the window: a counter, so a second click re-arms the timer.
+  const [copies, setCopies] = useState(0)
+  const copied = copies > 0
 
   // Cleared on unmount: copying and leaving inside the window set state on a gone component.
   useEffect(() => {
-    if (!copied) return undefined
-    const timer = window.setTimeout(() => setCopied(false), 1400)
+    if (copies === 0) return undefined
+    const timer = window.setTimeout(() => setCopies(0), 1400)
     return () => window.clearTimeout(timer)
-  }, [copied])
+  }, [copies])
 
   const copy = async () => {
     try {
       await navigator.clipboard.writeText(value)
-      setCopied(true)
+      setCopies((count) => count + 1)
     } catch {
       // No clipboard (permission, iframe): the value stays selectable on screen.
     }
