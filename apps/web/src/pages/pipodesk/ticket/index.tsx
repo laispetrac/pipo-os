@@ -5,6 +5,7 @@ import { useDesk } from '@/components/pipodesk/shell/desk-context'
 import { SidebarToggle } from '@/components/pipodesk/shell/SidebarToggle'
 import { CompanyTab } from '@/components/pipodesk/ticket/CompanyTab'
 import { CopyButton } from '@/components/pipodesk/ticket/CopyButton'
+import { DocumentsTab } from '@/components/pipodesk/ticket/DocumentsTab'
 import { PersonTab } from '@/components/pipodesk/ticket/PersonTab'
 import { RecordEmpty } from '@/components/pipodesk/ticket/RecordSection'
 import { Popover } from '@/components/pipodesk/primitives'
@@ -362,6 +363,14 @@ export default function TicketPage() {
     />
   )
 
+  const documentos = (
+    <DocumentsTab
+      ticket={ticket}
+      pendingDocumentation={movement?.pendingDocumentation ?? null}
+      records={records}
+    />
+  )
+
   const pendingTab = (
     <div className={styles.body}>
       <section className={styles.block}>
@@ -423,7 +432,11 @@ export default function TicketPage() {
           },
           { key: 'pessoa', label: constants.tabs.pessoa, content: withAside(pessoa) },
           { key: 'empresa', label: constants.tabs.empresa, content: withAside(empresa) },
-          { key: 'documentos', label: constants.tabs.documentos, content: pendingTab },
+          {
+            key: 'documentos',
+            label: constants.tabs.documentos,
+            content: withAside(documentos),
+          },
           { key: 'historico', label: constants.tabs.historico, content: pendingTab },
         ]}
       />

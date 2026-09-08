@@ -23,6 +23,20 @@ export const COMPANY_SIZE_COPY: Record<string, string> = {
   enterprise: 'Empresarial',
 }
 
+/** Keys of `pendingDocumentation` as the EI spells them today — both spellings
+ *  of the proof of address are in the wild. */
+export const DOCUMENT_LABEL: Record<string, string> = {
+  rg: 'RG',
+  cpf: 'CPF',
+  'comprovante-residencia': 'comprovante de residência',
+  comprovante_residencia: 'comprovante de residência',
+}
+
+export function documentLabel(key: string): string {
+  const label = DOCUMENT_LABEL[key] ?? key
+  return label.charAt(0).toUpperCase() + label.slice(1)
+}
+
 export const MARITAL_STATUS_COPY: Record<string, string> = {
   single: 'Solteiro(a)',
   married: 'Casado(a)',

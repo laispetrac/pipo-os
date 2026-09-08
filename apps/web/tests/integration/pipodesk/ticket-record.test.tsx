@@ -7,6 +7,7 @@ import { records } from '@/fixtures/pipodesk/records'
 import { displayNameOf } from '@/lib/pipodesk/record'
 import { formatCpf, formatLongDate } from '@/lib/pipodesk/format'
 import companyCopy from '@/constants/pages/pipodesk/ticket/company'
+import documentsCopy from '@/constants/pages/pipodesk/ticket/documents'
 import personCopy from '@/constants/pages/pipodesk/ticket/person'
 import recordCopy from '@/constants/pages/pipodesk/ticket/record'
 
@@ -244,6 +245,57 @@ describe('aba Sobre a empresa', () => {
 
   it('should warn about the saved picture when the Backoffice is down for the company', async () => {
     const { panel } = await openTab('/tickets/700127', 'Sobre a empresa')
+
+    expect(within(panel).getByText(recordCopy.outage.title)).toBeInTheDocument()
+  })
+})
+
+describe('aba Documentos', () => {
+  /** 700002 asks for RG and CPF; the RG arrived and the pendency is still
+   *  open — the tab states both facts and stops there. */
+  it('should list what is still missing, marking what arrived without closing the pendency', async () => {
+    const { panel } = await openTab('/tickets/700002', 'Documentos')
+
+    const missing = within(panel)
+      .getByRole('heading', { level: 2, name: documentsCopy.missing.title })
+      .closest('section')!
+    const items = within(missing).getAllByRole('listitem')
+    expect(items.map((item) => item.textContent)).toEqual([
+      `RG — ${documentsCopy.missing.arrived}`,
+      'CPF',
+    ])
+
+    const received = within(panel)
+      .getByRole('heading', { level: 2, name: documentsCopy.fromClient.title })
+      .closest('section')!
+    expect(within(received).getByText('RG.jpg')).toBeInTheDocument()
+    expect(within(received).getByText('1590 KB')).toBeInTheDocument()
+    expect(
+      within(received).getByRole('button', { name: documentsCopy.download('RG.jpg') }),
+    ).toBeInTheDocument()
+
+    const generated = within(panel)
+      .getByRole('heading', { level: 2, name: documentsCopy.fromPipo.title })
+      .closest('section')!
+    expect(within(generated).getByText('Ficha de adesão.pdf')).toBeInTheDocument()
+  })
+
+  /** An exclusion never has an adhesion form; the empty group says why
+   *  instead of vanishing. */
+  it('should explain an empty Pipo group instead of hiding it, and skip the missing block when nothing is asked', async () => {
+    const { panel } = await openTab('/tickets/705639', 'Documentos')
+
+    expect(
+      within(panel).queryByRole('heading', { level: 2, name: documentsCopy.missing.title }),
+    ).not.toBeInTheDocument()
+    expect(within(panel).getByText(documentsCopy.fromClient.empty)).toBeInTheDocument()
+    expect(
+      within(panel).getByText(documentsCopy.fromPipo.notInclusion('Exclusão')),
+    ).toBeInTheDocument()
+  })
+
+  it('should warn about the saved picture when the Backoffice is down for the company', async () => {
+    const { panel } = await openTab('/tickets/700127', 'Documentos')
 
     expect(within(panel).getByText(recordCopy.outage.title)).toBeInTheDocument()
   })
