@@ -1,6 +1,6 @@
-import { createFileRoute } from '@tanstack/react-router'
-import TicketPage from '@/pages/pipodesk/ticket'
+import { createFileRoute, lazyRouteComponent } from '@tanstack/react-router'
 
 export const Route = createFileRoute('/_auth/_desk/tickets/$id')({
-  component: TicketPage,
+  // The detail carries the record fixture (7 MB); the queue must not pay for it at boot.
+  component: lazyRouteComponent(() => import('@/pages/pipodesk/ticket')),
 })

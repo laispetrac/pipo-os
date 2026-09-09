@@ -1,4 +1,4 @@
-import { render, screen, within } from '@testing-library/react'
+import { configure, render, screen, within } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { RouterProvider, createMemoryHistory, createRouter } from '@tanstack/react-router'
 import { routeTree } from '@/routeTree.gen'
@@ -12,6 +12,7 @@ import { daysOverdue, formatLongDate } from '@/lib/pipodesk/format'
 import type { TicketRow } from '@/lib/pipodesk/ticket-row'
 import { analystsOf } from '@/lib/pipodesk/permissions'
 import constants from '@/constants/pages/pipodesk/ticket'
+import copyButton from '@/constants/pipodesk/copy-button'
 
 /**
  * The first drawn row — the table is virtualized, so only the visible window
@@ -29,6 +30,10 @@ async function firstRow(): Promise<{ id: string; ticket: TicketRow; link: HTMLEl
   // carries no operational number (PD-011 gives it one).
   return { id, ticket: byId(id), link: within(row as HTMLElement).getByRole('link') }
 }
+
+// This route loads on demand: the first `findBy` after entering it includes a
+// dynamic import, and the 1s default is not enough under parallel workers.
+configure({ asyncUtilTimeout: 3000 })
 
 vi.mock('@/lib/auth', () => ({
   ensureSession: vi.fn().mockResolvedValue(undefined),
@@ -296,7 +301,7 @@ describe('detalhe do chamado', () => {
     await user.click(await screen.findByRole('button', { name: constants.copyId('700003') }))
 
     await expect(navigator.clipboard.readText()).resolves.toBe('700003')
-    expect(screen.getByText(constants.copied)).toBeInTheDocument()
+    expect(screen.getByText(copyButton.copied)).toBeInTheDocument()
   })
 
   /** As in the prototype: the control is an icon that swaps to a check, and
@@ -317,7 +322,7 @@ describe('detalhe do chamado', () => {
 
     await user.click(button)
 
-    expect(status).toHaveTextContent(constants.copied)
+    expect(status).toHaveTextContent(copyButton.copied)
     expect(button).toHaveAttribute('data-copied', 'true')
   })
 

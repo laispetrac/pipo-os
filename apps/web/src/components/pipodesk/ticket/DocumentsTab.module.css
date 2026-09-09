@@ -1,0 +1,65 @@
+/* Ported from the prototype's `.ticket-docs` and `.doc-list` (ticket.css). */
+
+.tab {
+  display: flex;
+  flex-direction: column;
+  gap: var(--pipo-space-xlarge);
+}
+
+.missing {
+  margin: 0;
+  padding-left: 20px;
+  font-size: var(--pipo-fs-small);
+}
+
+/* A remark on the item, not another item; no alert color — the tab only knows the two facts. */
+.arrived {
+  color: var(--pipo-text-secondary);
+  font-size: 13px;
+}
+
+.documents {
+  display: flex;
+  flex-direction: column;
+  gap: var(--pipo-space-xsmall);
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  font-size: 13px;
+}
+
+.documents li {
+  display: grid;
+  grid-template-columns: 1fr auto auto auto;
+  gap: var(--pipo-space-medium);
+  align-items: center;
+}
+
+.name {
+  font-weight: var(--pipo-fw-medium);
+}
+
+/* 24px is the smallest target that meets WCAG 2.5.8; the glyph stays 14px. */
+.download {
+  display: inline-flex;
+  min-width: 24px;
+  min-height: 24px;
+  align-items: center;
+  justify-content: center;
+  padding: var(--pipo-space-xxsmall);
+  border: 0;
+  border-radius: var(--pipo-radius-xsmall);
+  background: none;
+  color: var(--pipo-text-secondary);
+  cursor: pointer;
+}
+
+.download:hover:not(:disabled) {
+  background: var(--pipo-surface-subtle);
+  color: var(--pipo-text-primary);
+}
+
+.download:disabled {
+  cursor: default;
+  opacity: 0.5;
+}
