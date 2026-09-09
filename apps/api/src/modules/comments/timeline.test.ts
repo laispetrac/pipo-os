@@ -35,7 +35,7 @@ describe('GET /api/tickets/:id/timeline', () => {
     const loginResponse = await app.inject({
       method: 'POST',
       url: '/api/auth/dev-login',
-      payload: { policies: ['admin/allow/administrate/ticket/*'] },
+      payload: { policies: ['admin/allow/administrate/pipodesk/ticket'] },
     })
     sessionCookie = cookieValue(loginResponse, SESSION_COOKIE_NAME)!
   })

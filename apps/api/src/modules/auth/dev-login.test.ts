@@ -161,7 +161,7 @@ describe('dev login', () => {
       const login = await instance.inject({
         method: 'POST',
         url: '/api/auth/dev-login',
-        payload: { policies: ['admin/allow/administrate/ticket/*'] },
+        payload: { policies: ['admin/allow/administrate/pipodesk/ticket'] },
       })
       const sessionCookie = login.cookies.find((cookie) => cookie.name === SESSION_COOKIE_NAME)!
 
@@ -171,7 +171,7 @@ describe('dev login', () => {
         cookies: { [SESSION_COOKIE_NAME]: sessionCookie.value },
       })
 
-      expect(me.json().policies).toEqual(['admin/allow/administrate/ticket/*'])
+      expect(me.json().policies).toEqual(['admin/allow/administrate/pipodesk/ticket'])
     })
 
     it('honours DEV_LOGIN_EMAIL', async () => {

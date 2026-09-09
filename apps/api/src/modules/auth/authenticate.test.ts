@@ -12,7 +12,7 @@ function cookieValue(
 }
 
 const DEV_LOGIN_USER_ID = 'dev@piposaude.com.br'
-const POLICIES = ['admin/allow/administrate/ticket/*']
+const POLICIES = ['admin/allow/administrate/pipodesk/ticket']
 
 // The auth-service's access-token may carry no `sub`. Dev login always sets one,
 // so reaching requireUserId's refusal means minting the token by hand — the

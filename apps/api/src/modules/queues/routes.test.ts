@@ -45,7 +45,7 @@ describe('queues routes', () => {
     const ticketLogin = await app.inject({
       method: 'POST',
       url: '/api/auth/dev-login',
-      payload: { email: DEV_LOGIN_USER_ID, policies: ['admin/allow/administrate/ticket/*'] },
+      payload: { email: DEV_LOGIN_USER_ID, policies: ['admin/allow/administrate/pipodesk/ticket'] },
     })
     ticketSessionCookie = cookieValue(ticketLogin, SESSION_COOKIE_NAME)!
   })

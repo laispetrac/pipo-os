@@ -8,11 +8,11 @@ import {
 
 describe('domain errors', () => {
   it('answers 403 under its own name when the session lacks the policy', () => {
-    const error = new ForbiddenError('Missing policy admin/allow/administrate/ticket/*')
+    const error = new ForbiddenError('Missing policy admin/allow/administrate/pipodesk/ticket')
 
     expect(error.statusCode).toBe(403)
     expect(error.name).toBe('ForbiddenError')
-    expect(error.message).toBe('Missing policy admin/allow/administrate/ticket/*')
+    expect(error.message).toBe('Missing policy admin/allow/administrate/pipodesk/ticket')
     expect(error.details).toBeUndefined()
   })
 

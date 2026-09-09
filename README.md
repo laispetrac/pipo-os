@@ -174,19 +174,21 @@ Essas garantias são cobertas por testes em `apps/api/src/modules/auth/dev-login
 
 Autenticar responde quem é a pessoa; a **policy** responde o que ela pode fazer. As policies vêm dentro do JWT do auth-service e são declaradas por rota, em `config.policy`, no formato da Pipo — `{context}/{effect}/{action}/{domain}/{specific}`, com `admin`, `allow`, `administrate` e `*` como padrões das partes omitidas.
 
-| Rotas                                                                                                  | Policy exigida                      |
-| ------------------------------------------------------------------------------------------------------ | ----------------------------------- |
-| `/api/tickets/**`, `/api/tickets/:id/comments`, `/api/tickets/:id/timeline`, `/api/queues/:id/tickets` | `admin/allow/administrate/ticket/*` |
-| `/api/queues/**` e `/api/groups/**` (estrutura)                                                        | nenhuma ainda                       |
-| `/api/auth/**`                                                                                         | nenhuma (identidade, não recurso)   |
+| Rotas                                                                                                  | Policy exigida                                                     |
+| ------------------------------------------------------------------------------------------------------ | ------------------------------------------------------------------ |
+| `/api/tickets/**`, `/api/tickets/:id/comments`, `/api/tickets/:id/timeline`, `/api/queues/:id/tickets` | `admin/allow/administrate/pipodesk/ticket`                         |
+| `/api/queues/**` e `/api/groups/**` (estrutura)                                                        | nenhuma ainda — será `admin/allow/administrate/pipodesk/structure` |
+| `/api/auth/**`                                                                                         | nenhuma (identidade, não recurso)                                  |
 
-O curinga vale só do lado da sessão: quem tem `.../ticket/*` passa numa rota que pede um ticket específico, e quem tem permissão sobre um ticket não passa numa rota que pede todos. Uma rota que não declara `policy` fica a cargo apenas da autenticação, e o inventário em `apps/api/src/modules/auth/authorize.test.ts` lista todas — rota nova sem decisão deixa o teste vermelho.
+**Por que o domínio é `pipodesk` e não `ticket`.** `admin/allow/administrate/ticket/*` já existe e pertence a outro serviço: é o papel de admin do `ticket-service` (squad opex). Reusar a string acoplaria os dois — analista do Pipodesk viraria admin lá, e o admin de lá entraria aqui. O domínio próprio também deixa o específico livre para separar as duas famílias de rota: `ticket` para chamado e `structure` para grupos e filas, com `admin/allow/administrate/pipodesk/*` cobrindo as duas. O `authorize.test.ts` tem um caso que recusa a policy do `ticket-service` com 403, para a colisão não voltar por descuido.
+
+O curinga vale só do lado da sessão: quem tem `.../pipodesk/*` passa numa rota que pede `pipodesk/ticket`, e quem tem só `pipodesk/ticket` não passa numa que peça `pipodesk/structure`. Uma rota que não declara `policy` fica a cargo apenas da autenticação, e o inventário em `apps/api/src/modules/auth/authorize.test.ts` lista todas — rota nova sem decisão deixa o teste vermelho.
 
 Conceder e conferir é pelo `ppcli` (a identidade que roda precisa de `admin/allow/administrate/identity/*`):
 
 ```bash
 ppcli user list-policies --email pessoa@piposaude.com.br -e stag
-ppcli user add-policy --email pessoa@piposaude.com.br --policy "admin/allow/administrate/ticket/*" -e stag
+ppcli user add-policy --email pessoa@piposaude.com.br --policy "admin/allow/administrate/pipodesk/*" -e stag
 ```
 
 `GET /api/auth/me` devolve as policies da sessão, que é a forma mais rápida de conferir depois de conceder.

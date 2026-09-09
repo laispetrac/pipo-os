@@ -25,7 +25,7 @@ function buildAccessToken(overrides: Partial<Record<string, unknown>> = {}): str
     email: 'pikachu@piposaude.com.br',
     iat: now,
     exp: now + 28800,
-    policies: ['admin/allow/administrate/ticket/*'],
+    policies: ['admin/allow/administrate/pipodesk/ticket'],
     ...overrides,
   })
 }
@@ -254,7 +254,7 @@ describe('auth routes', () => {
       const { state, stateCookie } = await startLogin(app)
       const accessToken = buildAccessToken({
         email: 'pikachu@piposaude.com.br',
-        policies: ['admin/allow/administrate/ticket/*'],
+        policies: ['admin/allow/administrate/pipodesk/ticket'],
       })
       fetchMock.mockResolvedValueOnce(jsonResponse({ 'access-token': accessToken }))
 
@@ -274,7 +274,7 @@ describe('auth routes', () => {
       expect(response.statusCode).toBe(200)
       expect(response.json()).toEqual({
         email: 'pikachu@piposaude.com.br',
-        policies: ['admin/allow/administrate/ticket/*'],
+        policies: ['admin/allow/administrate/pipodesk/ticket'],
       })
     })
   })

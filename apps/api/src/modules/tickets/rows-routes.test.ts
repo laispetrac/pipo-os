@@ -37,7 +37,7 @@ describe('GET /api/tickets/rows', () => {
     const login = await app.inject({
       method: 'POST',
       url: '/api/auth/dev-login',
-      payload: { policies: ['admin/allow/administrate/ticket/*'] },
+      payload: { policies: ['admin/allow/administrate/pipodesk/ticket'] },
       remoteAddress: '127.0.0.1',
     })
     cookie = login.cookies.find((c) => c.name === SESSION_COOKIE_NAME)!.value

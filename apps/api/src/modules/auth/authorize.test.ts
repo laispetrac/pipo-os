@@ -11,7 +11,10 @@ function cookieValue(
   return response.cookies.find((cookie) => cookie.name === name)?.value ?? null
 }
 
-const TICKET_POLICY_STRING = 'admin/allow/administrate/ticket/*'
+const PIPODESK_TICKET_POLICY_STRING = 'admin/allow/administrate/pipodesk/ticket'
+// The policy the ticket-service (squad opex) uses for its own admin role. It is
+// not ours, and holding it must not open a single route here.
+const TICKET_SERVICE_POLICY_STRING = 'admin/allow/administrate/ticket/*'
 
 async function session(app: FastifyInstance, policies: string[]): Promise<string> {
   const response = await app.inject({
@@ -27,6 +30,7 @@ describe('the policy hook', () => {
   let withPolicy: string
   let withoutPolicy: string
   let withAnotherDomain: string
+  let withTicketServicePolicy: string
 
   beforeAll(async () => {
     process.env.DEV_LOGIN_ENABLED = 'true'
@@ -34,22 +38,27 @@ describe('the policy hook', () => {
 
     // Added before ready(), the same way the auth hook is exercised: hooks bind
     // at preReady, so these routes are covered exactly like an autoloaded one.
-    app.get('/__test/needs-ticket', { config: { policy: { domain: 'ticket' } } }, async () => ({
-      ok: true,
-    }))
+    app.get(
+      '/__test/needs-ticket',
+      { config: { policy: { domain: 'pipodesk', specific: 'ticket' } } },
+      async () => ({
+        ok: true,
+      }),
+    )
     app.get('/__test/needs-nothing', async () => ({ ok: true }))
     app.get('/__test/open', { config: { public: true } }, async () => ({ ok: true }))
     app.get(
       '/__test/contradictory-at-root',
-      { config: { public: true, policy: { domain: 'ticket' } } },
+      { config: { public: true, policy: { domain: 'pipodesk', specific: 'ticket' } } },
       async () => ({ ok: true }),
     )
 
     await app.ready()
 
-    withPolicy = await session(app, [TICKET_POLICY_STRING])
+    withPolicy = await session(app, [PIPODESK_TICKET_POLICY_STRING])
     withoutPolicy = await session(app, [])
     withAnotherDomain = await session(app, ['admin/allow/administrate/company/*'])
+    withTicketServicePolicy = await session(app, [TICKET_SERVICE_POLICY_STRING])
   })
 
   afterAll(async () => {
@@ -77,8 +86,20 @@ describe('the policy hook', () => {
     expect(response.statusCode).toBe(403)
     expect(response.json()).toEqual({
       error: 'ForbiddenError',
-      message: `Missing policy ${TICKET_POLICY_STRING}`,
+      message: `Missing policy ${PIPODESK_TICKET_POLICY_STRING}`,
     })
+  })
+
+  // The domain is `pipodesk`, not `ticket`, because `ticket` already belongs to
+  // the ticket-service. If someone renames it back, this is what goes red.
+  it('answers 403 to the policy of the ticket-service, which is another product', async () => {
+    const response = await app.inject({
+      method: 'GET',
+      url: '/__test/needs-ticket',
+      cookies: { [SESSION_COOKIE_NAME]: withTicketServicePolicy },
+    })
+
+    expect(response.statusCode).toBe(403)
   })
 
   it('answers 403 when the session only holds another domain', async () => {
@@ -148,7 +169,7 @@ describe('the policy hook', () => {
     contradictory.register(async (scope) => {
       scope.get(
         '/__test/contradictory',
-        { config: { public: true, policy: { domain: 'ticket' } } },
+        { config: { public: true, policy: { domain: 'pipodesk', specific: 'ticket' } } },
         async () => ({ ok: true }),
       )
     })
@@ -170,7 +191,7 @@ describe('the policy hook', () => {
 // deciding its side lands here as null and turns this red, the same way
 // public-routes.test.ts guards the authentication side.
 describe('the policy each route requires', () => {
-  const TICKET = { domain: 'ticket' }
+  const TICKET = { domain: 'pipodesk', specific: 'ticket' }
 
   const EXPECTED: Array<[string, PolicyRequirement | null]> = [
     ['DELETE /api/groups/:id', null],
