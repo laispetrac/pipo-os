@@ -1,0 +1,88 @@
+/* Ported from the prototype's `.empresa-*` (ticket.css). */
+
+.tab {
+  display: flex;
+  flex-direction: column;
+  gap: var(--pipo-space-xlarge);
+}
+
+.list {
+  display: flex;
+  flex-direction: column;
+  gap: var(--pipo-space-xsmall);
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  font-size: var(--pipo-fs-small);
+}
+
+.row {
+  display: grid;
+  grid-template-columns: 1fr auto auto;
+  gap: var(--pipo-space-medium);
+}
+
+.code {
+  color: var(--pipo-text-secondary);
+  font-variant-numeric: tabular-nums;
+}
+
+.contract {
+  padding: 12px;
+  border: var(--pipo-border-width-small) solid var(--pipo-border);
+  border-radius: var(--pipo-radius-small);
+}
+
+/* The card is the hover surface that reveals its copy controls. */
+.contract:hover [data-copy-button],
+.contract:focus-within [data-copy-button] {
+  opacity: 1;
+}
+
+.contractHead {
+  display: flex;
+  align-items: center;
+  gap: var(--pipo-space-xsmall);
+}
+
+/* Label secondary, value primary, copy control right after — one mould per line. */
+.line {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  margin: 6px 0 0;
+  color: var(--pipo-text-secondary);
+}
+
+.value,
+.number {
+  color: var(--pipo-text-primary);
+}
+
+.number {
+  font-variant-numeric: tabular-nums;
+}
+
+.muted {
+  margin: 4px 0 0;
+  color: var(--pipo-text-secondary);
+}
+
+.warn {
+  margin: 2px 0 0;
+  color: var(--pipo-warning-darkest);
+}
+
+/* A hairline separates entering the portal from reading the contract. */
+.vault {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  margin: var(--pipo-space-xsmall) 0 0;
+  padding-top: var(--pipo-space-xsmall);
+  border-top: var(--pipo-border-width-small) solid var(--pipo-border);
+}
+
+.vault .line {
+  margin: 0;
+}

@@ -3,7 +3,6 @@ import type { CommentChannel } from '@/lib/pipodesk/timeline'
 export default {
   notFound: (id: string) => `Não existe chamado com o id ${id}.`,
   copyId: (id: string) => `Copiar o ID ${id}`,
-  copied: 'Copiado',
   /** Two parts, as in the prototype: the fact carries the weight, the filed
    *  date follows in plain text — no period between them. */
   overdueLead: (days: number) =>
@@ -16,9 +15,6 @@ export default {
     documentos: 'Documentos',
     historico: 'Histórico',
   },
-  /** The four record tabs read the full EI snapshot — they arrive with PD-111. */
-  tabPending:
-    'Esta aba lê o retrato completo da movimentação (snapshot do EI), que chega com o PD-111.',
   facts: {
     heading: 'Movimentação',
     company: 'Empresa',

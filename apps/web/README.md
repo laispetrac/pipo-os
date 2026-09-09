@@ -88,15 +88,18 @@ tests/integration    uma suíte por fluxo, renderizando a routeTree real com fet
 
 ## Dados: fixture do protótipo
 
-O frontend ainda não está ligado à API de tickets. Fila, time e detalhe leem
-`src/fixtures/pipodesk/dataset.json`, gerado a partir do protótipo `pipodesk`
-(repositório `prototipos`, ao lado deste) com o vocabulário já traduzido para o
-da API.
+O frontend ainda não está ligado à API de tickets. Fila e time leem
+`src/fixtures/pipodesk/dataset.json`; o detalhe lê também
+`src/fixtures/pipodesk/records.json` (cadastro, empresa, contratos, documentos
+e o vínculo de cada chamado com o beneficiário). Os dois são gerados a partir do
+protótipo `pipodesk` (repositório `prototipos`, ao lado deste) com o
+vocabulário já traduzido para o da API.
 
-- Regerar, a partir da raiz do `pipo-os`:
-  `cd ../prototipos/pipodesk && npx tsx scripts/export-pipo-os.ts ../../pipo-os/apps/web/src/fixtures/pipodesk/dataset.json`
-  O protótipo é projeto **npm**, não pnpm — rodar `pnpm` lá desloca os pacotes
-  instalados e quebra o `node_modules`.
+- Regerar, de dentro de `apps/web`, no commit-base do protótipo:
+  `pnpm fixture:export 79becc7`
+  O script (`scripts/export-fixture.mts`) lê o protótipo por `git archive`, então
+  não toca nele nem depende do que está checado lá; o repositório é procurado em
+  `../prototipos` (ou em `PIPODESK_PROTOTYPE=<caminho>`).
 - Ações na tela (reatribuir, mudar status, prioridade, agendar) aplicam um patch
   local (`lib/pipodesk/patches.ts`); recarregar volta ao dataset.
 - O “hoje” é fixo (campo `today` do dataset), para a fila ser reproduzível em

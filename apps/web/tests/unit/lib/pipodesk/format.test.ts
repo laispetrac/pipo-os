@@ -5,10 +5,17 @@ import {
   daysOverdue,
   displayNameFromEmail,
   formatCount,
+  formatCpf,
   formatDate,
   formatDayMonth,
+  formatHeight,
   formatLongDate,
+  formatLongDateWithYear,
+  formatNumericDate,
   formatPrazo,
+  formatSalary,
+  formatWeight,
+  formatZip,
   prazoVariant,
   shortSidebarLabel,
   slaOf,
@@ -234,5 +241,61 @@ describe('shortSidebarLabel', () => {
   it('should shorten only the label that does not fit the sidebar', () => {
     expect(shortSidebarLabel('Movimentações futuras')).toBe('Mov. futuras')
     expect(shortSidebarLabel('Meus tickets')).toBe('Meus tickets')
+  })
+})
+
+/* ── The record tabs: values as the Backoffice prints them. ── */
+
+describe('formatCpf', () => {
+  it('should mask eleven digits as 000.000.000-00 and leave anything else as it came', () => {
+    expect(formatCpf('63340761992')).toBe('633.407.619-92')
+    expect(formatCpf('633.407.619-92')).toBe('633.407.619-92')
+    expect(formatCpf('1234')).toBe('1234')
+  })
+})
+
+describe('formatZip', () => {
+  it('should split the CEP as 00000-000, and leave anything that is not eight digits as it came', () => {
+    expect(formatZip('23303021')).toBe('23303-021')
+    expect(formatZip('23303-021')).toBe('23303-021')
+    expect(formatZip('123')).toBe('123')
+  })
+})
+
+describe('formatSalary', () => {
+  /** `toLocaleString` puts a no-break space after `R$`; written out so an
+   *  edit with a plain space does not fail on an invisible diff. */
+  it('should print cents as BRL currency', () => {
+    expect(formatSalary(180000)).toBe('R$\u00a01.800,00')
+    expect(formatSalary(0)).toBe('R$\u00a00,00')
+  })
+})
+
+describe('formatWeight and formatHeight', () => {
+  it('should print kilos and metres, and the Backoffice dash when nobody measured', () => {
+    expect(formatWeight(72)).toBe('72 kg')
+    expect(formatWeight(null)).toBe('-')
+    expect(formatHeight(175)).toBe('1,75 m')
+    expect(formatHeight(203)).toBe('2,03 m')
+    // The API may send a decimal; the record shows whole centimetres.
+    expect(formatHeight(175.5)).toBe('1,76 m')
+    expect(formatHeight(null)).toBe('-')
+  })
+})
+
+describe('formatLongDateWithYear', () => {
+  it('should spell the month and keep the year, because the span is years long', () => {
+    expect(formatLongDateWithYear('2026-07-13')).toBe('13 de Julho de 2026')
+    expect(formatLongDateWithYear(null)).toBe('—')
+  })
+})
+
+describe('formatNumericDate', () => {
+  it('should print dd/mm/yy from the São Paulo day of an instant, like every other date on screen', () => {
+    expect(formatNumericDate('2026-07-12')).toBe('12/07/26')
+    expect(formatNumericDate('2026-07-12T15:00:00.000Z')).toBe('12/07/26')
+    // Midnight UTC is still the evening before in São Paulo.
+    expect(formatNumericDate('2026-07-12T00:00:00.000Z')).toBe('11/07/26')
+    expect(formatNumericDate(null)).toBe('—')
   })
 })

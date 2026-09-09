@@ -17,6 +17,9 @@ export default defineConfig({
       '@': fileURLToPath(new URL('./src', import.meta.url)),
     },
   },
+  // The two fixtures are 6 and 7 MB: `JSON.parse` of a string beats a 7 MB
+  // object literal, in the browser and under vitest alike.
+  json: { stringify: true },
   // WEB_APP_ além do VITE_ padrão: variáveis do observability (ex.: WEB_APP_SENTRY_DSN)
   // não usam o prefixo VITE_.
   envPrefix: ['VITE_', 'WEB_APP_'],
