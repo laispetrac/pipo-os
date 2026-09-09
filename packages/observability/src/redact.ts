@@ -11,6 +11,9 @@ const PII_FIELD_ROOTS = [
   'apiKey',
   'cpf',
   'email',
+  // The JWT subject. In Pipo's tokens it is the person's e-mail, so leaving it
+  // out would redact `email` and publish the same value under another name.
+  'sub',
   'taxId',
   'address',
   'beneficiaryName',

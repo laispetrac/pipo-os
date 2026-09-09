@@ -52,8 +52,10 @@ export default fp(
       const policies = request.principal?.policies ?? []
 
       if (!isAuthorized(policies, wanted)) {
+        // No identity in the line: `sub` is the person's e-mail in Pipo's tokens,
+        // so it would only come out redacted. The reqId is what correlates.
         request.log.warn(
-          { email: request.principal?.email, required: wanted.map(policyString) },
+          { required: wanted.map(policyString) },
           'request refused: session lacks the policy the route requires',
         )
         throw new ForbiddenError(`Missing policy ${wanted.map(policyString).join(' or ')}`)

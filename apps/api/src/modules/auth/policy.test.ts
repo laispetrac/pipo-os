@@ -50,9 +50,22 @@ describe('policyMatches', () => {
   })
 
   // Real policies come in longer shapes, like admin/allow/read/email/hr/company/{uuid}.
-  it('refuses a policy with a different number of parts', () => {
+  it('refuses a policy longer than the requirement', () => {
     expect(policyMatches('admin/allow/read/email/hr/company/abc', TICKET)).toBe(false)
-    expect(policyMatches('admin/allow/administrate/ticket', TICKET)).toBe(false)
+  })
+
+  // What the shared Clojure interceptor does: the parts the session states have
+  // to match, and the ones it leaves out are not asked about. This is how the
+  // house grants total access, so refusing it would 403 every Pipo admin.
+  it('accepts a shorter policy on its prefix, the way the house does', () => {
+    expect(policyMatches('admin/allow/*/*', TICKET)).toBe(true)
+    expect(policyMatches('admin/allow/administrate/ticket', TICKET)).toBe(true)
+    expect(policyMatches('admin/allow/*/*', 'admin/allow/administrate/pipodesk/ticket')).toBe(true)
+  })
+
+  it('still refuses a shorter policy whose prefix diverges', () => {
+    expect(policyMatches('admin/allow/read', TICKET)).toBe(false)
+    expect(policyMatches('system/allow', TICKET)).toBe(false)
   })
 })
 
@@ -72,5 +85,31 @@ describe('isAuthorized', () => {
         [{ domain: 'ticket' }],
       ),
     ).toBe(false)
+  })
+
+  // The exclusion pattern the auth-service issues: total access minus one
+  // domain. Reading only the allows would hand the route to someone refused.
+  it('refuses a session denied the very policy the route requires', () => {
+    expect(
+      isAuthorized(
+        ['admin/allow/administrate/pipodesk/*', 'admin/deny/administrate/pipodesk/ticket'],
+        [{ domain: 'pipodesk', specific: 'ticket' }],
+      ),
+    ).toBe(false)
+  })
+
+  it('leaves a deny of another policy alone', () => {
+    expect(
+      isAuthorized(
+        ['admin/allow/administrate/pipodesk/*', 'admin/deny/administrate/pipodesk/structure'],
+        [{ domain: 'pipodesk', specific: 'ticket' }],
+      ),
+    ).toBe(true)
+  })
+
+  // Neither allow nor deny: the shared interceptor groups by effect and never
+  // looks at it, so a wildcard there must not stand in for an allow.
+  it('refuses a policy whose effect is a wildcard', () => {
+    expect(isAuthorized(['admin/*/administrate/ticket/*'], [{ domain: 'ticket' }])).toBe(false)
   })
 })

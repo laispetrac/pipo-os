@@ -31,6 +31,8 @@ describe('the policy hook', () => {
   let withoutPolicy: string
   let withAnotherDomain: string
   let withTicketServicePolicy: string
+  let withHouseWideAccess: string
+  let withDeniedTicket: string
 
   beforeAll(async () => {
     process.env.DEV_LOGIN_ENABLED = 'true'
@@ -59,6 +61,11 @@ describe('the policy hook', () => {
     withoutPolicy = await session(app, [])
     withAnotherDomain = await session(app, ['admin/allow/administrate/company/*'])
     withTicketServicePolicy = await session(app, [TICKET_SERVICE_POLICY_STRING])
+    withHouseWideAccess = await session(app, ['admin/allow/*/*'])
+    withDeniedTicket = await session(app, [
+      'admin/allow/administrate/pipodesk/*',
+      'admin/deny/administrate/pipodesk/ticket',
+    ])
   })
 
   afterAll(async () => {
@@ -74,6 +81,28 @@ describe('the policy hook', () => {
     })
 
     expect(response.statusCode).toBe(200)
+  })
+
+  // Total access in Pipo is a four-part policy. Requiring the same length would
+  // answer 403 to every admin of the house.
+  it('lets through the house-wide policy, which is shorter than the requirement', async () => {
+    const response = await app.inject({
+      method: 'GET',
+      url: '/__test/needs-ticket',
+      cookies: { [SESSION_COOKIE_NAME]: withHouseWideAccess },
+    })
+
+    expect(response.statusCode).toBe(200)
+  })
+
+  it('answers 403 to a session denied the policy, however wide its allow', async () => {
+    const response = await app.inject({
+      method: 'GET',
+      url: '/__test/needs-ticket',
+      cookies: { [SESSION_COOKIE_NAME]: withDeniedTicket },
+    })
+
+    expect(response.statusCode).toBe(403)
   })
 
   it('answers 403 when the session carries no policy', async () => {
@@ -181,6 +210,9 @@ describe('the policy hook', () => {
       await contradictory.ready()
     } catch (error) {
       caught = error
+    } finally {
+      // The failed boot may still have opened the pool dbPlugin closes on close.
+      await contradictory.close().catch(() => {})
     }
 
     expect((caught as Error | undefined)?.message).toMatch(/declares both public and a policy/)
@@ -192,6 +224,17 @@ describe('the policy hook', () => {
 // public-routes.test.ts guards the authentication side.
 describe('the policy each route requires', () => {
   const TICKET = { domain: 'pipodesk', specific: 'ticket' }
+
+  // With the flag on, buildApp registers dev-login, which EXPECTED does not list.
+  const flag = process.env.DEV_LOGIN_ENABLED
+  beforeAll(() => {
+    delete process.env.DEV_LOGIN_ENABLED
+  })
+  afterAll(() => {
+    if (flag !== undefined) {
+      process.env.DEV_LOGIN_ENABLED = flag
+    }
+  })
 
   const EXPECTED: Array<[string, PolicyRequirement | null]> = [
     ['DELETE /api/groups/:id', null],
@@ -235,24 +278,27 @@ describe('the policy each route requires', () => {
 
     // The final config value is only there after ready(): a route stamped by a
     // scope of its own, like the docs, has nothing on it before that.
-    await inventoried.ready()
+    try {
+      await inventoried.ready()
 
-    const inventory = routes
-      .flatMap((route) => {
-        const methods = Array.isArray(route.method) ? route.method : [route.method]
-        return methods.map((method) => ({ method, url: route.url, config: route.config }))
-      })
-      .filter(
-        ({ method, url }) => url.startsWith('/api') && method !== 'HEAD' && method !== 'OPTIONS',
-      )
-      .map(({ method, url, config }): [string, PolicyRequirement | null] => [
-        `${method} ${url}`,
-        config?.policy === undefined ? null : (config.policy as PolicyRequirement),
-      ])
-      .sort(([a], [b]) => a.localeCompare(b))
+      const inventory = routes
+        .flatMap((route) => {
+          const methods = Array.isArray(route.method) ? route.method : [route.method]
+          return methods.map((method) => ({ method, url: route.url, config: route.config }))
+        })
+        .filter(
+          ({ method, url }) => url.startsWith('/api') && method !== 'HEAD' && method !== 'OPTIONS',
+        )
+        .map(({ method, url, config }): [string, PolicyRequirement | null] => [
+          `${method} ${url}`,
+          config?.policy === undefined ? null : (config.policy as PolicyRequirement),
+        ])
+        .sort(([a], [b]) => a.localeCompare(b))
 
-    expect(inventory).toEqual(EXPECTED)
-
-    await inventoried.close()
+      expect(inventory).toEqual(EXPECTED)
+    } finally {
+      // A failed assertion would otherwise leave the pool dbPlugin opened.
+      await inventoried.close().catch(() => {})
+    }
   })
 })

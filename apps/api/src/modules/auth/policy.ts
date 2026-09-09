@@ -21,13 +21,22 @@ export function policyString(requirement: PolicyRequirement): string {
   return [context, effect, action, domain, specific].join('/')
 }
 
-// The wildcard only widens what the session holds: `*` in the session's policy
-// covers any value the requirement names at that position, never the reverse.
+const effectOf = (policy: string): string | undefined => policy.split('/')[1]
+
+/** The effect swapped for `allow`, to compare a deny against a requirement. */
+const asAllow = (policy: string): string => {
+  const parts = policy.split('/')
+  parts[1] = 'allow'
+  return parts.join('/')
+}
+
+// Mirrors match-policy in com.piposaude.interceptors.auth.token: a held policy
+// shorter than the requirement matches on its prefix, never the other way.
 export function policyMatches(held: string, required: string): boolean {
   const heldParts = held.split('/')
   const requiredParts = required.split('/')
 
-  if (heldParts.length !== requiredParts.length) {
+  if (heldParts.length > requiredParts.length) {
     return false
   }
 
@@ -35,8 +44,15 @@ export function policyMatches(held: string, required: string): boolean {
 }
 
 export function isAuthorized(policies: string[], required: PolicyRequirement[]): boolean {
-  return required.some((requirement) => {
-    const wanted = policyString(requirement)
-    return policies.some((held) => policyMatches(held, wanted))
-  })
+  const wanted = required.map(policyString)
+
+  // A deny naming one of the required policies refuses the whole request, the
+  // way filter-authorized-policies does — exact string, no wildcard expansion.
+  const denied = new Set(policies.filter((held) => effectOf(held) === 'deny').map(asAllow))
+  if (wanted.some((policy) => denied.has(policy))) {
+    return false
+  }
+
+  const allowed = policies.filter((held) => effectOf(held) === 'allow')
+  return wanted.some((policy) => allowed.some((held) => policyMatches(held, policy)))
 }
