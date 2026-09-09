@@ -1,9 +1,5 @@
 import '@testing-library/jest-dom/vitest'
-import { cleanup, configure } from '@testing-library/react'
-
-// The ticket route loads on demand, so the first `findBy` after entering it
-// includes a dynamic import; under parallel workers 1s was not enough.
-configure({ asyncUtilTimeout: 3000 })
+import { cleanup } from '@testing-library/react'
 
 // In the jsdom environment, fetch/Request come from undici (Node) while
 // AbortController comes from jsdom, and undici rejects foreign signals at

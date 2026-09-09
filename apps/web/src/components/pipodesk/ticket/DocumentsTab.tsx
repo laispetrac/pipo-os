@@ -1,5 +1,6 @@
 import { DeskIcon } from '@/components/pipodesk/icons'
-import { ENROLLMENT_TYPE_COPY, documentKey, documentLabel } from '@/constants/pipodesk/domain'
+import { ENROLLMENT_TYPE_COPY } from '@/constants/pipodesk/domain'
+import { documentKey, documentLabel } from '@/lib/pipodesk/document'
 import copy from '@/constants/pages/pipodesk/ticket/documents'
 import { formatLongDate } from '@/lib/pipodesk/format'
 import type { RecordDocument, TicketRecords } from '@/lib/pipodesk/record'

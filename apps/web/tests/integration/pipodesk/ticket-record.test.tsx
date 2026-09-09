@@ -1,4 +1,4 @@
-import { render, screen, within } from '@testing-library/react'
+import { configure, render, screen, within } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { RouterProvider, createMemoryHistory, createRouter } from '@tanstack/react-router'
 import { routeTree } from '@/routeTree.gen'
@@ -6,12 +6,16 @@ import { queueSeed } from '@/fixtures/pipodesk/dataset'
 import { records } from '@/fixtures/pipodesk/records'
 import { displayNameOf, historyOf } from '@/lib/pipodesk/record'
 import { formatCpf, formatLongDate, formatNumericDate } from '@/lib/pipodesk/format'
-import { documentLabel } from '@/constants/pipodesk/domain'
+import { documentLabel } from '@/lib/pipodesk/document'
 import companyCopy from '@/constants/pages/pipodesk/ticket/company'
 import documentsCopy from '@/constants/pages/pipodesk/ticket/documents'
 import historyCopy from '@/constants/pages/pipodesk/ticket/history'
 import personCopy from '@/constants/pages/pipodesk/ticket/person'
 import recordCopy from '@/constants/pages/pipodesk/ticket/record'
+
+// This route loads on demand: the first `findBy` after entering it includes a
+// dynamic import, and the 1s default is not enough under parallel workers.
+configure({ asyncUtilTimeout: 3000 })
 
 vi.mock('@/lib/auth', () => ({
   ensureSession: vi.fn().mockResolvedValue(undefined),

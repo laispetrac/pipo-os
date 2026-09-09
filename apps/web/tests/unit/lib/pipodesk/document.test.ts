@@ -1,5 +1,5 @@
 // @vitest-environment node
-import { documentKey, documentLabel } from '@/constants/pipodesk/domain'
+import { documentKey, documentLabel } from '@/lib/pipodesk/document'
 
 describe('documentLabel', () => {
   it('should name the documents the EI asks for, in both spellings of the proof of address', () => {

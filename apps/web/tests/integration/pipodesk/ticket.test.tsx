@@ -1,4 +1,4 @@
-import { render, screen, within } from '@testing-library/react'
+import { configure, render, screen, within } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { RouterProvider, createMemoryHistory, createRouter } from '@tanstack/react-router'
 import { routeTree } from '@/routeTree.gen'
@@ -30,6 +30,10 @@ async function firstRow(): Promise<{ id: string; ticket: TicketRow; link: HTMLEl
   // carries no operational number (PD-011 gives it one).
   return { id, ticket: byId(id), link: within(row as HTMLElement).getByRole('link') }
 }
+
+// This route loads on demand: the first `findBy` after entering it includes a
+// dynamic import, and the 1s default is not enough under parallel workers.
+configure({ asyncUtilTimeout: 3000 })
 
 vi.mock('@/lib/auth', () => ({
   ensureSession: vi.fn().mockResolvedValue(undefined),
