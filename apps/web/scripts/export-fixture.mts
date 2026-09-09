@@ -209,6 +209,8 @@ const translate = (table: Record<string, string>, value: string, what: string): 
 /* The record's closed unions: the fixture enters the app by cast, so this is
    the only place a value outside them can still be caught. */
 const ROLE = ['holder', 'dependent'] as const
+const MEMBER_ROLE = ['admin', 'member'] as const
+const PRIORITY = ['urgent', 'high', 'medium', 'low'] as const
 const DOCUMENT_SCOPE = ['ticket', 'company', 'contract'] as const
 const DOCUMENT_ORIGIN = ['pipo', 'client'] as const
 const SEX = ['f', 'm'] as const
@@ -311,7 +313,10 @@ async function main(): Promise<void> {
         vinculo: relationshipOf(enrollment),
         assigneeId: ticket.assigneeId,
         groupId: ticket.groupId,
-        priority: ticket.priority,
+        priority:
+          ticket.priority === null
+            ? null
+            : oneOf(PRIORITY, ticket.priority, `prioridade de ${ticket.id}`),
         actionDate: ticket.actionDate,
         tags: ticket.tags,
         sourceSystem: translate(SOURCE_SYSTEM, ticket.origin, 'origem'),
@@ -346,7 +351,7 @@ async function main(): Promise<void> {
         memberships: DATASET.memberships.map(({ userId, groupId, role, companyIds }) => ({
           userId,
           groupId,
-          role,
+          role: oneOf(MEMBER_ROLE, role, `papel de ${userId} em ${groupId}`),
           companyIds,
         })),
         // As the prototype seeds its state: the viewers start unsubscribed.
