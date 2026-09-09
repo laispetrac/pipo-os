@@ -62,7 +62,7 @@ interface Beneficiary {
     agency: string
     account: string
   } | null
-  role: 'holder' | 'dependent'
+  role: string
   holderId: string | null
   link: {
     companyId: string
@@ -120,9 +120,9 @@ interface Contract {
 interface Document {
   id: string
   name: string
-  scope: 'ticket' | 'company' | 'contract'
+  scope: string
   scopeId: string
-  origin: 'pipo' | 'client'
+  origin: string
   kind: string
   at: string
   sizeKb: number
@@ -208,6 +208,9 @@ const translate = (table: Record<string, string>, value: string, what: string): 
 
 /* The record's closed unions: the fixture enters the app by cast, so this is
    the only place a value outside them can still be caught. */
+const ROLE = ['holder', 'dependent'] as const
+const DOCUMENT_SCOPE = ['ticket', 'company', 'contract'] as const
+const DOCUMENT_ORIGIN = ['pipo', 'client'] as const
 const SEX = ['f', 'm'] as const
 const MARITAL_STATUS = ['single', 'married', 'divorced', 'widowed', 'domestic-partnership'] as const
 
@@ -388,9 +391,9 @@ async function main(): Promise<void> {
         ({ id, name, scope, scopeId, origin, kind, at, sizeKb }) => ({
           id,
           name,
-          scope,
+          scope: oneOf(DOCUMENT_SCOPE, scope, `escopo do documento ${id}`),
           scopeId,
-          origin,
+          origin: oneOf(DOCUMENT_ORIGIN, origin, `origem do documento ${id}`),
           kind,
           at,
           sizeKb,
@@ -411,7 +414,7 @@ async function main(): Promise<void> {
         motherName: person.motherName,
         address: person.address,
         bankAccount: person.bankAccount,
-        role: person.role,
+        role: oneOf(ROLE, person.role, `papel de ${person.id}`),
         holderId: person.holderId,
         link: {
           companyId: person.link.companyId,
