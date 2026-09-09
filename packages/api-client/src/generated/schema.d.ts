@@ -1874,12 +1874,10 @@ export interface components {
             parentTicketId?: string;
         };
         UpdateTicketBodyInput: {
-            status?: components["schemas"]["TicketStatusInput"];
             queueId?: string | null;
             assigneeId?: string | null;
             tags?: string[];
             forceCompletion?: boolean;
-            closedAt?: string | null;
             parentTicketId?: string | null;
         };
         UpdateTicketStatusBodyInput: {

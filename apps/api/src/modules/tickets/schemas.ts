@@ -91,14 +91,14 @@ export const createTicketBodySchema = z
   })
   .meta({ id: 'CreateTicketBody' })
 
+// Status lives only in PATCH /:id/status, which audits the change and refuses
+// a closed ticket. Accepting it here was a second, unaudited door (DSP-19).
 export const updateTicketBodySchema = z
   .object({
-    status: ticketStatusSchema.optional(),
     queueId: z.uuid().nullable().optional(),
     assigneeId: z.string().min(1).nullable().optional(),
     tags: z.array(tagSchema).optional(),
     forceCompletion: z.boolean().optional(),
-    closedAt: z.iso.datetime({ offset: true }).nullable().optional(),
     parentTicketId: z.uuid().nullable().optional(),
   })
   .strict()

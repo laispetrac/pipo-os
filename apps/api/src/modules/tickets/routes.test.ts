@@ -563,7 +563,7 @@ describe('tickets routes', () => {
       const response = await app.inject({
         method: 'PATCH',
         url: '/api/tickets/00000000-0000-4000-8000-000000000099',
-        payload: { status: 'completed' },
+        payload: { tags: ['pj_mov'] },
       })
 
       expect(response.statusCode).toBe(401)
@@ -574,7 +574,7 @@ describe('tickets routes', () => {
       const response = await app.inject({
         method: 'PATCH',
         url: '/api/tickets/00000000-0000-4000-8000-000000000099',
-        payload: { status: 'completed' },
+        payload: { tags: ['pj_mov'] },
         cookies: { [SESSION_COOKIE_NAME]: sessionCookie },
       })
 
@@ -582,7 +582,7 @@ describe('tickets routes', () => {
       expect(response.json().error).toBe('NotFoundError')
     })
 
-    it('updates ticket status and returns 200', async () => {
+    it('updates a field and returns 200', async () => {
       const created = await app.inject({
         method: 'POST',
         url: '/api/tickets',
@@ -594,12 +594,12 @@ describe('tickets routes', () => {
       const response = await app.inject({
         method: 'PATCH',
         url: `/api/tickets/${id}`,
-        payload: { status: 'carrier-processing' },
+        payload: { tags: ['pj_mov'] },
         cookies: { [SESSION_COOKIE_NAME]: sessionCookie },
       })
 
       expect(response.statusCode).toBe(200)
-      expect(response.json().status).toBe('carrier-processing')
+      expect(response.json().tags).toEqual(['pj_mov'])
     })
 
     it('accepts null to clear a nullable field', async () => {
@@ -846,7 +846,7 @@ describe('tickets routes', () => {
 
       await app.inject({
         method: 'PATCH',
-        url: `/api/tickets/${id}`,
+        url: `/api/tickets/${id}/status`,
         cookies: { [SESSION_COOKIE_NAME]: sessionCookie },
         payload: { status: 'completed' },
       })
