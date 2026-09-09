@@ -210,6 +210,8 @@ const translate = (table: Record<string, string>, value: string, what: string): 
    the only place a value outside them can still be caught. */
 const ROLE = ['holder', 'dependent'] as const
 const MEMBER_ROLE = ['admin', 'member'] as const
+const SORT_FIELD = ['actionDate', 'createdAt', 'updatedAt', 'company', 'status'] as const
+const SORT_DIRECTION = ['asc', 'desc'] as const
 const PRIORITY = ['urgent', 'high', 'medium', 'low'] as const
 const DOCUMENT_SCOPE = ['ticket', 'company', 'contract'] as const
 const DOCUMENT_ORIGIN = ['pipo', 'client'] as const
@@ -362,8 +364,17 @@ async function main(): Promise<void> {
             groupId,
             ownerId,
             subscriberIds: subscriberIds.filter((userId) => !VIEWER_IDS.includes(userId)),
+            // `filter` stays opaque on purpose: the queue reads it through the
+            // generated API types, and no field of it is closed on our side.
             filter,
-            sort,
+            sort: {
+              by: oneOf(SORT_FIELD, String(sort.by), `campo de ordenação da fila ${id}`),
+              direction: oneOf(
+                SORT_DIRECTION,
+                String(sort.direction),
+                `direção de ordenação da fila ${id}`,
+              ),
+            },
           }),
         ),
       },
