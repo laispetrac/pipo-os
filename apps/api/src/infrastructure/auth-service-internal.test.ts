@@ -2,7 +2,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { verifyToken } from './auth-service-internal.js'
 
 const BASE_URL = 'http://auth-service.platform:4000'
-const TICKET_POLICY = 'admin/allow/administrate/ticket/*'
+const TICKET_POLICY = 'admin/allow/administrate/pipodesk/ticket'
 const SERVICE_TOKEN = 'header.payload.signature'
 
 function jsonResponse(body: unknown, status = 200): Response {

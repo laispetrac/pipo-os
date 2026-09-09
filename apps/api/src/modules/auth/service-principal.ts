@@ -1,9 +1,13 @@
 import { decodeJwtPayload } from './session.js'
 
 /** The policy a service must hold to reach the ticket routes. A string here and
- *  not a builder because every service-allowed route is ticket-domain; when
- *  PD-022 lands, the requirement comes from the route's own `policy` config. */
-export const SERVICE_TICKET_POLICY = 'admin/allow/administrate/ticket/*'
+ *  not a builder because every service-allowed route is in the same family;
+ *  when PD-022 lands, the requirement comes from the route's own `policy`.
+ *
+ *  `pipodesk`, not `ticket`: the `ticket` domain is already the admin role of
+ *  the ticket-service (squad opex). The specific segment splits this from
+ *  `pipodesk/structure`, the groups and queues of PD-025. */
+export const SERVICE_PIPODESK_TICKET_POLICY = 'admin/allow/administrate/pipodesk/ticket'
 
 const SUBJECT_PREFIX = 'system:serviceaccount:'
 

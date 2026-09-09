@@ -8,7 +8,7 @@ import {
   allowedServiceNames,
   bearerToken,
   serviceNameFromToken,
-  SERVICE_TICKET_POLICY,
+  SERVICE_PIPODESK_TICKET_POLICY,
   tokenExpired,
 } from './service-principal.js'
 
@@ -120,11 +120,11 @@ async function servicePrincipal(request: FastifyRequest, token: string): Promise
   const identityId = await verifyToken({
     baseUrl: authServiceInternalUrl(),
     token,
-    policies: [SERVICE_TICKET_POLICY],
+    policies: [SERVICE_PIPODESK_TICKET_POLICY],
     audit: auditOf(request, name),
   })
 
-  return { kind: 'service', name, identityId, policies: [SERVICE_TICKET_POLICY] }
+  return { kind: 'service', name, identityId, policies: [SERVICE_PIPODESK_TICKET_POLICY] }
 }
 
 export default fp(

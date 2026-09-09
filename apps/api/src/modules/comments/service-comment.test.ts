@@ -54,7 +54,7 @@ describe('a comment written by a service', () => {
     const login = await app.inject({
       method: 'POST',
       url: '/api/auth/dev-login',
-      payload: { policies: ['admin/allow/administrate/ticket/*'] },
+      payload: { policies: ['admin/allow/administrate/pipodesk/ticket'] },
     })
     sessionCookie = cookieValue(login, SESSION_COOKIE_NAME)!
 

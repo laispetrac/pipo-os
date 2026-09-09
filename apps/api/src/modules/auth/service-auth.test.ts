@@ -3,7 +3,7 @@ import { afterAll, afterEach, beforeAll, beforeEach, describe, expect, it, vi } 
 import { buildApp } from '../../app.js'
 import { requirePrincipal, requireUser } from './authenticate.js'
 
-const TICKET_POLICY = 'admin/allow/administrate/ticket/*'
+const TICKET_POLICY = 'admin/allow/administrate/pipodesk/ticket'
 const IDENTITY_ID = '3f1a6d6e-9c1e-4f0b-9d0e-2b7a1c5f8e42'
 const SERVICE_NAME_IN_TEST = 'enrollment-integrations'
 

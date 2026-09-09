@@ -164,7 +164,7 @@ As rotas abertas a serviço são as quatro que abrir e acompanhar um chamado exi
 
 Quem escreve como serviço fica registrado como `svc:<nome>` na coluna de autor, ao lado do `sub` de uma pessoa. Mudar status não está aberto a serviço: quem muda status é gente, e o caminho de volta para o EI é o webhook.
 
-**Pré-requisito de infraestrutura**: a identidade `<nome>.serviceaccount@piposaude.com.br` precisa existir no auth-service de cada ambiente com a policy `admin/allow/administrate/ticket/*` (`ppcli user add-policy`). Ligar `SERVICE_ALLOWED_NAMES` sem isso dá `403` no `verify-token`.
+**Pré-requisito de infraestrutura**: a identidade `<nome>.serviceaccount@piposaude.com.br` precisa existir no auth-service de cada ambiente com a policy que as rotas de chamado exigem (ver [Autorização](#autorização)), concedida por `ppcli user add-policy`. Ligar `SERVICE_ALLOWED_NAMES` sem isso dá `403` no `verify-token`.
 
 #### Autenticação em desenvolvimento
 
