@@ -93,7 +93,6 @@ describe('error handler', () => {
         config: { public: true },
         schema: { response: { 200: z.object({ id: z.uuid() }), 500: errorResponseSchema } },
       },
-      // @ts-expect-error the mismatch is the point of the route
       async () => ({ id: 'not-a-uuid' }),
     )
 
