@@ -74,6 +74,19 @@ describe('error handler', () => {
       },
     )
 
+    // Nobody throws a bare null on purpose; the point is that the handler must
+    // not add a second failure on top of the first one.
+    server.get(
+      '/__test/throws-nothing',
+      {
+        config: { public: true },
+        schema: { response: { 500: errorResponseSchema } },
+      },
+      async () => {
+        throw null
+      },
+    )
+
     await app.ready()
   })
 
@@ -176,5 +189,12 @@ describe('error handler', () => {
       error: 'InternalServerError',
       message: 'Something went wrong',
     })
+  })
+
+  it('survives a thrown value that is not an object', async () => {
+    const response = await app.inject({ method: 'GET', url: '/__test/throws-nothing' })
+
+    expect(response.statusCode).toBe(500)
+    expect(response.json().error).toBe('InternalServerError')
   })
 })

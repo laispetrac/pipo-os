@@ -39,6 +39,13 @@ const CLIENT_ERROR_NAMES: Record<number, string> = {
 }
 
 function isClientError(error: unknown): error is ClientError {
+  // `unknown` is honest here: a handler can throw anything, including null, and
+  // reading a property off it would fail inside the handler that exists to
+  // stop failures.
+  if (typeof error !== 'object' || error === null) {
+    return false
+  }
+
   const status = (error as { statusCode?: unknown }).statusCode
   return typeof status === 'number' && status >= 400 && status < 500
 }
