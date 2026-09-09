@@ -1,9 +1,30 @@
 import type { FastifyRequest } from 'fastify'
 import fp from 'fastify-plugin'
-import { UnauthorizedError } from '../../shared/errors.js'
+import { verifyToken } from '../../infrastructure/auth-service-internal.js'
+import { ForbiddenError, UnauthorizedError } from '../../shared/errors.js'
+import { authServiceInternalUrl } from './config.js'
 import { SESSION_COOKIE_NAME, extractSessionClaims, type SessionClaims } from './session.js'
+import {
+  allowedServiceNames,
+  bearerToken,
+  serviceNameFromToken,
+  SERVICE_TICKET_POLICY,
+} from './service-principal.js'
 
-export type Principal = SessionClaims
+export interface UserPrincipal extends SessionClaims {
+  kind: 'user'
+}
+
+/** A caller that is not a person: another Pipo service, recognised by the
+ *  service account token of its pod instead of a login. */
+export interface ServicePrincipal {
+  kind: 'service'
+  name: string
+  identityId: string
+  policies: string[]
+}
+
+export type Principal = UserPrincipal | ServicePrincipal
 
 declare module 'fastify' {
   interface FastifyRequest {
@@ -14,6 +35,9 @@ declare module 'fastify' {
 
   interface FastifyContextConfig {
     public?: boolean
+    // Opt-in, one route at a time: a service reaching a route that never named
+    // itself gets 403, so a route added later is closed to services by default.
+    serviceAllowed?: boolean
   }
 }
 
@@ -29,16 +53,64 @@ export function requirePrincipal(request: FastifyRequest): Principal {
   return principal
 }
 
+/** For a handler that only makes sense for a person: an author, an assignee,
+ *  the `@me` of a queue. A service holding the policy still gets 403 here. */
+export function requireUser(request: FastifyRequest): UserPrincipal {
+  const principal = requirePrincipal(request)
+
+  if (principal.kind !== 'user') {
+    throw new ForbiddenError('This action belongs to a person, not to a service')
+  }
+
+  return principal
+}
+
 // The access-token may carry no `sub`, so a handler writing an author or an
 // assignee has to demand it instead of assuming it.
 export function requireUserId(request: FastifyRequest): string {
-  const sub = requirePrincipal(request).sub?.trim()
+  const sub = requireUser(request).sub?.trim()
 
   if (!sub) {
     throw new UnauthorizedError('Invalid session')
   }
 
   return sub
+}
+
+function auditOf(request: FastifyRequest, serviceName: string) {
+  const header = (name: string): string | undefined => {
+    const value = request.headers[name]
+    return typeof value === 'string' ? value : undefined
+  }
+
+  return {
+    requestId: request.id,
+    correlationId: header('x-correlation-id'),
+    userId: `svc:${serviceName}`,
+    sourceIp: header('x-forwarded-for') ?? request.ip,
+  }
+}
+
+async function servicePrincipal(request: FastifyRequest, token: string): Promise<ServicePrincipal> {
+  const name = serviceNameFromToken(token)
+
+  if (!name) {
+    throw new UnauthorizedError('Not a service account token')
+  }
+
+  if (!allowedServiceNames().has(name)) {
+    request.log.warn({ service: name }, 'request refused: service is not in the allowlist')
+    throw new ForbiddenError(`Service ${name} is not allowed`)
+  }
+
+  const identityId = await verifyToken({
+    baseUrl: authServiceInternalUrl(),
+    token,
+    policies: [SERVICE_TICKET_POLICY],
+    audit: auditOf(request, name),
+  })
+
+  return { kind: 'service', name, identityId, policies: [SERVICE_TICKET_POLICY] }
 }
 
 export default fp(
@@ -60,11 +132,25 @@ export default fp(
       const unsigned = rawCookie ? request.unsignCookie(rawCookie) : null
       const claims = unsigned?.valid && unsigned.value ? extractSessionClaims(unsigned.value) : null
 
-      if (!claims) {
+      if (claims) {
+        request.principal = { kind: 'user', ...claims }
+        return
+      }
+
+      const token = bearerToken(request.headers.authorization)
+
+      if (!token) {
         throw new UnauthorizedError('Not authenticated')
       }
 
-      request.principal = claims
+      // Read before the token is decoded, and before any call upstream: a route
+      // that does not accept services closes here, and a broken auth-service
+      // cannot turn that refusal into a 503.
+      if (request.routeOptions.config.serviceAllowed !== true) {
+        throw new ForbiddenError('This route does not accept a service caller')
+      }
+
+      request.principal = await servicePrincipal(request, token)
     })
   },
   // Both run their own onRequest hook, and hooks fire in registration order:

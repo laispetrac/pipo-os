@@ -1,7 +1,7 @@
 import type { FastifyInstance } from 'fastify'
 import { afterAll, beforeAll, describe, expect, it } from 'vitest'
 import { buildApp } from '../../app.js'
-import { requirePrincipal, requireUserId } from './authenticate.js'
+import { requirePrincipal, requireUser, requireUserId } from './authenticate.js'
 import { SESSION_COOKIE_NAME } from './session.js'
 
 function cookieValue(
@@ -40,7 +40,7 @@ describe('authenticate hook', () => {
     // Routes added before ready(): hooks bind at preReady, so a route that
     // declares no config is covered exactly like an autoloaded one.
     app.get('/__test/protected', async (request) => {
-      const principal = requirePrincipal(request)
+      const principal = requireUser(request)
       return { email: principal.email, policies: principal.policies, sub: principal.sub ?? null }
     })
     app.get('/__test/public', { config: { public: true } }, async () => ({ ok: true }))

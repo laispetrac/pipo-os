@@ -61,6 +61,14 @@ function resolveDevLoginEnabled(
   return true
 }
 
+// A second listener, not a second service: /api/verify-token only answers on
+// the internal port (4000), never through the public host. Not
+// requiredInProduction like its neighbours: the address is fixed in the
+// cluster, and a missing variable must not take the whole API down.
+export function authServiceInternalUrl(): string {
+  return process.env.AUTH_SERVICE_INTERNAL_URL ?? 'http://auth-service.platform:4000'
+}
+
 export function authConfig(): AuthConfig {
   const isProduction = process.env.NODE_ENV === 'production'
   const allowedEmailDomains = (process.env.ALLOWED_EMAIL_DOMAINS ?? 'piposaude.com.br,pipo.ai')
@@ -71,12 +79,7 @@ export function authConfig(): AuthConfig {
 
   return {
     authServiceUrl: requiredInProduction('AUTH_SERVICE_URL', 'http://localhost:9090', isProduction),
-    // A second listener, not a second service: /api/verify-token only answers
-    // on the internal port (4000), never through the public host. Not
-    // requiredInProduction like its neighbours: the address is fixed in the
-    // cluster, and a missing variable must not take the whole API down.
-    authServiceInternalUrl:
-      process.env.AUTH_SERVICE_INTERNAL_URL ?? 'http://auth-service.platform:4000',
+    authServiceInternalUrl: authServiceInternalUrl(),
     googleClientId: requiredInProduction('GOOGLE_OAUTH_CLIENT_ID', '', isProduction),
     appBaseUrl: requiredInProduction('APP_BASE_URL', 'http://localhost:5173', isProduction),
     allowedEmailDomains,
