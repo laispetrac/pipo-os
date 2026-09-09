@@ -165,7 +165,7 @@ A identidade vem de `DEV_LOGIN_EMAIL` (padrão `dev@piposaude.com.br`); as `poli
 ```bash
 curl -X POST http://localhost:3001/api/auth/dev-login \
   -H 'Content-Type: application/json' \
-  -d '{"policies":["admin/allow/administrate/ticket/*"]}'
+  -d '{"policies":["admin/allow/administrate/pipodesk/ticket"]}'
 ```
 
 Essas garantias são cobertas por testes em `apps/api/src/modules/auth/dev-login.test.ts` — inclusive as que verificam a recusa no boot.
@@ -182,7 +182,11 @@ Autenticar responde quem é a pessoa; a **policy** responde o que ela pode fazer
 
 **Por que o domínio é `pipodesk` e não `ticket`.** `admin/allow/administrate/ticket/*` já existe e pertence a outro serviço: é o papel de admin do `ticket-service` (squad opex). Reusar a string acoplaria os dois — analista do Pipodesk viraria admin lá, e o admin de lá entraria aqui. O domínio próprio também deixa o específico livre para separar as duas famílias de rota: `ticket` para chamado e `structure` para grupos e filas, com `admin/allow/administrate/pipodesk/*` cobrindo as duas. O `authorize.test.ts` tem um caso que recusa a policy do `ticket-service` com 403, para a colisão não voltar por descuido.
 
-O curinga vale só do lado da sessão: quem tem `.../pipodesk/*` passa numa rota que pede `pipodesk/ticket`, e quem tem só `pipodesk/ticket` não passa numa que peça `pipodesk/structure`. Uma rota que não declara `policy` fica a cargo apenas da autenticação, e o inventário em `apps/api/src/modules/auth/authorize.test.ts` lista todas — rota nova sem decisão deixa o teste vermelho.
+O casamento é o mesmo do interceptor Clojure da casa (`com.piposaude.interceptors.auth.token`), em três regras:
+
+- **O curinga vale só do lado da sessão**: quem tem `.../pipodesk/*` passa numa rota que pede `pipodesk/ticket`, e quem tem só `pipodesk/ticket` não passa numa que peça `pipodesk/structure`.
+- **Policy mais curta casa pelo prefixo**: as partes que a sessão declara precisam bater, e as que ela omite não são perguntadas — é assim que `admin/allow/*/*`, o acesso total da Pipo, entra aqui como entra em qualquer serviço. O contrário não vale: policy mais longa que a exigida não passa.
+- **`deny` recusa antes de qualquer `allow`**: uma policy `admin/deny/...` que nomeie exatamente a exigida pela rota fecha o acesso, mesmo que a sessão também carregue um `allow` mais amplo. É o padrão de exclusão que o auth-service emite. Uma rota que não declara `policy` fica a cargo apenas da autenticação, e o inventário em `apps/api/src/modules/auth/authorize.test.ts` lista todas — rota nova sem decisão deixa o teste vermelho.
 
 Conceder e conferir é pelo `ppcli` (a identidade que roda precisa de `admin/allow/administrate/identity/*`):
 
@@ -207,9 +211,9 @@ Todo erro da API responde com o mesmo corpo, o componente `ErrorResponse` do con
 }
 ```
 
-`error` é o nome da classe de erro (contrato observado pelos testes), `message` é legível em inglês — a copy em pt-BR é do frontend — e `details` só aparece quando a falha é por campo: validação de payload (400) e recusa dos gates de conclusão (422). Um 422 de `UnprocessableEntityError` é violação de máquina de estados (chamado já fechado), e não traz `details`; um de `ValidationFailedError` traz todos os campos que falharam de uma vez, não o primeiro.
+`error` é o nome da classe de erro (contrato observado pelos testes), `message` é legível em inglês — a copy em pt-BR é do frontend — e `details` só aparece quando a falha é por campo: validação de payload (400) e recusa dos gates de conclusão (422). Um 422 de `UnprocessableEntityError` é violação de máquina de estados (chamado já fechado), e não traz `details`; um de `ValidationFailedError` traz todos os campos que falharam de uma vez, não o primeiro — o contrato existe, mas quem o produz são os gates de conclusão do PD-031, então hoje o único `details` que sai de verdade é o do 400.
 
-Limites de corpo, do mais externo para o mais interno: **1 MB** global (o mesmo corte do nginx-ingress), **256 KB** no `POST /api/tickets/:id/comments` e **50 mil caracteres** no campo `body` do comentário (o teto da rota é quatro vezes isso em bytes, para que um texto de caracteres multibyte chegue à validação do campo em vez de esbarrar no limite de corpo). Passar dos dois primeiros responde `413`; passar do último responde `400` dizendo qual campo estourou.
+Limites de corpo, do mais externo para o mais interno: **1 MB** global (o mesmo corte do nginx-ingress), **256 KB** no `POST /api/tickets/:id/comments` e **50 mil caracteres** no campo `body` do comentário (o teto da rota é cinco vezes isso em bytes de UTF-8 cru, para que um texto de caracteres multibyte chegue à validação do campo em vez de esbarrar no limite de corpo; um cliente que escapa tudo em `\uXXXX` gasta 6 bytes por unidade e pode esbarrar no 413 antes). Passar dos dois primeiros responde `413`; passar do último responde `400` dizendo qual campo estourou.
 
 ### Payload de criação
 
