@@ -1,4 +1,4 @@
-import { render, screen, within } from '@testing-library/react'
+import { configure, render, screen, within } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { RouterProvider, createMemoryHistory, createRouter } from '@tanstack/react-router'
 import { routeTree } from '@/routeTree.gen'
@@ -27,6 +27,10 @@ vi.mock('@/fixtures/pipodesk/dataset', async (importOriginal) => {
     },
   }
 })
+
+// This route loads on demand: the first `findBy` after entering it includes a
+// dynamic import, and the 1s default is not enough under parallel workers.
+configure({ asyncUtilTimeout: 3000 })
 
 describe('dono num pod sem analista', () => {
   it('should say the pod has no analyst instead of opening an empty menu', async () => {

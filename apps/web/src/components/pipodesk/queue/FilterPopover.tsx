@@ -1,5 +1,5 @@
 import { useMemo, useState, type RefObject } from 'react'
-import { Popover } from '@/components/pipodesk/primitives'
+import { Popover, type PopoverAlign } from '@/components/pipodesk/primitives'
 import {
   DATE_WINDOWS,
   FILTER_FIELDS,
@@ -29,7 +29,7 @@ import styles from './Queue.module.css'
 export interface FilterPopoverProps {
   /** The trigger, so its own click closes the panel. */
   anchor?: RefObject<HTMLElement | null>
-  open: boolean
+  /** Mounted only while open, so there is no `open`: closing unmounts. */
   onClose: () => void
   /** The node's tickets, before any chip. */
   base: TicketRow[]
@@ -42,10 +42,15 @@ export interface FilterPopoverProps {
   onRemove: (field: FilterField) => void
   dateWindowDays: number | null
   onSetDateWindow: (days: number | null) => void
+  /** Set by a column funnel: the panel opens on this field's options and has
+   *  no field list to go back to. */
+  lockedField?: FilterField
+  /** Defaults to `right`, the toolbar's side: its trigger sits at the table's
+   *  right edge, so the panel must grow leftwards. */
+  align?: PopoverAlign
 }
 
 export function FilterPopover({
-  open,
   onClose,
   base,
   filter,
@@ -56,19 +61,12 @@ export function FilterPopover({
   dateWindowDays,
   onSetDateWindow,
   anchor,
+  lockedField,
+  align = 'right',
 }: FilterPopoverProps) {
-  const [field, setField] = useState<FilterField | null>(null)
+  const [field, setField] = useState<FilterField | null>(lockedField ?? null)
   const [query, setQuery] = useState('')
   const [onDateWindow, setOnDateWindow] = useState(false)
-
-  /** Closing resets state: reopening must land on the field list, not the
-   *  previous field's options. */
-  const close = () => {
-    setField(null)
-    setQuery('')
-    setOnDateWindow(false)
-    onClose()
-  }
 
   const options = useMemo(() => {
     if (field === null) return []
@@ -101,7 +99,7 @@ export function FilterPopover({
   }
 
   return (
-    <Popover open={open} onClose={close} label="Filtros" align="right" anchor={anchor}>
+    <Popover open onClose={onClose} label="Filtros" align={align} anchor={anchor}>
       <div className={styles.panelBody}>
         {onDateWindow ? (
           <>
@@ -162,9 +160,13 @@ export function FilterPopover({
         ) : (
           <>
             <div className={styles.panelHead}>
-              <button type="button" className={styles.panelBack} onClick={() => setField(null)}>
-                Voltar
-              </button>
+              {/* No way back when the field came from a column funnel — there is
+                  no field list behind it. */}
+              {lockedField === undefined && (
+                <button type="button" className={styles.panelBack} onClick={() => setField(null)}>
+                  Voltar
+                </button>
+              )}
               <span>{FILTER_FIELD_COPY[field]}</span>
             </div>
             {/* `aria-label`, not a visible label — the field name is on the line above;

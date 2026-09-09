@@ -1,0 +1,70 @@
+/* Ported from the prototype's `.pessoa-*` (ticket.css). */
+
+.tab {
+  display: flex;
+  flex-direction: column;
+  gap: var(--pipo-space-xlarge);
+}
+
+.head {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+/* One step above the 16px sections, one below the ticket's H1. Two classes:
+   the DS base sheet sizes every `.pipo-base h2`, and one class loses to it. */
+.head .name {
+  margin: 0;
+  font-family: var(--pipo-font-display);
+  font-size: 18px;
+  font-weight: var(--pipo-fw-regular);
+  line-height: 1.313;
+}
+
+.holderLink {
+  margin: 0;
+  font-size: var(--pipo-fs-small);
+}
+
+.personButton,
+.dependentButton {
+  padding: 0;
+  border: 0;
+  background: none;
+  color: inherit;
+  font: inherit;
+  cursor: pointer;
+  text-decoration: underline;
+}
+
+.dependents {
+  display: flex;
+  flex-direction: column;
+  gap: var(--pipo-space-xsmall);
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.dependentButton {
+  display: grid;
+  width: 100%;
+  grid-template-columns: 1fr auto auto;
+  gap: var(--pipo-space-medium);
+  text-align: left;
+  text-decoration: none;
+}
+
+.dependentButton:hover span:first-child {
+  text-decoration: underline;
+}
+
+.dependentMeta {
+  color: var(--pipo-text-secondary);
+  font-size: 13px;
+}
+
+.cardNumber {
+  font-variant-numeric: tabular-nums;
+}

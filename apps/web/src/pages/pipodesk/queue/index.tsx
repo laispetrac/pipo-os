@@ -2,6 +2,7 @@ import { useEffect, useMemo, useState } from 'react'
 import { useNavigate } from '@tanstack/react-router'
 import { Snackbar } from '@piposaude/design-system'
 import { QueueHeader } from '@/components/pipodesk/queue/QueueHeader'
+import { ColumnFilter } from '@/components/pipodesk/queue/ColumnFilter'
 import { QueueTable } from '@/components/pipodesk/queue/QueueTable'
 import { BatchBar, type PodOption } from '@/components/pipodesk/queue/BatchBar'
 import styles from '@/components/pipodesk/queue/Queue.module.css'
@@ -243,6 +244,20 @@ export default function QueuePage() {
         onOpenTicket={(id) => navigate({ to: '/tickets/$id', params: { id } })}
         today={today}
         resolveName={resolveName}
+        columnFilter={(field, align) => (
+          <ColumnFilter
+            field={field}
+            align={align}
+            base={base}
+            filter={view.filter}
+            viewerId={viewerId}
+            ctx={ctx}
+            onApply={(applied, values) => dispatch({ type: 'add-filter', field: applied, values })}
+            onRemove={(applied) => dispatch({ type: 'remove-filter', field: applied })}
+            dateWindowDays={view.dateWindowDays}
+            onSetDateWindow={(days) => dispatch({ type: 'set-date-window', days, today })}
+          />
+        )}
       />
 
       {/* Mounted only while something is selected: the panel keeps which screen

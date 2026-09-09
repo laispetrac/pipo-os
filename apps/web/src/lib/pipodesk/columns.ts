@@ -1,3 +1,16 @@
+import type { FilterField } from './filter'
+import type { SortField } from './sort'
+
+/** Sortable columns. Making the rest clickable would promise a sort
+ *  `sortTickets` cannot do. */
+export const SORTABLE: Partial<Record<string, SortField>> = {
+  createdAt: 'createdAt',
+  updatedAt: 'updatedAt',
+  company: 'company',
+  status: 'status',
+  prazo: 'actionDate',
+}
+
 /**
  * Queue columns: which exist, which show, in what order and width. Preferences
  * keep the order of ALL keys, not only visible ones — the owner column comes
@@ -10,6 +23,25 @@ export interface QueueColumn {
   /** `'auto'` only for the flexible column. */
   width: string
   align?: 'left' | 'right'
+  /** Header hover, for a column the label alone does not teach. */
+  title?: string
+}
+
+/**
+ * Which field each column's funnel opens. The prototype's rule is exclusive —
+ * a column either sorts or it filters — so no key here appears in `SORTABLE`
+ * above, and a unit test holds the two apart. The funnel is a shortcut into
+ * the panel that already exists, never a second filtering surface.
+ *
+ * Two entries do not name their own column, and both are deliberate: `subject`
+ * opens Operadora, the first thing its cell prints, and `id` opens Prioridade,
+ * whose marker lives in that cell.
+ */
+export const FILTER_BY_COLUMN: Partial<Record<string, FilterField>> = {
+  id: 'priorities',
+  subject: 'carrierIds',
+  classification: 'types',
+  relationship: 'relationships',
 }
 
 /** The select column never hides or moves. */
@@ -99,7 +131,18 @@ export const columnsFor = (showAssignee: boolean): QueueColumn[] =>
     { key: 'status', label: 'Status', width: '150px' },
     { key: 'createdAt', label: 'Criação', width: '110px' },
     { key: 'updatedAt', label: 'Parado', width: '110px' },
-    { key: 'prazo', label: 'Prazo', width: '86px', align: 'right' },
+    // The cell shows two different counts with the same `d` suffix, so the
+    // label alone cannot say which one is on screen.
+    {
+      key: 'prazo',
+      label: 'Prazo',
+      width: '86px',
+      align: 'right',
+      title:
+        'A data de ação da movimentação, contada contra hoje: vermelho venceu, ' +
+        'âmbar é hoje, cinza ainda vem. Sem data de ação, a célula mostra há ' +
+        'quantos dias o chamado está aberto.',
+    },
   ] satisfies QueueColumn[]
 
 export function applyColumnPrefs(base: QueueColumn[], prefs: ColumnPrefs): QueueColumn[] {

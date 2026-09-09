@@ -1,0 +1,23 @@
+/* Ported from the prototype's `.historico-*` (ticket.css). */
+
+.tab {
+  display: flex;
+  flex-direction: column;
+  gap: var(--pipo-space-xlarge);
+}
+
+/* Tighter than the DS default: five columns in a column 280px narrower than the page. */
+.table th,
+.table td {
+  padding-right: var(--pipo-space-xsmall);
+  padding-left: var(--pipo-space-xsmall);
+}
+
+.current {
+  font-weight: var(--pipo-fw-semibold);
+}
+
+.closed {
+  display: block;
+  color: var(--pipo-text-secondary);
+}

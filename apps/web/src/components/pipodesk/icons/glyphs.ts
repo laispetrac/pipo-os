@@ -295,6 +295,61 @@ export const GLYPHS: Record<string, Glyph> = {
       },
     ],
   },
+  download: {
+    viewBox: '0 0 24 24',
+    nodes: [
+      {
+        tag: 'path',
+        attrs: {
+          d: 'M12 15V3M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4M7 10l5 5 5-5',
+          stroke: 'currentColor',
+          strokeWidth: '2',
+          strokeLinecap: 'round',
+          strokeLinejoin: 'round',
+        },
+      },
+    ],
+  },
+  eye: {
+    viewBox: '0 0 24 24',
+    nodes: [
+      {
+        tag: 'path',
+        attrs: {
+          d: 'M2.062 12.348a1 1 0 0 1 0-.696 10.75 10.75 0 0 1 19.876 0 1 1 0 0 1 0 .696 10.75 10.75 0 0 1-19.876 0',
+          stroke: 'currentColor',
+          strokeWidth: '2',
+          strokeLinecap: 'round',
+          strokeLinejoin: 'round',
+        },
+      },
+      {
+        tag: 'circle',
+        attrs: {
+          cx: '12',
+          cy: '12',
+          r: '3',
+          stroke: 'currentColor',
+          strokeWidth: '2',
+        },
+      },
+    ],
+  },
+  'eye-off': {
+    viewBox: '0 0 24 24',
+    nodes: [
+      {
+        tag: 'path',
+        attrs: {
+          d: 'M10.733 5.076a10.744 10.744 0 0 1 11.205 6.575 1 1 0 0 1 0 .696 10.747 10.747 0 0 1-1.444 2.49M14.084 14.158a3 3 0 0 1-4.242-4.242M17.479 17.499a10.75 10.75 0 0 1-15.417-5.151 1 1 0 0 1 0-.696 10.75 10.75 0 0 1 4.446-5.143M2 2l20 20',
+          stroke: 'currentColor',
+          strokeWidth: '2',
+          strokeLinecap: 'round',
+          strokeLinejoin: 'round',
+        },
+      },
+    ],
+  },
   cube: {
     viewBox: '0 0 16 16',
     nodes: [
@@ -351,6 +406,23 @@ export const GLYPHS: Record<string, Glyph> = {
           clipRule: 'evenodd',
           d: 'M2.64645 5.14645C2.55268 5.24021 2.5 5.36739 2.5 5.5C2.5 5.63261 2.55268 5.75979 2.64645 5.85355L4.64645 7.85355C4.84171 8.04882 5.15829 8.04882 5.35355 7.85355C5.54882 7.65829 5.54882 7.34171 5.35355 7.14645L4.20711 6H13C13.2761 6 13.5 5.77614 13.5 5.5C13.5 5.22386 13.2761 5 13 5H4.20711L5.35355 3.85355C5.54882 3.65829 5.54882 3.34171 5.35355 3.14645C5.15829 2.95118 4.84171 2.95118 4.64645 3.14645L2.64645 5.14645ZM3 10C2.72386 10 2.5 10.2239 2.5 10.5C2.5 10.7761 2.72386 11 3 11H11.7929L10.6464 12.1464C10.4512 12.3417 10.4512 12.6583 10.6464 12.8536C10.8417 13.0488 11.1583 13.0488 11.3536 12.8536L13.3536 10.8536C13.5488 10.6583 13.5488 10.3417 13.3536 10.1464L11.3536 8.14645C11.1583 7.95118 10.8417 7.95118 10.6464 8.14645C10.4512 8.34171 10.4512 8.65829 10.6464 8.85355L11.7929 10H3Z',
           fill: 'currentColor',
+        },
+      },
+    ],
+  },
+  funnel: {
+    viewBox: '0 0 16 16',
+    nodes: [
+      {
+        tag: 'path',
+        attrs: {
+          d: 'M2 3.5h12L9.5 8.5v4l-3 1.5v-5.5L2 3.5Z',
+          stroke: 'currentColor',
+          strokeWidth: '1.2',
+          strokeLinejoin: 'round',
+          // Drawn at 16 in the toolbar and 12 in the column header: the same
+          // hairline at both, instead of a stroke that thins with the box.
+          vectorEffect: 'non-scaling-stroke',
         },
       },
     ],

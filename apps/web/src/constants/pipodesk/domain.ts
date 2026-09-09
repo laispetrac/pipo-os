@@ -1,4 +1,6 @@
+import type { MaritalStatus, Person } from '@/lib/pipodesk/record'
 import type { Priority } from '@/lib/pipodesk/ticket-row'
+
 /** pt-BR copy for domain values from the snapshot. Missing keys fall back to
  *  the raw value — EI may ship a product before the UI learns its name. */
 export const PRODUCT_COPY: Record<string, string> = {
@@ -21,6 +23,20 @@ export const COMPANY_SIZE_COPY: Record<string, string> = {
   pme: 'PME',
   'pme-plus': 'PME+',
   enterprise: 'Empresarial',
+}
+
+export const MARITAL_STATUS_COPY: Record<MaritalStatus, string> = {
+  single: 'Solteiro(a)',
+  married: 'Casado(a)',
+  divorced: 'Divorciado(a)',
+  widowed: 'Viúvo(a)',
+  'domestic-partnership': 'União estável',
+}
+
+/** The Backoffice label is "Sexo atribuído ao nascimento"; the values are these two. */
+export const SEX_COPY: Record<Person['sex'], string> = {
+  f: 'Feminino',
+  m: 'Masculino',
 }
 
 export const RELATIONSHIP_COPY: Record<string, string> = {
