@@ -39,6 +39,11 @@ describe('the policy hook', () => {
     }))
     app.get('/__test/needs-nothing', async () => ({ ok: true }))
     app.get('/__test/open', { config: { public: true } }, async () => ({ ok: true }))
+    app.get(
+      '/__test/contradictory-at-root',
+      { config: { public: true, policy: { domain: 'ticket' } } },
+      async () => ({ ok: true }),
+    )
 
     await app.ready()
 
@@ -108,6 +113,22 @@ describe('the policy hook', () => {
     const response = await app.inject({ method: 'GET', url: '/__test/open' })
 
     expect(response.statusCode).toBe(200)
+  })
+
+  // The boot guard cannot see a route registered on the root instance, before
+  // this plugin's onRoute. When the contradiction slips through, the route closes
+  // for everyone — a public route never gets a principal, so no policy can be
+  // held — instead of publishing itself as open.
+  it('closes a route that declares public alongside a policy, for every session', async () => {
+    for (const cookie of [withoutPolicy, withPolicy]) {
+      const response = await app.inject({
+        method: 'GET',
+        url: '/__test/contradictory-at-root',
+        cookies: { [SESSION_COOKIE_NAME]: cookie },
+      })
+
+      expect(response.statusCode).toBe(403)
+    }
   })
 
   it('keeps an unknown route at 404 instead of turning it into 403', async () => {

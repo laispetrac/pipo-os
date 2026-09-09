@@ -29,13 +29,23 @@ export default fp(
     })
 
     app.addHook('onRequest', async (request) => {
-      if (request.is404 || request.routeOptions.config.public === true) {
+      if (request.is404) {
         return
       }
 
       const declared = request.routeOptions.config.policy
       if (declared === undefined) {
         return
+      }
+
+      // Read after the policy, not before: a contradictory route the boot guard
+      // could not see closes for everyone here (a public route has no principal,
+      // so no policy can be held) instead of publishing itself as open.
+      if (request.routeOptions.config.public === true) {
+        request.log.error(
+          { url: request.url },
+          'route declares both public and a policy: enforcing the policy',
+        )
       }
 
       const wanted = required(declared)
