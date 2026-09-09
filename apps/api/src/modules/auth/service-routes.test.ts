@@ -46,4 +46,16 @@ describe('the set of routes a service may call', () => {
       'POST /api/tickets/:id/comments',
     ])
   })
+
+  // The hook asks the auth-service for one policy, the ticket one, for every
+  // service-allowed route. Opening a route of another domain — a queue, a group
+  // — would ask for the wrong policy and pass or fail for the wrong reason, so
+  // that mistake has to be red here before it reaches the hook.
+  it('opens only ticket-domain routes, which is the policy the hook asks for', () => {
+    const outsideTheTicketDomain = serviceRoutes.filter(
+      (route) => !route.split(' ')[1].startsWith('/api/tickets'),
+    )
+
+    expect(outsideTheTicketDomain).toEqual([])
+  })
 })
