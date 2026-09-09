@@ -7,6 +7,8 @@ export default {
     dependent: 'Dependente',
   },
   dependentOf: 'Dependente de',
+  /* Elegibilidade vem do emprego do titular; sem ele, não há o que mostrar aqui. */
+  holderMissing: 'O titular deste dependente não está no retrato desta movimentação.',
   dependentContact: [
     'O dependente ',
     'não tem contato próprio',

@@ -1,3 +1,4 @@
+import { useEffect, useRef } from 'react'
 import {
   Status,
   Table,
@@ -46,15 +47,31 @@ const productsOf = (person: Person): string =>
   person.cards.map((card) => PRODUCT_COPY[card.product] ?? card.product).join(', ')
 
 export function PersonTab({ personId, records, capturedAt, onSelectPerson }: PersonTabProps) {
+  // The button that switched the person unmounts with the switch, dropping focus to
+  // the body; the name it navigated to takes it, as the Popover does with its trigger.
+  const nameRef = useRef<HTMLHeadingElement>(null)
+  const switched = useRef(false)
+  useEffect(() => {
+    if (!switched.current) return
+    switched.current = false
+    nameRef.current?.focus()
+  }, [personId])
+
   const person = records.personById.get(personId)
   if (!person) return <RecordEmpty>{recordCopy.notFound.person}</RecordEmpty>
+
+  const selectPerson = (id: string) => {
+    switched.current = true
+    onSelectPerson(id)
+  }
 
   const isDependent = person.role === 'dependent'
   const holder = person.holderId ? records.personById.get(person.holderId) : undefined
   const dependents = records.dependentsOf(person.id)
-  // The section is the holder's job whoever is on screen; never trust the copy on a dependent.
-  const link = holder?.link ?? person.link
-  const company = records.companyById.get(link.companyId)
+  // The section is the holder's job whoever is on screen; never trust the copy on a
+  // dependent. Without the holder in the record there is no holder job to show.
+  const holderLink = isDependent ? (holder?.link ?? null) : person.link
+  const company = holderLink ? records.companyById.get(holderLink.companyId) : undefined
   // A dependent usually has no account: the refund lands on the holder's, and the
   // tab says so — but only when the account really is the holder's, not by role.
   const account = person.bankAccount ?? holder?.bankAccount ?? null
@@ -62,12 +79,16 @@ export function PersonTab({ personId, records, capturedAt, onSelectPerson }: Per
 
   return (
     <div className={styles.tab}>
-      {/* The company of the shown person's holder, not the ticket's. */}
-      {records.isBackofficeDown(link.companyId) && <OutageNotice capturedAt={capturedAt} />}
+      {/* The holder's company when it is known; without it, the only one on record. */}
+      {records.isBackofficeDown((holderLink ?? person.link).companyId) && (
+        <OutageNotice capturedAt={capturedAt} />
+      )}
 
       <RecordBlock>
         <div className={styles.head}>
-          <h2 className={styles.name}>{displayNameOf(person)}</h2>
+          <h2 className={styles.name} ref={nameRef} tabIndex={-1}>
+            {displayNameOf(person)}
+          </h2>
           <Status variant="neutral">{isDependent ? copy.role.dependent : copy.role.holder}</Status>
         </div>
         {isDependent && holder && (
@@ -76,7 +97,7 @@ export function PersonTab({ personId, records, capturedAt, onSelectPerson }: Per
             <button
               type="button"
               className={styles.personButton}
-              onClick={() => onSelectPerson(holder.id)}
+              onClick={() => selectPerson(holder.id)}
             >
               {displayNameOf(holder)}
             </button>
@@ -116,20 +137,26 @@ export function PersonTab({ personId, records, capturedAt, onSelectPerson }: Per
       </RecordSection>
 
       <RecordSection title={copy.sections.holder}>
-        <RecordFields>
-          <RecordField label={copy.fields.company}>{or(company?.tradeName)}</RecordField>
-          <RecordField label={copy.fields.cnpj}>{or(company?.cnpj)}</RecordField>
-          <RecordField label={copy.fields.admissionDate}>
-            {formatLongDateWithYear(link.admissionDate)}
-          </RecordField>
-          <RecordField label={copy.fields.contractType}>
-            {link.contractType.toUpperCase()}
-          </RecordField>
-          <RecordField label={copy.fields.salary}>{formatSalary(link.salaryCents)}</RecordField>
-          <RecordField label={copy.fields.registration}>{link.registration}</RecordField>
-          <RecordField label={copy.fields.jobTitle}>{or(link.jobTitle)}</RecordField>
-          <RecordField label={copy.fields.costCenter}>{or(link.costCenter)}</RecordField>
-        </RecordFields>
+        {holderLink === null ? (
+          <RecordEmpty>{copy.holderMissing}</RecordEmpty>
+        ) : (
+          <RecordFields>
+            <RecordField label={copy.fields.company}>{or(company?.tradeName)}</RecordField>
+            <RecordField label={copy.fields.cnpj}>{or(company?.cnpj)}</RecordField>
+            <RecordField label={copy.fields.admissionDate}>
+              {formatLongDateWithYear(holderLink.admissionDate)}
+            </RecordField>
+            <RecordField label={copy.fields.contractType}>
+              {holderLink.contractType.toUpperCase()}
+            </RecordField>
+            <RecordField label={copy.fields.salary}>
+              {formatSalary(holderLink.salaryCents)}
+            </RecordField>
+            <RecordField label={copy.fields.registration}>{holderLink.registration}</RecordField>
+            <RecordField label={copy.fields.jobTitle}>{or(holderLink.jobTitle)}</RecordField>
+            <RecordField label={copy.fields.costCenter}>{or(holderLink.costCenter)}</RecordField>
+          </RecordFields>
+        )}
       </RecordSection>
 
       <RecordSection title={copy.sections.contact}>
@@ -183,7 +210,7 @@ export function PersonTab({ personId, records, capturedAt, onSelectPerson }: Per
                 <button
                   type="button"
                   className={styles.dependentButton}
-                  onClick={() => onSelectPerson(dependent.id)}
+                  onClick={() => selectPerson(dependent.id)}
                 >
                   <span>{displayNameOf(dependent)}</span>
                   <span className={styles.dependentMeta}>{formatCpf(dependent.cpf)}</span>

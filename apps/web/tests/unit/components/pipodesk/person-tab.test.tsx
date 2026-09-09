@@ -1,4 +1,6 @@
+import { useState } from 'react'
 import { render, screen, within } from '@testing-library/react'
+import userEvent from '@testing-library/user-event'
 import { PersonTab } from '@/components/pipodesk/ticket/PersonTab'
 import copy from '@/constants/pages/pipodesk/ticket/person'
 import recordCopy from '@/constants/pages/pipodesk/ticket/record'
@@ -122,5 +124,74 @@ describe('PersonTab', () => {
 
     expect(screen.getByText(copy.refund.holderBadge)).toBeInTheDocument()
     expect(screen.getByText(copy.refund.dependentNote[1])).toBeInTheDocument()
+  })
+
+  /** `holderId` apontando para quem não está no retrato: a seção inteira fala
+   *  "do titular", então mostrar o vínculo do próprio dependente ali é mentira. */
+  it('should say the holder is missing instead of showing the dependent job as theirs', () => {
+    const records = recordsWith({
+      beneficiaries: [
+        person('dep', {
+          role: 'dependent',
+          holderId: 'quem-nao-esta-no-retrato',
+          link: { ...person('dep').link, registration: '99999' },
+        }),
+      ],
+    })
+    render(
+      <PersonTab
+        personId="dep"
+        records={records}
+        capturedAt="2026-08-01T12:00:00.000Z"
+        onSelectPerson={() => {}}
+      />,
+    )
+
+    const holderSection = screen
+      .getByRole('heading', { level: 3, name: copy.sections.holder })
+      .closest('section')!
+    expect(within(holderSection).getByText(copy.holderMissing)).toBeInTheDocument()
+    expect(within(holderSection).queryByText('99999')).not.toBeInTheDocument()
+    expect(within(holderSection).queryByText(copy.fields.registration)).not.toBeInTheDocument()
+  })
+
+  /** O botão clicado some com a troca; sem devolver o foco, quem usa teclado
+   *  volta para o topo da página. */
+  it('should move focus to the name after switching person', async () => {
+    const user = userEvent.setup()
+    const records = recordsWith({
+      beneficiaries: [person('holder'), person('dep', { role: 'dependent', holderId: 'holder' })],
+    })
+    // A página é quem decide quem está na tela; aqui ela é este estado.
+    function Page() {
+      const [personId, setPersonId] = useState('dep')
+      return (
+        <PersonTab
+          personId={personId}
+          records={records}
+          capturedAt="2026-08-01T12:00:00.000Z"
+          onSelectPerson={setPersonId}
+        />
+      )
+    }
+    render(<Page />)
+
+    await user.click(screen.getByRole('button', { name: 'Pessoa holder' }))
+
+    expect(screen.getByRole('heading', { level: 2, name: 'Pessoa holder' })).toHaveFocus()
+  })
+
+  it('should not steal focus when it only mounts', () => {
+    const records = recordsWith({ beneficiaries: [person('holder')] })
+    render(
+      <PersonTab
+        personId="holder"
+        records={records}
+        capturedAt="2026-08-01T12:00:00.000Z"
+        onSelectPerson={() => {}}
+      />,
+    )
+
+    expect(screen.getByRole('heading', { level: 2 })).not.toHaveFocus()
   })
 })
