@@ -5,7 +5,7 @@ import { requirePrincipal, requireUser } from './authenticate.js'
 
 const TICKET_POLICY = 'admin/allow/administrate/pipodesk/ticket'
 const IDENTITY_ID = '3f1a6d6e-9c1e-4f0b-9d0e-2b7a1c5f8e42'
-const SERVICE_NAME_IN_TEST = 'enrollment-integrations'
+const SERVICE_NAME_IN_TEST = 'enrollment-integrations-worker'
 
 function base64url(value: string): string {
   return Buffer.from(value).toString('base64url')
@@ -38,10 +38,10 @@ function jsonResponse(body: unknown, status = 200): Response {
 describe('a service calling the API', () => {
   let app: FastifyInstance
   const fetchMock = vi.fn()
-  const eiToken = serviceAccountToken('enrollment-integrations')
+  const eiToken = serviceAccountToken('enrollment-integrations-worker')
 
   beforeAll(async () => {
-    process.env.SERVICE_ALLOWED_NAMES = 'enrollment-integrations'
+    process.env.SERVICE_ALLOWED_NAMES = 'enrollment-integrations-worker'
     app = buildApp()
 
     // Added before ready() so the hooks bind to them exactly as they bind to an
@@ -83,7 +83,7 @@ describe('a service calling the API', () => {
     expect(response.statusCode).toBe(200)
     expect(response.json().principal).toEqual({
       kind: 'service',
-      name: 'enrollment-integrations',
+      name: 'enrollment-integrations-worker',
       identityId: IDENTITY_ID,
       policies: [TICKET_POLICY],
     })

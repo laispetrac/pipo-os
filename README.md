@@ -166,6 +166,8 @@ Quem escreve como serviço fica registrado como `svc:<nome>` na coluna de autor,
 
 **Pré-requisito de infraestrutura**: a identidade `<nome>.serviceaccount@piposaude.com.br` precisa existir no auth-service de cada ambiente com a policy que as rotas de chamado exigem (ver [Autorização](#autorização)), concedida por `ppcli user add-policy`. Ligar `SERVICE_ALLOWED_NAMES` sem isso dá `403` no `verify-token`.
 
+O `<nome>` é o do ServiceAccount do pod, sem namespace — e no EI ele **não** é `enrollment-integrations`. Quem processa movimentação é o `--handler=enrollment`, que roda no namespace `cronjobs` com o service account `enrollment-integrations-worker`; o `enrollment-integrations` do `default` carrega só o `--handler=server`. A identidade, portanto, é `enrollment-integrations-worker.serviceaccount@piposaude.com.br`.
+
 #### Autenticação em desenvolvimento
 
 Copie `apps/api/.env.example` para `apps/api/.env` (git-ignored) e ajuste. O `pnpm dev` carrega esse arquivo automaticamente; variáveis exportadas no shell têm precedência sobre ele.
