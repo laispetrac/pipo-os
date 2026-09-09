@@ -65,6 +65,15 @@ export function requireUser(request: FastifyRequest): UserPrincipal {
   return principal
 }
 
+/** Who to record as the author of a write. A person is their `sub`; a service
+ *  is `svc:<name>`, in the same text column, because blanking the author would
+ *  lose who wrote it. */
+export function requireActor(request: FastifyRequest): string {
+  const principal = requirePrincipal(request)
+
+  return principal.kind === 'service' ? `svc:${principal.name}` : requireUserId(request)
+}
+
 // The access-token may carry no `sub`, so a handler writing an author or an
 // assignee has to demand it instead of assuming it.
 export function requireUserId(request: FastifyRequest): string {

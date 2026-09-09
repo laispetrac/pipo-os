@@ -43,6 +43,7 @@ describe('the set of routes a service may call', () => {
       'HEAD /api/tickets/:id',
       'HEAD /api/tickets/:id/comments',
       'POST /api/tickets',
+      'POST /api/tickets/:id/comments',
     ])
   })
 })
