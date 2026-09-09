@@ -7,14 +7,16 @@
 // production bundle at build time.
 // What the Pipodesk routes require: without it the local session logs in and
 // then gets 403 from every ticket endpoint.
-const DEFAULT_DEV_POLICIES = ['admin/allow/administrate/ticket/*']
+export const DEV_POLICIES = ['admin/allow/administrate/pipodesk/ticket']
 
-export async function devLogin(policies?: string[]): Promise<void> {
+// Explicit on purpose: a default would hand out a privileged session to a
+// caller that meant to exercise one without policies.
+export async function devLogin(policies: string[]): Promise<void> {
   const response = await fetch('/api/auth/dev-login', {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     credentials: 'include',
-    body: JSON.stringify({ policies: policies ?? DEFAULT_DEV_POLICIES }),
+    body: JSON.stringify({ policies }),
   })
 
   if (!response.ok) {
