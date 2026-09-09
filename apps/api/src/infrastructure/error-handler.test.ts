@@ -4,9 +4,9 @@ import { afterAll, beforeAll, describe, expect, it } from 'vitest'
 import { z } from 'zod'
 import { buildApp } from '../app.js'
 import { errorResponseSchema } from '../shared/schemas.js'
-import { NotFoundError, ValidationFailedError } from '../shared/errors.js'
+import { type ErrorDetails, NotFoundError, ValidationFailedError } from '../shared/errors.js'
 
-const GATE_FAILURES = [
+const GATE_FAILURES: ErrorDetails = [
   { field: 'members.0.taxId', message: 'Required', code: 'invalid_type' },
   { field: 'members.0.idCardNumber', message: 'Required', code: 'invalid_type' },
   { field: 'startDate', message: 'Earlier than the admission date', code: 'out_of_range' },
@@ -74,6 +74,44 @@ describe('error handler', () => {
       },
     )
 
+    server.get(
+      '/__test/movement/:id',
+      {
+        config: { public: true },
+        schema: {
+          params: z.object({ id: z.uuid() }),
+          response: { 200: z.object({ ok: z.literal(true) }), 400: errorResponseSchema },
+        },
+      },
+      async () => ({ ok: true as const }),
+    )
+
+    // The handler returns what the response schema does not accept.
+    server.get(
+      '/__test/broken-contract',
+      {
+        config: { public: true },
+        schema: { response: { 200: z.object({ id: z.uuid() }), 500: errorResponseSchema } },
+      },
+      // @ts-expect-error the mismatch is the point of the route
+      async () => ({ id: 'not-a-uuid' }),
+    )
+
+    // A library error (an HTTP client, the driver) that happens to carry a 4xx.
+    server.get(
+      '/__test/library-4xx',
+      {
+        config: { public: true },
+        schema: { response: { 500: errorResponseSchema } },
+      },
+      async () => {
+        throw Object.assign(new Error('upstream said the internal id is unknown'), {
+          statusCode: 404,
+          code: 'ERR_UPSTREAM',
+        })
+      },
+    )
+
     // Nobody throws a bare null on purpose; the point is that the handler must
     // not add a second failure on top of the first one.
     server.get(
@@ -102,6 +140,35 @@ describe('error handler', () => {
       error: 'ValidationFailedError',
       message: 'Ticket cannot be completed',
       details: GATE_FAILURES,
+    })
+  })
+
+  it('says which side of the request a field is on when it is not the body', async () => {
+    const response = await app.inject({ method: 'GET', url: '/__test/movement/not-a-uuid' })
+
+    expect(response.statusCode).toBe(400)
+    expect(response.json().details).toEqual([
+      { field: 'params.id', message: expect.any(String), code: 'invalid_format' },
+    ])
+  })
+
+  it('still catches a response that does not match its own schema', async () => {
+    const response = await app.inject({ method: 'GET', url: '/__test/broken-contract' })
+
+    expect(response.statusCode).toBe(500)
+    expect(response.json()).toEqual({
+      error: 'ResponseSerializationError',
+      message: 'Response failed to match the schema',
+    })
+  })
+
+  it('does not mirror a library 4xx outward, message and all', async () => {
+    const response = await app.inject({ method: 'GET', url: '/__test/library-4xx' })
+
+    expect(response.statusCode).toBe(500)
+    expect(response.json()).toEqual({
+      error: 'InternalServerError',
+      message: 'Something went wrong',
     })
   })
 

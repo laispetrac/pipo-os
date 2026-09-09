@@ -6,11 +6,14 @@ export interface ErrorDetail {
   code: string
 }
 
+/** At least one detail: `[]` would claim every field was checked and passed. */
+export type ErrorDetails = readonly [ErrorDetail, ...ErrorDetail[]]
+
 export abstract class DomainError extends Error {
   abstract readonly statusCode: number
-  readonly details?: readonly ErrorDetail[]
+  readonly details?: ErrorDetails
 
-  constructor(message: string, details?: readonly ErrorDetail[]) {
+  constructor(message: string, details?: ErrorDetails) {
     super(message)
     this.details = details
   }
@@ -77,7 +80,7 @@ export class UnprocessableEntityError extends DomainError {
 export class ValidationFailedError extends DomainError {
   readonly statusCode = 422
 
-  constructor(message: string, details: readonly ErrorDetail[]) {
+  constructor(message: string, details: ErrorDetails) {
     super(message, details)
     this.name = 'ValidationFailedError'
   }

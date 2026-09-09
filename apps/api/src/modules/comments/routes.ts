@@ -63,8 +63,8 @@ export function registerCommentRoutes(app: FastifyInstance, service: CommentsSer
     '/api/tickets/:id/comments',
     {
       config: { policy: TICKET_POLICY },
-      // A quarter of the global limit, and four times the 50k characters the
-      // schema accepts, so even an all-4-byte body reaches the field check.
+      // A quarter of the global limit, over 5x the 50k characters the schema
+      // accepts as raw UTF-8, so a multibyte body still reaches the field check.
       bodyLimit: 262_144,
       schema: {
         params: ticketParamsSchema,

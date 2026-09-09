@@ -12,11 +12,18 @@ function toErrorDetails(
   validation: ZodFastifySchemaValidationError[],
   context: string | undefined,
 ): ErrorDetail[] {
-  return validation.map((entry) => ({
-    field: entry.instancePath.slice(1).split('/').join('.') || (context ?? 'body'),
-    message: entry.message ?? 'Invalid value',
-    code: entry.keyword,
-  }))
+  // Everything but the body is prefixed: a bare `id` cannot tell a bad path
+  // param from a body field with the same name.
+  const prefix = context === undefined || context === 'body' ? '' : `${context}.`
+
+  return validation.map((entry) => {
+    const path = entry.instancePath.slice(1).split('/').join('.')
+    return {
+      field: path ? `${prefix}${path}` : (context ?? 'body'),
+      message: entry.message ?? 'Invalid value',
+      code: entry.keyword,
+    }
+  })
 }
 
 // The handler receives `unknown`, and a Fastify error (FST_ERR_CTP_*) carries
@@ -24,7 +31,7 @@ function toErrorDetails(
 // with no parser.
 interface ClientError {
   statusCode: number
-  code?: string
+  code: string
   message?: string
 }
 
@@ -46,8 +53,16 @@ function isClientError(error: unknown): error is ClientError {
     return false
   }
 
-  const status = (error as { statusCode?: unknown }).statusCode
-  return typeof status === 'number' && status >= 400 && status < 500
+  // The FST_ prefix is the whole point: a library error that happens to carry a
+  // 4xx (an HTTP client, the driver) would mirror its internal message outward.
+  const { statusCode: status, code } = error as { statusCode?: unknown; code?: unknown }
+  return (
+    typeof status === 'number' &&
+    status >= 400 &&
+    status < 500 &&
+    typeof code === 'string' &&
+    code.startsWith('FST_')
+  )
 }
 
 export default fp(
@@ -62,7 +77,9 @@ export default fp(
         return
       }
 
-      if (isResponseSerializationError(error)) {
+      // The library predicate only looks for a `method` key, which an HTTP
+      // client's error also carries; the code is what makes it ours.
+      if (isResponseSerializationError(error) && error.code === 'FST_ERR_RESPONSE_SERIALIZATION') {
         request.log.error(error)
         reply.status(500).send({
           error: 'ResponseSerializationError',
