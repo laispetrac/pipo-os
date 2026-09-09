@@ -76,21 +76,23 @@ Isso sobe `apps/api` e `apps/web` simultaneamente via `pnpm -r --parallel dev`.
 
 ## Variáveis de ambiente
 
-| Variável                 | Padrão                                                | Descrição                                                                                                                   |
-| ------------------------ | ----------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------- |
-| `PORT`                   | `3001`                                                | Porta HTTP da API                                                                                                           |
-| `DATABASE_URL`           | `postgresql://pipo_os:pipo_os@localhost:5432/pipo_os` | Connection string do Postgres                                                                                               |
-| `CORS_ORIGIN`            | `http://localhost:5173`                               | Origens permitidas, separadas por vírgula                                                                                   |
-| `LOG_LEVEL`              | `info` em produção, `debug` nos demais ambientes      | Nível mínimo de log do pino                                                                                                 |
-| `SENTRY_DSN`             | _(vazio, Sentry desabilitado)_                        | DSN do projeto Sentry da api. Sempre desabilitado em dev/test                                                               |
-| `WEB_APP_SENTRY_DSN`     | _(vazio, Sentry desabilitado)_                        | DSN do projeto Sentry do web, injetado em build-time pelo Vite                                                              |
-| `COOKIE_SECRET`          | valor de dev fixo fora de produção                    | Secret de assinatura HMAC dos cookies de sessão (`@fastify/cookie`). Obrigatório em produção — a API falha ao subir sem ele |
-| `AUTH_SERVICE_URL`       | `http://localhost:9090`                               | URL base do auth-service (backend de identidade da Pipo)                                                                    |
-| `GOOGLE_OAUTH_CLIENT_ID` | _(vazio)_                                             | Client ID OAuth do Google reaproveitado do client "Backoffice" já registrado no GCP (o mesmo usado pelo `tools`)            |
-| `APP_BASE_URL`           | `http://localhost:5173`                               | Origem pública da aplicação, usada para montar o `redirect_uri` do fluxo Google e os redirects de erro                      |
-| `ALLOWED_EMAIL_DOMAINS`  | `piposaude.com.br,pipo.ai`                            | Domínios de e-mail aceitos no login Google, separados por vírgula                                                           |
-| `DEV_LOGIN_ENABLED`      | _(desligado)_                                         | Habilita `POST /api/auth/dev-login`. Só `true` liga; a API **falha no boot** se chegar em ambiente deployado                |
-| `DEV_LOGIN_EMAIL`        | `dev@piposaude.com.br`                                | Identidade usada pelo login local; precisa pertencer a `ALLOWED_EMAIL_DOMAINS`                                              |
+| Variável                    | Padrão                                                | Descrição                                                                                                                   |
+| --------------------------- | ----------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------- |
+| `PORT`                      | `3001`                                                | Porta HTTP da API                                                                                                           |
+| `DATABASE_URL`              | `postgresql://pipo_os:pipo_os@localhost:5432/pipo_os` | Connection string do Postgres                                                                                               |
+| `CORS_ORIGIN`               | `http://localhost:5173`                               | Origens permitidas, separadas por vírgula                                                                                   |
+| `LOG_LEVEL`                 | `info` em produção, `debug` nos demais ambientes      | Nível mínimo de log do pino                                                                                                 |
+| `SENTRY_DSN`                | _(vazio, Sentry desabilitado)_                        | DSN do projeto Sentry da api. Sempre desabilitado em dev/test                                                               |
+| `WEB_APP_SENTRY_DSN`        | _(vazio, Sentry desabilitado)_                        | DSN do projeto Sentry do web, injetado em build-time pelo Vite                                                              |
+| `COOKIE_SECRET`             | valor de dev fixo fora de produção                    | Secret de assinatura HMAC dos cookies de sessão (`@fastify/cookie`). Obrigatório em produção — a API falha ao subir sem ele |
+| `AUTH_SERVICE_URL`          | `http://localhost:9090`                               | URL base do auth-service (backend de identidade da Pipo)                                                                    |
+| `AUTH_SERVICE_INTERNAL_URL` | `http://auth-service.platform:4000`                   | URL do listener **interno** do auth-service, o único que responde `/api/verify-token`. Usado só na autenticação de serviço  |
+| `SERVICE_ALLOWED_NAMES`     | _(vazio, nenhum serviço entra)_                       | Service accounts que podem chamar a API como serviço, separadas por vírgula                                                 |
+| `GOOGLE_OAUTH_CLIENT_ID`    | _(vazio)_                                             | Client ID OAuth do Google reaproveitado do client "Backoffice" já registrado no GCP (o mesmo usado pelo `tools`)            |
+| `APP_BASE_URL`              | `http://localhost:5173`                               | Origem pública da aplicação, usada para montar o `redirect_uri` do fluxo Google e os redirects de erro                      |
+| `ALLOWED_EMAIL_DOMAINS`     | `piposaude.com.br,pipo.ai`                            | Domínios de e-mail aceitos no login Google, separados por vírgula                                                           |
+| `DEV_LOGIN_ENABLED`         | _(desligado)_                                         | Habilita `POST /api/auth/dev-login`. Só `true` liga; a API **falha no boot** se chegar em ambiente deployado                |
+| `DEV_LOGIN_EMAIL`           | `dev@piposaude.com.br`                                | Identidade usada pelo login local; precisa pertencer a `ALLOWED_EMAIL_DOMAINS`                                              |
 
 ## Observabilidade
 
@@ -137,6 +139,32 @@ O JWT emitido pelo auth-service (ES256, assinado via AWS KMS) não pode ser vali
 A API confia no cookie assinado (HMAC via `COOKIE_SECRET`) para garantir que o token não foi adulterado pelo cliente, e apenas decodifica o payload para ler `email`/`policies`/`exp`.
 
 **Pré-requisito de infraestrutura**: a redirect URI `{APP_BASE_URL}/api/auth/google/callback` de cada ambiente (local, stag, prod) precisa estar registrada no client OAuth "Backoffice" do Google Cloud Console — o mesmo client usado pelo `tools`.
+
+#### Autenticação de serviço (EI → Pipodesk)
+
+O login acima serve para gente. O `enrollment-integrations` é um worker num pod: não tem navegador, não faz login e não tem cookie — e precisa abrir e acompanhar chamado.
+
+Ele entra por outra porta, a mesma que todo serviço da Pipo usa:
+
+1. O Kubernetes monta um token dentro de cada pod. O serviço lê esse arquivo e manda `Authorization: Bearer <token>`.
+2. A API não valida esse token sozinha: manda para o `POST /api/verify-token` do listener interno do auth-service, junto da policy que a rota exige.
+3. O auth-service resolve as claims do service account na identidade `<nome>.serviceaccount@piposaude.com.br`, confere as policies dela e devolve o `identity-id`.
+
+O que a API cobra, em ordem, antes de deixar entrar:
+
+| Guarda                                            | Recusa                                                                                              |
+| ------------------------------------------------- | --------------------------------------------------------------------------------------------------- |
+| A rota declara `config: { serviceAllowed: true }` | `403` — rota nova nasce fechada para serviço, e a recusa acontece antes de qualquer chamada de rede |
+| O token traz nome de service account              | `401`                                                                                               |
+| O nome está em `SERVICE_ALLOWED_NAMES`            | `403`                                                                                               |
+| O auth-service reconhece a identidade e a policy  | `401` (credencial) ou `403` (identidade ou policy)                                                  |
+| O auth-service responde                           | `503`, nunca um 500 mudo                                                                            |
+
+As rotas abertas a serviço são as quatro que abrir e acompanhar um chamado exige — criar, ler por id, procurar pelo `enrollmentId` e ler comentários — mais escrever comentário. A lista inteira é asserção em `apps/api/src/modules/auth/service-routes.test.ts`: abrir uma quinta é uma linha visível no diff.
+
+Quem escreve como serviço fica registrado como `svc:<nome>` na coluna de autor, ao lado do `sub` de uma pessoa. Mudar status não está aberto a serviço: quem muda status é gente, e o caminho de volta para o EI é o webhook.
+
+**Pré-requisito de infraestrutura**: a identidade `<nome>.serviceaccount@piposaude.com.br` precisa existir no auth-service de cada ambiente com a policy `admin/allow/administrate/ticket/*` (`ppcli user add-policy`). Ligar `SERVICE_ALLOWED_NAMES` sem isso dá `403` no `verify-token`.
 
 #### Autenticação em desenvolvimento
 
