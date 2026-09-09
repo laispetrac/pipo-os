@@ -20,6 +20,7 @@ import { z } from 'zod'
 import dbPlugin from './infrastructure/db.js'
 import errorHandlerPlugin from './infrastructure/error-handler.js'
 import authenticatePlugin from './modules/auth/authenticate.js'
+import authorizePlugin from './modules/auth/authorize.js'
 
 function corsOrigins(): string[] {
   return (process.env.CORS_ORIGIN ?? 'http://localhost:5173')
@@ -76,6 +77,7 @@ export function buildApp(): FastifyInstance {
   app.register(cors, { origin: corsOrigins() })
   app.register(cookie, { secret: cookieSecret() })
   app.register(authenticatePlugin)
+  app.register(authorizePlugin)
   app.register(metricsPlugin)
   app.register(dbPlugin)
   app.register(errorHandlerPlugin)
