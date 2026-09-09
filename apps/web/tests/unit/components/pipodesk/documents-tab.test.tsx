@@ -32,4 +32,23 @@ describe('DocumentsTab', () => {
       documentLabel('comprovante-residencia'),
     )
   })
+
+  /** Fora do catálogo o rótulo é a própria grafia, e aí qual delas sobra é
+   *  observável: é a primeira, a ordem em que a EI escreveu a pendência. */
+  it('should keep the first spelling when the document is not in the catalogue', () => {
+    render(
+      <DocumentsTab
+        ticket={row}
+        pendingDocumentation={['certidao-nascimento', 'CERTIDAO_NASCIMENTO']}
+        records={recordsWith()}
+      />,
+    )
+
+    const missing = screen
+      .getByRole('heading', { level: 2, name: copy.missing.title })
+      .closest('section')!
+    const [item] = within(missing).getAllByRole('listitem')
+    expect(within(missing).getAllByRole('listitem')).toHaveLength(1)
+    expect(item).toHaveTextContent('Certidao-nascimento')
+  })
 })

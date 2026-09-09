@@ -65,7 +65,8 @@ export function DocumentsTab({ ticket, pendingDocumentation, records }: Document
   const byKey = new Map<string, string>()
   for (const spelling of pendingDocumentation ?? []) {
     const key = documentKey(spelling)
-    if (!byKey.has(key)) byKey.set(key, spelling)
+    // Everything that is not alphanumeric normalises away: `''` names no document.
+    if (key !== '' && !byKey.has(key)) byKey.set(key, spelling)
   }
   const missing = [...byKey].map(([key, spelling]) => ({
     key,
