@@ -36,6 +36,17 @@ export function serviceNameFromToken(token: string): string | null {
   return null
 }
 
+/** The deadline the token carries. Same rule the session claims use, and the
+ *  reason it is read here: a name in an unsigned payload costs nothing to
+ *  forge, so refusing a stale or absent deadline locally keeps a forged token
+ *  from spending a round trip to the auth-service. It does not replace that
+ *  call — only the auth-service can say the signature is real. */
+export function tokenExpired(token: string): boolean {
+  const exp = decodeJwtPayload(token)?.exp
+
+  return typeof exp !== 'number' || exp * 1000 <= Date.now()
+}
+
 /** Empty until someone lists the services, which is deliberate: a service that
  *  nobody named cannot get in, even holding the policy. */
 export function allowedServiceNames(): Set<string> {

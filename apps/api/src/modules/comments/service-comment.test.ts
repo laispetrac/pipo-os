@@ -16,6 +16,7 @@ function serviceAccountToken(name: string): string {
     base64url(
       JSON.stringify({
         sub: `system:serviceaccount:default:${name}`,
+        exp: Math.floor(Date.now() / 1000) + 3600,
         'kubernetes.io': { namespace: 'default', serviceaccount: { name } },
       }),
     ),

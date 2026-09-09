@@ -9,6 +9,7 @@ import {
   bearerToken,
   serviceNameFromToken,
   SERVICE_TICKET_POLICY,
+  tokenExpired,
 } from './service-principal.js'
 
 export interface UserPrincipal extends SessionClaims {
@@ -105,6 +106,10 @@ async function servicePrincipal(request: FastifyRequest, token: string): Promise
 
   if (!name) {
     throw new UnauthorizedError('Not a service account token')
+  }
+
+  if (tokenExpired(token)) {
+    throw new UnauthorizedError('Service account token is expired')
   }
 
   if (!allowedServiceNames().has(name)) {

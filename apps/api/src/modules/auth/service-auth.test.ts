@@ -5,6 +5,7 @@ import { requirePrincipal, requireUser } from './authenticate.js'
 
 const TICKET_POLICY = 'admin/allow/administrate/ticket/*'
 const IDENTITY_ID = '3f1a6d6e-9c1e-4f0b-9d0e-2b7a1c5f8e42'
+const SERVICE_NAME_IN_TEST = 'enrollment-integrations'
 
 function base64url(value: string): string {
   return Buffer.from(value).toString('base64url')
@@ -14,12 +15,13 @@ function base64url(value: string): string {
  *  account name lives under the `kubernetes.io` claim, and `sub` repeats it as
  *  `system:serviceaccount:<namespace>:<name>`. Nothing here is signed — the
  *  auth-service is what validates the token, and it is stubbed in these tests. */
-function serviceAccountToken(name: string): string {
+function serviceAccountToken(name: string, expiresInSeconds = 3600): string {
   const header = base64url(JSON.stringify({ alg: 'RS256', typ: 'JWT' }))
   const payload = base64url(
     JSON.stringify({
       iss: 'https://oidc.eks.sa-east-1.amazonaws.com/id/PIPO',
       sub: `system:serviceaccount:default:${name}`,
+      exp: Math.floor(Date.now() / 1000) + expiresInSeconds,
       'kubernetes.io': { namespace: 'default', serviceaccount: { name } },
     }),
   )
@@ -194,5 +196,34 @@ describe('a service calling the API', () => {
     })
 
     expect(response.statusCode).toBe(403)
+  })
+
+  // Anyone can write a name into an unsigned payload, and the auth-service is
+  // what catches that — but not before the API has already called it. Reading
+  // the expiry first keeps a stale or empty deadline from costing a round trip.
+  it('does not call the auth-service for a token that is already expired', async () => {
+    const response = await app.inject({
+      method: 'GET',
+      url: '/__test/open-to-service',
+      headers: { authorization: `Bearer ${serviceAccountToken(SERVICE_NAME_IN_TEST, -60)}` },
+    })
+
+    expect(response.statusCode).toBe(401)
+    expect(fetchMock).not.toHaveBeenCalled()
+  })
+
+  it('does not call the auth-service for a token with no expiry at all', async () => {
+    const noExpiry = `${base64url(JSON.stringify({ alg: 'RS256' }))}.${base64url(
+      JSON.stringify({ 'kubernetes.io': { serviceaccount: { name: SERVICE_NAME_IN_TEST } } }),
+    )}.x`
+
+    const response = await app.inject({
+      method: 'GET',
+      url: '/__test/open-to-service',
+      headers: { authorization: `Bearer ${noExpiry}` },
+    })
+
+    expect(response.statusCode).toBe(401)
+    expect(fetchMock).not.toHaveBeenCalled()
   })
 })
