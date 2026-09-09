@@ -27,7 +27,6 @@ async function openField(
   const onRemove = vi.fn()
   render(
     <FilterPopover
-      open
       onClose={() => {}}
       base={base}
       filter={filter}

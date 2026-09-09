@@ -8,6 +8,7 @@ import type { TicketSort } from '@/lib/pipodesk/sort'
 import type { TicketRow } from '@/lib/pipodesk/ticket-row'
 import type { TreeNode } from '@/lib/pipodesk/tree'
 import constants from '@/constants/pages/pipodesk/queue'
+import { DeskIcon } from '@/components/pipodesk/icons'
 import { SidebarToggle } from '@/components/pipodesk/shell/SidebarToggle'
 import { DisplayPopover } from './DisplayPopover'
 import { FilterPopover } from './FilterPopover'
@@ -152,14 +153,7 @@ export function QueueHeader({
               title={constants.filters}
               onClick={() => setFiltersOpen((current) => !current)}
             >
-              <svg width="16" height="16" viewBox="0 0 16 16" fill="none" aria-hidden="true">
-                <path
-                  d="M2 3.5h12L9.5 8.5v4l-3 1.5v-5.5L2 3.5Z"
-                  stroke="currentColor"
-                  strokeWidth="1.2"
-                  strokeLinejoin="round"
-                />
-              </svg>
+              <DeskIcon name="funnel" />
               {/* The dot lights when a chip is applied — an icon button has no other way
                                  to say the queue is cut. */}
               {(chips.length > 0 || dateWindowDays !== null) && (
@@ -170,7 +164,6 @@ export function QueueHeader({
                              screen, and a closed one would reopen on the last subpanel. */}
             {filtersOpen && (
               <FilterPopover
-                open={filtersOpen}
                 anchor={filtersTrigger}
                 onClose={() => setFiltersOpen(false)}
                 base={base}

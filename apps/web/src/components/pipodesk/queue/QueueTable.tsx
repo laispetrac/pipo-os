@@ -1,7 +1,9 @@
-import { useEffect, useLayoutEffect, useRef, useState } from 'react'
-import type { QueueColumn } from '@/lib/pipodesk/columns'
+import { useEffect, useLayoutEffect, useRef, useState, type ReactNode } from 'react'
+import type { PopoverAlign } from '@/components/pipodesk/primitives'
+import { FILTER_BY_COLUMN, SORTABLE, type QueueColumn } from '@/lib/pipodesk/columns'
+import type { FilterField } from '@/lib/pipodesk/filter'
 import type { TicketGroup } from '@/lib/pipodesk/group'
-import type { TicketSort, SortField } from '@/lib/pipodesk/sort'
+import type { TicketSort } from '@/lib/pipodesk/sort'
 import { computeWindow, flattenGroups, ROW_HEIGHT } from '@/lib/pipodesk/virtual'
 import constants from '@/constants/pages/pipodesk/queue'
 import { QueueRow } from './QueueRow'
@@ -26,16 +28,10 @@ export interface QueueTableProps {
   onOpenTicket: (id: string) => void
   today: string
   resolveName: (userId: string) => string
-}
-
-/** Sortable columns. Making the rest clickable would promise a sort
- *  `sortTickets` cannot do. */
-const SORTABLE: Record<string, SortField> = {
-  createdAt: 'createdAt',
-  updatedAt: 'updatedAt',
-  company: 'company',
-  status: 'status',
-  prazo: 'actionDate',
+  /** The funnel a filtering column shows. A render prop so the table stays
+   *  ignorant of the filter panel and its state; `align` is the side the panel
+   *  grows toward. */
+  columnFilter?: (field: FilterField, align: PopoverAlign) => ReactNode
 }
 
 export function QueueTable({
@@ -51,6 +47,7 @@ export function QueueTable({
   onOpenTicket,
   today,
   resolveName,
+  columnFilter,
 }: QueueTableProps) {
   const scrollRef = useRef<HTMLDivElement>(null)
   const [scrollTop, setScrollTop] = useState(0)
@@ -121,8 +118,12 @@ export function QueueTable({
           </colgroup>
           <thead>
             <tr>
-              {columns.map((column) =>
-                column.key === 'select' ? (
+              {columns.map((column, index) => {
+                const filterField = FILTER_BY_COLUMN[column.key]
+                // The panel is wider than most columns, so it grows toward the
+                // half of the table with room. By position, not key: columns move.
+                const align: PopoverAlign = index < columns.length / 2 ? 'left' : 'right'
+                return column.key === 'select' ? (
                   <th key="select" scope="col">
                     <input
                       ref={selectAll}
@@ -139,27 +140,36 @@ export function QueueTable({
                     aria-sort={sortOf(column.key)}
                     className={column.align === 'right' ? styles.right : undefined}
                   >
-                    {SORTABLE[column.key] ? (
-                      <button
-                        type="button"
-                        className={styles.headerButton}
-                        onClick={() => toggleSort(column.key)}
-                      >
-                        {column.label}
-                        <span aria-hidden="true" className={styles.sortGlyph}>
-                          {sortOf(column.key) === 'ascending'
-                            ? '↑'
-                            : sortOf(column.key) === 'descending'
-                              ? '↓'
-                              : '↕'}
-                        </span>
-                      </button>
-                    ) : (
-                      column.label
-                    )}
+                    <span className={styles.headerCell}>
+                      {/* The title rides the label, never the cell: with the funnel
+                          inside it, a column carrying both would nest two tooltips.
+                          On the button when the column sorts — a `title` on a bare
+                          span is a mouse tooltip and nothing else, while on a button
+                          it is also the accessible description. */}
+                      {SORTABLE[column.key] ? (
+                        <button
+                          type="button"
+                          className={styles.headerButton}
+                          title={column.title}
+                          onClick={() => toggleSort(column.key)}
+                        >
+                          {column.label}
+                          <span aria-hidden="true" className={styles.sortGlyph}>
+                            {sortOf(column.key) === 'ascending'
+                              ? '↑'
+                              : sortOf(column.key) === 'descending'
+                                ? '↓'
+                                : '↕'}
+                          </span>
+                        </button>
+                      ) : (
+                        <span title={column.title}>{column.label}</span>
+                      )}
+                      {columnFilter && filterField ? columnFilter(filterField, align) : null}
+                    </span>
                   </th>
-                ),
-              )}
+                )
+              })}
             </tr>
           </thead>
           <tbody>
