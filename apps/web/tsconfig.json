@@ -7,6 +7,6 @@
     },
     "types": ["vite/client", "vitest/globals"]
   },
-  "include": ["src", "tests", ".storybook"],
+  "include": ["src", "tests", ".storybook", "scripts"],
   "references": [{ "path": "./tsconfig.node.json" }]
 }

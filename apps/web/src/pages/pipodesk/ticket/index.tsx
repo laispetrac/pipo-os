@@ -1,9 +1,14 @@
-import { useEffect, useMemo, useRef, useState } from 'react'
+import { useMemo, useRef, useState } from 'react'
 import { Banner, Breadcrumb, BreadcrumbItem, Button, Heading, Tabs } from '@piposaude/design-system'
 import { Link, useParams } from '@tanstack/react-router'
 import { useDesk } from '@/components/pipodesk/shell/desk-context'
 import { SidebarToggle } from '@/components/pipodesk/shell/SidebarToggle'
-import { DeskIcon } from '@/components/pipodesk/icons'
+import { CompanyTab } from '@/components/pipodesk/ticket/CompanyTab'
+import { CopyButton } from '@/components/pipodesk/ticket/CopyButton'
+import { DocumentsTab } from '@/components/pipodesk/ticket/DocumentsTab'
+import { HistoryTab } from '@/components/pipodesk/ticket/HistoryTab'
+import { PersonTab } from '@/components/pipodesk/ticket/PersonTab'
+import { RecordEmpty } from '@/components/pipodesk/ticket/RecordSection'
 import { Popover } from '@/components/pipodesk/primitives'
 import { DISPLAY_STATUS_COPY, PENDING_REASON_COPY } from '@/constants/pipodesk/status'
 import {
@@ -16,6 +21,7 @@ import {
 import { ORIGIN_COPY } from '@/lib/pipodesk/filter-copy'
 import { analystsOf } from '@/lib/pipodesk/permissions'
 import { structureFixture } from '@/fixtures/pipodesk/dataset'
+import { records } from '@/fixtures/pipodesk/records'
 import { daysOverdue, formatDate, formatDayMonth, formatLongDate } from '@/lib/pipodesk/format'
 import {
   CHANNELS,
@@ -26,6 +32,7 @@ import {
 } from '@/lib/pipodesk/timeline'
 import { PRIORITIES } from '@/lib/pipodesk/ticket-row'
 import constants from '@/constants/pages/pipodesk/ticket'
+import recordCopy from '@/constants/pages/pipodesk/ticket/record'
 import styles from './style.module.css'
 
 /** One fact: label above, value below. */
@@ -42,8 +49,7 @@ function Fact({ label, value }: { label: string; value: string }) {
  * Ticket detail — the S3/PD-103 core. Person in the H1, copyable id below
  * (the analyst looks for the person; the number gets pasted elsewhere).
  * Priority and owner edit through the same patches as the queue. Missing:
- * the four record tabs (PD-111), completion form/gates, suggestions and
- * attachments (PD-112).
+ * completion form/gates, suggestions and attachments (PD-112).
  */
 export default function TicketPage() {
   const { id } = useParams({ from: '/_auth/_desk/tickets/$id' })
@@ -51,13 +57,17 @@ export default function TicketPage() {
 
   const ticket = useMemo(() => rows.find((row) => row.id === id), [rows, id])
 
-  const [copied, setCopied] = useState(false)
   const [priorityOpen, setPriorityOpen] = useState(false)
   const [ownerOpen, setOwnerOpen] = useState(false)
   const priorityTrigger = useRef<HTMLButtonElement>(null)
   const ownerTrigger = useRef<HTMLButtonElement>(null)
   const [channel, setChannel] = useState<CommentChannel>('internal')
   const [draft, setDraft] = useState('')
+  /* Keyed by ticket: the page does not remount between tickets, and a person
+     picked on one must not leak into the next. */
+  const [shownPerson, setShownPerson] = useState<{ ticketId: string; personId: string } | null>(
+    null,
+  )
 
   const events = useMemo(
     () => (ticket ? timelineOf(ticket, comments, resolveName) : []),
@@ -74,14 +84,6 @@ export default function TicketPage() {
     [ticket?.groupId],
   )
 
-  const copiedTimer = useRef<ReturnType<typeof setTimeout> | null>(null)
-  useEffect(
-    () => () => {
-      if (copiedTimer.current !== null) clearTimeout(copiedTimer.current)
-    },
-    [],
-  )
-
   if (!ticket) {
     return (
       <div className={`${styles.screen} ${styles.missing}`}>
@@ -91,23 +93,13 @@ export default function TicketPage() {
   }
 
   const personName = ticket.beneficiaryName ?? ticket.subject
+  const movement = records.movementOf(ticket.id)
+  const shownPersonId =
+    shownPerson?.ticketId === ticket.id ? shownPerson.personId : (movement?.beneficiaryId ?? null)
   /* `null` for no action date AND for one that cannot be read — an unreadable
      date is not an overdue deadline. */
   const overdue = ticket.actionDate === null ? null : daysOverdue(ticket.actionDate, today)
   const activeChannel = CHANNELS[channel]
-
-  const copyId = async () => {
-    try {
-      await navigator.clipboard.writeText(ticket.id)
-      setCopied(true)
-      /* Cleared before rearming and on unmount: copying and leaving inside the
-         window used to set state on a gone component. */
-      if (copiedTimer.current !== null) clearTimeout(copiedTimer.current)
-      copiedTimer.current = setTimeout(() => setCopied(false), 1500)
-    } catch {
-      // No clipboard (permission, iframe): the id stays selectable on screen.
-    }
-  }
 
   const situacao = ticket.reason
     ? `${DISPLAY_STATUS_COPY[ticket.display]} · ${PENDING_REASON_COPY[ticket.reason]}`
@@ -349,15 +341,37 @@ export default function TicketPage() {
     </div>
   )
 
-  /* No context column here: the DS Tabs mounts every panel at once, and five
-       identical `complementary` landmarks would pile up (back with PD-111). */
-  const pendingTab = (
-    <div className={styles.body}>
-      <section className={styles.block}>
-        <p className={styles.pending}>{constants.tabPending}</p>
-      </section>
-    </div>
+  const pessoa =
+    shownPersonId === null ? (
+      <RecordEmpty>{recordCopy.notFound.person}</RecordEmpty>
+    ) : (
+      <PersonTab
+        personId={shownPersonId}
+        records={records}
+        capturedAt={ticket.createdAt}
+        onSelectPerson={(personId) => setShownPerson({ ticketId: ticket.id, personId })}
+      />
+    )
+
+  const empresa = (
+    <CompanyTab
+      companyId={ticket.companyId}
+      policyId={movement?.policyId}
+      records={records}
+      capturedAt={ticket.createdAt}
+      today={today}
+    />
   )
+
+  const documentos = (
+    <DocumentsTab
+      ticket={ticket}
+      pendingDocumentation={movement?.pendingDocumentation ?? null}
+      records={records}
+    />
+  )
+
+  const historico = <HistoryTab ticket={ticket} rows={rows} records={records} />
 
   return (
     <div className={styles.screen}>
@@ -393,34 +407,8 @@ export default function TicketPage() {
         <Heading level="h1">{personName}</Heading>
         <p className={styles.subtitle}>
           <span className={styles.ticketId}>{ticket.id}</span>
-          {/* Hidden at rest, shown on hover of the header, on focus and while
-              copied — as in the prototype. The glyph morphs to a check and a
-              balloon says "Copiado"; the live region is always mounted so the
-              announcement is not lost when the text appears. */}
-          <button
-            type="button"
-            className={styles.copy}
-            aria-label={constants.copyId(ticket.id)}
-            title={copied ? constants.copied : constants.copyId(ticket.id)}
-            data-copied={copied ? 'true' : undefined}
-            onClick={copyId}
-          >
-            <span className={styles.copyGlyphs}>
-              <DeskIcon
-                name="copy"
-                size={14}
-                className={`${styles.copyGlyph} ${styles.copyIcon}`}
-              />
-              <DeskIcon
-                name="check"
-                size={14}
-                className={`${styles.copyGlyph} ${styles.checkIcon}`}
-              />
-            </span>
-            <span className={styles.copiedTip} role="status" aria-live="polite">
-              {copied ? constants.copied : ''}
-            </span>
-          </button>
+          {/* Revealed on hover of the header (`.pagehead`), as in the prototype. */}
+          <CopyButton value={ticket.id} label={constants.copyId(ticket.id)} />
         </p>
       </div>
 
@@ -436,10 +424,14 @@ export default function TicketPage() {
               </>,
             ),
           },
-          { key: 'pessoa', label: constants.tabs.pessoa, content: pendingTab },
-          { key: 'empresa', label: constants.tabs.empresa, content: pendingTab },
-          { key: 'documentos', label: constants.tabs.documentos, content: pendingTab },
-          { key: 'historico', label: constants.tabs.historico, content: pendingTab },
+          { key: 'pessoa', label: constants.tabs.pessoa, content: withAside(pessoa) },
+          { key: 'empresa', label: constants.tabs.empresa, content: withAside(empresa) },
+          {
+            key: 'documentos',
+            label: constants.tabs.documentos,
+            content: withAside(documentos),
+          },
+          { key: 'historico', label: constants.tabs.historico, content: withAside(historico) },
         ]}
       />
     </div>
