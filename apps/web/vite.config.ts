@@ -26,6 +26,10 @@ export default defineConfig({
   test: {
     environment: 'jsdom',
     globals: true,
+    // The detail route loads on demand: under parallel workers the default 5s
+    // ceiling is what the integration suites hit, not the wait they configure.
+    testTimeout: 15_000,
+    hookTimeout: 15_000,
     setupFiles: ['tests/setup.ts'],
     include: ['tests/**/*.test.{ts,tsx}'],
     env: {
