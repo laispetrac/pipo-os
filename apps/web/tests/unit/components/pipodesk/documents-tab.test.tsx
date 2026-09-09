@@ -1,10 +1,16 @@
 import { render, screen, within } from '@testing-library/react'
 import { DocumentsTab } from '@/components/pipodesk/ticket/DocumentsTab'
 import copy from '@/constants/pages/pipodesk/ticket/documents'
+import { documentLabel } from '@/lib/pipodesk/document'
 import type { TicketRow } from '@/lib/pipodesk/ticket-row'
 import { recordsWith } from '../../../helpers/records'
 
-const row = { id: '700001', companyId: 'company-1', enrollmentType: 'inclusion' } as TicketRow
+const row = {
+  id: '700001',
+  companyId: 'company-1',
+  enrollmentType: 'inclusion',
+  createdAt: '2026-08-01T12:00:00.000Z',
+} as TicketRow
 
 describe('DocumentsTab', () => {
   /** As duas grafias do comprovante nomeiam um documento, não dois — e é a
@@ -22,5 +28,8 @@ describe('DocumentsTab', () => {
       .getByRole('heading', { level: 2, name: copy.missing.title })
       .closest('section')!
     expect(within(missing).getAllByRole('listitem')).toHaveLength(1)
+    expect(within(missing).getByRole('listitem')).toHaveTextContent(
+      documentLabel('comprovante-residencia'),
+    )
   })
 })

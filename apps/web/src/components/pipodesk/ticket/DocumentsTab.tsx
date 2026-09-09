@@ -61,10 +61,17 @@ export function DocumentsTab({ ticket, pendingDocumentation, records }: Document
   // Matched on the normalised key, never on the label — copy must not steer it.
   const received = new Set(fromClient.map((doc) => documentKey(doc.kind)))
   // Keyed and deduplicated by the same key that decides equality: two spellings
-  // of one document in the same list are one pendency, not two.
-  const missing = [...new Map((pendingDocumentation ?? []).map((k) => [documentKey(k), k]))].map(
-    ([key, spelling]) => ({ key, label: documentLabel(spelling), arrived: received.has(key) }),
-  )
+  // of one document are one pendency, and the first one the EI wrote is the label.
+  const byKey = new Map<string, string>()
+  for (const spelling of pendingDocumentation ?? []) {
+    const key = documentKey(spelling)
+    if (!byKey.has(key)) byKey.set(key, spelling)
+  }
+  const missing = [...byKey].map(([key, spelling]) => ({
+    key,
+    label: documentLabel(spelling),
+    arrived: received.has(key),
+  }))
 
   // Only an inclusion goes through Adobe Sign; the empty group says so instead of vanishing.
   const pipoEmpty =
