@@ -50,10 +50,12 @@ export function PersonTab({ personId, records, capturedAt, onSelectPerson }: Per
   // The button that switched the person unmounts with the switch, dropping focus to
   // the body; the name it navigated to takes it, as the Popover does with its trigger.
   const nameRef = useRef<HTMLHeadingElement>(null)
-  const switched = useRef(false)
+  // The id asked for, not a flag: a parent that switches to someone else than the
+  // person asked for does not move the focus. Both call sites ask for another person.
+  const switchedTo = useRef<string | null>(null)
   useEffect(() => {
-    if (!switched.current) return
-    switched.current = false
+    if (switchedTo.current !== personId) return
+    switchedTo.current = null
     nameRef.current?.focus()
   }, [personId])
 
@@ -61,7 +63,7 @@ export function PersonTab({ personId, records, capturedAt, onSelectPerson }: Per
   if (!person) return <RecordEmpty>{recordCopy.notFound.person}</RecordEmpty>
 
   const selectPerson = (id: string) => {
-    switched.current = true
+    switchedTo.current = id
     onSelectPerson(id)
   }
 
@@ -121,6 +123,8 @@ export function PersonTab({ personId, records, capturedAt, onSelectPerson }: Per
             {formatLongDateWithYear(person.birthDate)}
           </RecordField>
           <RecordField label={copy.fields.cpf}>{formatCpf(person.cpf)}</RecordField>
+          {/* The `??` looks dead against the union, but the fixture enters by cast:
+              a JSON not regenerated can still carry a value the union dropped. */}
           <RecordField label={copy.fields.sex}>{SEX_COPY[person.sex] ?? person.sex}</RecordField>
           <RecordField label={copy.fields.maritalStatus}>
             {MARITAL_STATUS_COPY[person.maritalStatus] ?? person.maritalStatus}

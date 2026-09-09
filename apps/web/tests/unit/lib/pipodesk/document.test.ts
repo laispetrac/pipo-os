@@ -34,3 +34,9 @@ describe('documentKey', () => {
     expect(documentKey('Certidão de nascimento')).toBe('certidaodenascimento')
   })
 })
+
+describe('documentLabel', () => {
+  it('should name both spellings of the proof of address the same', () => {
+    expect(documentLabel('comprovante_residencia')).toBe(documentLabel('comprovante-residencia'))
+  })
+})

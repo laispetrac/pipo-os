@@ -274,11 +274,14 @@ async function main(): Promise<void> {
       return enrollment
     }
 
+    // Validated here too, so the comparison stays type-checked after `role: string`.
+    const roleOf = (person: Beneficiary): (typeof ROLE)[number] =>
+      oneOf(ROLE, person.role, `papel de ${person.id}`)
+
     const relationshipOf = (enrollment: Enrollment): string => {
       if (enrollment.dependentIds.length > 0) return 'grupo-familiar'
-      return beneficiaryById.get(enrollment.beneficiaryId)?.role === 'dependent'
-        ? 'dependente'
-        : 'titular'
+      const person = beneficiaryById.get(enrollment.beneficiaryId)
+      return person && roleOf(person) === 'dependent' ? 'dependente' : 'titular'
     }
 
     const displayNameOf = (person: Beneficiary): string => person.socialName ?? person.name
@@ -414,7 +417,7 @@ async function main(): Promise<void> {
         motherName: person.motherName,
         address: person.address,
         bankAccount: person.bankAccount,
-        role: oneOf(ROLE, person.role, `papel de ${person.id}`),
+        role: roleOf(person),
         holderId: person.holderId,
         link: {
           companyId: person.link.companyId,

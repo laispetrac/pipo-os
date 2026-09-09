@@ -60,11 +60,11 @@ export function DocumentsTab({ ticket, pendingDocumentation, records }: Document
   // What is missing comes from the ticket, not from what arrived: both facts show.
   // Matched on the normalised key, never on the label — copy must not steer it.
   const received = new Set(fromClient.map((doc) => documentKey(doc.kind)))
-  const missing = (pendingDocumentation ?? []).map((key) => ({
-    key,
-    label: documentLabel(key),
-    arrived: received.has(documentKey(key)),
-  }))
+  // Keyed and deduplicated by the same key that decides equality: two spellings
+  // of one document in the same list are one pendency, not two.
+  const missing = [...new Map((pendingDocumentation ?? []).map((k) => [documentKey(k), k]))].map(
+    ([key, spelling]) => ({ key, label: documentLabel(spelling), arrived: received.has(key) }),
+  )
 
   // Only an inclusion goes through Adobe Sign; the empty group says so instead of vanishing.
   const pipoEmpty =
