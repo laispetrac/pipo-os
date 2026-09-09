@@ -224,7 +224,12 @@
   white-space: nowrap;
 }
 
+/* The header opts out of the cell clipping the body needs: the funnel's panel
+   is absolutely positioned inside the cell, and `hidden` swallowed it whole.
+   Nothing in the header clips — a box tight around the label would also cut
+   the sort button, whose hover pill and focus ring hang 4px outside it. */
 .table thead th {
+  overflow: visible;
   position: sticky;
   top: 0;
   z-index: var(--desk-z-table-header);
@@ -233,6 +238,54 @@
   box-shadow: inset 0 calc(-1 * var(--pipo-border-width-small)) 0 var(--pipo-border);
   color: var(--pipo-text-secondary);
   font-weight: var(--pipo-fw-semibold);
+}
+
+/* The funnel of a filtering column. Dimmed at rest so it announces the
+   affordance without competing with the label; full ink on hover and while
+   its panel is open. */
+.columnFunnel {
+  display: inline-flex;
+  position: relative;
+  align-items: center;
+  padding: 0;
+  border: none;
+  background: transparent;
+  color: var(--pipo-text-secondary);
+  opacity: 0.55;
+  cursor: pointer;
+}
+
+.columnFunnel:hover,
+.columnFunnel[aria-expanded='true'],
+.columnFunnel:focus-visible {
+  opacity: 1;
+}
+
+/* Its own dot, not the toolbar's: that one is 6px at 3px from the edge, sized
+   for a 16px button, and would cover a 12px funnel almost whole. */
+.funnelDot {
+  position: absolute;
+  top: -1px;
+  right: -2px;
+  width: 4px;
+  height: 4px;
+  border-radius: var(--pipo-radius-pill);
+  background: var(--pipo-brand-primary);
+}
+
+/* A filtered column keeps the funnel lit even at rest — otherwise the only
+   sign that the column is cutting the queue is the chip, far from here. */
+.columnFunnel:has([data-active]) {
+  opacity: 1;
+  color: var(--pipo-brand-primary);
+}
+
+/* Label and funnel side by side; the title hangs on the label alone (see
+   QueueTable), so the cell is a box and not a bare `<th>`. */
+.headerCell {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--pipo-space-xxsmall);
 }
 
 .headerButton {

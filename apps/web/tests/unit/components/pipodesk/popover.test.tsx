@@ -1,9 +1,12 @@
 import { fireEvent, render, screen } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { useRef, useState } from 'react'
-import { Popover } from '@/components/pipodesk/primitives'
+import { Popover, type PopoverAlign } from '@/components/pipodesk/primitives'
 
-function Harness({ onOpenChange }: { onOpenChange?: (open: boolean) => void } = {}) {
+function Harness({
+  onOpenChange,
+  align,
+}: { onOpenChange?: (open: boolean) => void; align?: PopoverAlign } = {}) {
   const [open, setOpen] = useState(false)
   const trigger = useRef<HTMLButtonElement>(null)
   const change = (next: boolean) => {
@@ -16,7 +19,13 @@ function Harness({ onOpenChange }: { onOpenChange?: (open: boolean) => void } = 
       <button type="button" ref={trigger} onClick={() => change(!open)}>
         Filtros
       </button>
-      <Popover open={open} onClose={() => change(false)} label="Filtros" anchor={trigger}>
+      <Popover
+        open={open}
+        onClose={() => change(false)}
+        label="Filtros"
+        anchor={trigger}
+        align={align}
+      >
         <button type="button">Status</button>
       </Popover>
       <button type="button">Fora</button>
@@ -73,6 +82,15 @@ describe('Popover', () => {
 
     await user.click(trigger)
     expect(screen.queryByRole('dialog')).not.toBeInTheDocument()
+  })
+
+  /** Which side it hangs on is a CSS class, invisible to jsdom; the attribute
+   *  is how a caller proves it asked for the right one. */
+  it('should name the side it opens toward', () => {
+    render(<Harness align="right" />)
+    fireEvent.click(screen.getByRole('button', { name: 'Filtros' }))
+
+    expect(screen.getByRole('dialog')).toHaveAttribute('data-align', 'right')
   })
 
   it('should stay open when the click lands inside of it', () => {

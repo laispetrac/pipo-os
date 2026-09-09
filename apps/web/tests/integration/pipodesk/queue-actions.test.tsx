@@ -448,3 +448,143 @@ describe('sair', () => {
     })
   })
 })
+
+/**
+ * The header cell also carries what the label alone does not teach.
+ */
+describe('cabeçalho da fila', () => {
+  /** The Prazo cell shows two different counts with the same `d` suffix, and
+   *  the label alone does not say which is which. */
+  it('should explain the Prazo column on hover', async () => {
+    await renderQueue()
+
+    const prazo = screen
+      .getAllByRole('columnheader')
+      .find((cell) => cell.textContent?.startsWith('Prazo'))
+    expect(prazo?.querySelector('[title]')?.getAttribute('title')).toMatch(/data de ação/i)
+  })
+})
+
+/**
+ * The header cell carries the per-column controls: a funnel on the columns
+ * that filter, the explanation on the ones a label alone does not teach.
+ * The prototype's rule is exclusive — a column either sorts or it filters.
+ */
+describe('funil por coluna', () => {
+  it('should open the panel already on the column field, skipping the field list', async () => {
+    await renderQueue()
+    const user = userEvent.setup()
+
+    await user.click(screen.getByRole('button', { name: 'Filtrar por Tipo' }))
+
+    // Straight to the options: no "Aberto em", no field list.
+    const painel = screen.getByRole('dialog', { name: /filtros/i })
+    expect(within(painel).getByRole('button', { name: /^Exclusão/ })).toBeInTheDocument()
+    expect(within(painel).queryByRole('button', { name: /Aberto em/ })).not.toBeInTheDocument()
+  })
+
+  /** The panel keeps a Voltar when it came from the field list. From a funnel
+   *  there is no list behind it, and the button would go nowhere. */
+  it('should offer no way back when the field came from a funnel', async () => {
+    await renderQueue()
+    const user = userEvent.setup()
+
+    await user.click(screen.getByRole('button', { name: 'Filtrar por Tipo' }))
+    const doFunil = screen.getByRole('dialog', { name: /filtros/i })
+    expect(within(doFunil).queryByRole('button', { name: 'Voltar' })).not.toBeInTheDocument()
+
+    // ...and the toolbar panel, which does have a list behind it, keeps it.
+    await user.keyboard('{Escape}')
+    await user.click(screen.getByRole('button', { name: 'Filtros' }))
+    await user.click(screen.getByRole('button', { name: 'Tipo' }))
+    const daBarra = screen.getByRole('dialog', { name: /filtros/i })
+    expect(within(daBarra).getByRole('button', { name: 'Voltar' })).toBeInTheDocument()
+  })
+
+  it('should cut the queue from the column funnel, growing the same chip as the panel', async () => {
+    await renderQueue()
+    const user = userEvent.setup()
+    const antes = liveCount()
+
+    await user.click(screen.getByRole('button', { name: 'Filtrar por Tipo' }))
+    await user.click(await screen.findByRole('button', { name: /^Exclusão/ }))
+    await user.keyboard('{Escape}')
+
+    expect(screen.getByText('Tipo é Exclusão')).toBeInTheDocument()
+    expect(liveCount()).toBeLessThan(antes)
+  })
+
+  it('should light the dot only on the funnel of the filtered column', async () => {
+    await renderQueue()
+    const user = userEvent.setup()
+    const funil = () => screen.getByRole('button', { name: 'Filtrar por Tipo' })
+    const outro = () => screen.getByRole('button', { name: 'Filtrar por Operadora' })
+
+    expect(funil().querySelector('[data-active]')).toBeNull()
+
+    await user.click(funil())
+    await user.click(await screen.findByRole('button', { name: /^Exclusão/ }))
+    await user.keyboard('{Escape}')
+
+    expect(funil().querySelector('[data-active]')).not.toBeNull()
+    expect(outro().querySelector('[data-active]')).toBeNull()
+  })
+
+  /** A column either sorts or it filters. Empresa sorts, so it has no funnel —
+   *  even though `companyIds` is a field of the global panel. */
+  it('should not offer a funnel on a column that sorts', async () => {
+    await renderQueue()
+
+    expect(screen.queryByRole('button', { name: 'Filtrar por Empresa' })).not.toBeInTheDocument()
+    expect(screen.queryByRole('button', { name: 'Filtrar por Status' })).not.toBeInTheDocument()
+  })
+
+  it('should not change the sort when the funnel is clicked', async () => {
+    await renderQueue()
+    const user = userEvent.setup()
+    const before = screen.getAllByRole('columnheader').map((cell) => cell.getAttribute('aria-sort'))
+
+    await user.click(screen.getByRole('button', { name: 'Filtrar por Tipo' }))
+
+    const after = screen.getAllByRole('columnheader').map((cell) => cell.getAttribute('aria-sort'))
+    expect(after).toEqual(before)
+  })
+
+  /** The two mappings that do not name their own column: ID. opens Prioridade
+   *  because the priority marker lives in that cell, and Assunto opens
+   *  Operadora, the first thing its cell prints. */
+  it('should open Prioridade from the ID. funnel', async () => {
+    await renderQueue()
+    const user = userEvent.setup()
+
+    await user.click(screen.getByRole('button', { name: 'Filtrar por Prioridade' }))
+
+    const painel = screen.getByRole('dialog', { name: /filtros/i })
+    expect(within(painel).getByRole('button', { name: /^Sem prioridade/ })).toBeInTheDocument()
+  })
+
+  it('should open Operadora from the Assunto funnel', async () => {
+    await renderQueue()
+    const user = userEvent.setup()
+
+    await user.click(screen.getByRole('button', { name: 'Filtrar por Operadora' }))
+
+    const painel = screen.getByRole('dialog', { name: /filtros/i })
+    expect(within(painel).getByRole('button', { name: /^Unimed Mineira/ })).toBeInTheDocument()
+  })
+
+  /** The toolbar panel hangs to the left of its trigger, which sits at the
+   *  right edge. From the first data column that same alignment pushed 190 of
+   *  the panel's 274px past the table edge, where `overflow-x: hidden` ate them. */
+  it('should open the panel toward the side of the table with room for it', async () => {
+    await renderQueue()
+    const user = userEvent.setup()
+
+    await user.click(screen.getByRole('button', { name: 'Filtrar por Prioridade' }))
+    expect(screen.getByRole('dialog', { name: /filtros/i })).toHaveAttribute('data-align', 'left')
+
+    await user.keyboard('{Escape}')
+    await user.click(screen.getByRole('button', { name: 'Filtrar por Vínculo' }))
+    expect(screen.getByRole('dialog', { name: /filtros/i })).toHaveAttribute('data-align', 'right')
+  })
+})
