@@ -28,6 +28,16 @@ interface ClientError {
   message?: string
 }
 
+// `error` in the body is our error name everywhere else, so a framework code
+// like FST_ERR_CTP_BODY_TOO_LARGE must not leak into it.
+const CLIENT_ERROR_NAMES: Record<number, string> = {
+  400: 'BadRequestError',
+  405: 'MethodNotAllowedError',
+  406: 'NotAcceptableError',
+  413: 'PayloadTooLargeError',
+  415: 'UnsupportedMediaTypeError',
+}
+
 function isClientError(error: unknown): error is ClientError {
   const status = (error as { statusCode?: unknown }).statusCode
   return typeof status === 'number' && status >= 400 && status < 500
@@ -68,7 +78,7 @@ export default fp(
       if (isClientError(error)) {
         request.log.warn({ err: error }, 'client error')
         reply.status(error.statusCode).send({
-          error: error.code ?? 'BadRequestError',
+          error: CLIENT_ERROR_NAMES[error.statusCode] ?? 'ClientError',
           message: error.message ?? 'Request refused',
         })
         return

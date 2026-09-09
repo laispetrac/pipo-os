@@ -153,6 +153,7 @@ describe('error handler', () => {
     })
 
     expect(response.statusCode).toBe(413)
+    expect(response.json().error).toBe('PayloadTooLargeError')
   })
 
   it('answers 415 for a content type no parser accepts', async () => {
@@ -164,6 +165,7 @@ describe('error handler', () => {
     })
 
     expect(response.statusCode).toBe(415)
+    expect(response.json().error).toBe('UnsupportedMediaTypeError')
   })
 
   it('keeps an unexpected failure at the generic body, without its message', async () => {

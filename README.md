@@ -207,7 +207,7 @@ Todo erro da API responde com o mesmo corpo, o componente `ErrorResponse` do con
 
 `error` é o nome da classe de erro (contrato observado pelos testes), `message` é legível em inglês — a copy em pt-BR é do frontend — e `details` só aparece quando a falha é por campo: validação de payload (400) e recusa dos gates de conclusão (422). Um 422 de `UnprocessableEntityError` é violação de máquina de estados (chamado já fechado), e não traz `details`; um de `ValidationFailedError` traz todos os campos que falharam de uma vez, não o primeiro.
 
-Limites de corpo, do mais externo para o mais interno: **1 MB** global (o mesmo corte do nginx-ingress), **256 KB** no `POST /api/tickets/:id/comments` e **100 mil caracteres** no campo `body` do comentário. Passar dos dois primeiros responde `413`; passar do último responde `400` dizendo qual campo estourou.
+Limites de corpo, do mais externo para o mais interno: **1 MB** global (o mesmo corte do nginx-ingress), **256 KB** no `POST /api/tickets/:id/comments` e **50 mil caracteres** no campo `body` do comentário (o teto da rota é quatro vezes isso em bytes, para que um texto de caracteres multibyte chegue à validação do campo em vez de esbarrar no limite de corpo). Passar dos dois primeiros responde `413`; passar do último responde `400` dizendo qual campo estourou.
 
 ### Payload de criação
 

@@ -18,7 +18,7 @@ export const commentSchema = z
 export const createCommentBodySchema = z
   .object({
     visibility: z.enum(['public', 'private']),
-    body: z.string().trim().min(1).max(100_000),
+    body: z.string().trim().min(1).max(50_000),
   })
   .strict()
   .meta({ id: 'CreateCommentBody' })
