@@ -1,5 +1,6 @@
 export interface AuthConfig {
   authServiceUrl: string
+  authServiceInternalUrl: string
   googleClientId: string
   appBaseUrl: string
   allowedEmailDomains: string[]
@@ -70,6 +71,12 @@ export function authConfig(): AuthConfig {
 
   return {
     authServiceUrl: requiredInProduction('AUTH_SERVICE_URL', 'http://localhost:9090', isProduction),
+    // A second listener, not a second service: /api/verify-token only answers
+    // on the internal port (4000), never through the public host. Not
+    // requiredInProduction like its neighbours: the address is fixed in the
+    // cluster, and a missing variable must not take the whole API down.
+    authServiceInternalUrl:
+      process.env.AUTH_SERVICE_INTERNAL_URL ?? 'http://auth-service.platform:4000',
     googleClientId: requiredInProduction('GOOGLE_OAUTH_CLIENT_ID', '', isProduction),
     appBaseUrl: requiredInProduction('APP_BASE_URL', 'http://localhost:5173', isProduction),
     allowedEmailDomains,
