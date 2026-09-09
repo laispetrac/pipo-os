@@ -12,6 +12,7 @@ import documentsCopy from '@/constants/pages/pipodesk/ticket/documents'
 import historyCopy from '@/constants/pages/pipodesk/ticket/history'
 import personCopy from '@/constants/pages/pipodesk/ticket/person'
 import recordCopy from '@/constants/pages/pipodesk/ticket/record'
+import secretCopy from '@/constants/pipodesk/secret'
 
 // This route loads on demand: the first `findBy` after entering it includes a
 // dynamic import, and the 1s default is not enough under parallel workers.
@@ -210,7 +211,11 @@ describe('aba Sobre a empresa', () => {
     expect(within(expired).getByText('portal.unimedmineira.com.br/rh')).toBeInTheDocument()
     expect(within(expired).getByText('pipo.caicara-metalurgia')).toBeInTheDocument()
     expect(within(expired).queryByText('34q5-EM7J-68!')).not.toBeInTheDocument()
-    await user.click(within(expired).getByRole('button', { name: 'Mostrar a senha do portal' }))
+    await user.click(
+      within(expired).getByRole('button', {
+        name: secretCopy.show(companyCopy.contract.passwordLabel),
+      }),
+    )
     expect(within(expired).getByText('34q5-EM7J-68!')).toBeInTheDocument()
     expect(
       within(expired).getByRole('button', { name: companyCopy.contract.copyPassword }),
