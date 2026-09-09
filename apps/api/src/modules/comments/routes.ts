@@ -3,6 +3,7 @@ import type { FastifyInstance } from 'fastify'
 import { requireUserId } from '../auth/authenticate.js'
 import { errorResponseSchema } from '../../shared/schemas.js'
 import { ticketParamsSchema } from '../tickets/schemas.js'
+import { TICKET_POLICY } from '../tickets/policy.js'
 import {
   commentListSchema,
   commentSchema,
@@ -18,12 +19,14 @@ export function registerCommentRoutes(app: FastifyInstance, service: CommentsSer
   server.get(
     '/api/tickets/:id/comments',
     {
+      config: { policy: TICKET_POLICY },
       schema: {
         params: ticketParamsSchema,
         response: {
           200: commentListSchema,
           400: errorResponseSchema,
           401: errorResponseSchema,
+          403: errorResponseSchema,
           404: errorResponseSchema,
         },
       },
@@ -36,6 +39,7 @@ export function registerCommentRoutes(app: FastifyInstance, service: CommentsSer
   server.get(
     '/api/tickets/:id/timeline',
     {
+      config: { policy: TICKET_POLICY },
       schema: {
         params: ticketParamsSchema,
         querystring: timelineQuerySchema,
@@ -43,14 +47,14 @@ export function registerCommentRoutes(app: FastifyInstance, service: CommentsSer
           200: timelineSchema,
           400: errorResponseSchema,
           401: errorResponseSchema,
+          403: errorResponseSchema,
           404: errorResponseSchema,
         },
       },
     },
     async (request) => {
-      // TODO: enforce tenant scope from session claims before this endpoint goes to production
-      // Any authenticated user can currently read the chronology of any company's ticket,
-      // including internal comments — the same gap as GET /api/tickets (ACE-147)
+      // TODO: no portfolio filter yet, so a policy holder reads the chronology of
+      // any company's ticket, internal comments included (ACE-147)
       return service.timeline(request.params.id, request.query)
     },
   )
@@ -58,6 +62,7 @@ export function registerCommentRoutes(app: FastifyInstance, service: CommentsSer
   server.post(
     '/api/tickets/:id/comments',
     {
+      config: { policy: TICKET_POLICY },
       // A quarter of the global limit: a comment is text, and the caller that
       // needs more than this is sending a file, which is not this route.
       bodyLimit: 262_144,
@@ -68,6 +73,7 @@ export function registerCommentRoutes(app: FastifyInstance, service: CommentsSer
           201: commentSchema,
           400: errorResponseSchema,
           401: errorResponseSchema,
+          403: errorResponseSchema,
           404: errorResponseSchema,
           413: errorResponseSchema,
         },

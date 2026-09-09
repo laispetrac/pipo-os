@@ -4,6 +4,7 @@ import { z } from 'zod'
 import { requireUserId } from '../auth/authenticate.js'
 import { errorResponseSchema } from '../../shared/schemas.js'
 import { ticketListSchema } from '../tickets/schemas.js'
+import { TICKET_POLICY } from '../tickets/policy.js'
 import {
   addQueueGroupBodySchema,
   createQueueBodySchema,
@@ -147,10 +148,16 @@ export function registerQueueRoutes(app: FastifyInstance, service: QueuesService
   server.get(
     '/api/queues/:id/tickets',
     {
+      config: { policy: TICKET_POLICY },
       schema: {
         params: queueParamsSchema,
         querystring: listQueueTicketsQuerySchema,
-        response: { 200: ticketListSchema, 401: errorResponseSchema, 404: errorResponseSchema },
+        response: {
+          200: ticketListSchema,
+          401: errorResponseSchema,
+          403: errorResponseSchema,
+          404: errorResponseSchema,
+        },
       },
     },
     async (request) => {

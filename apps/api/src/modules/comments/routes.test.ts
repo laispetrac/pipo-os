@@ -217,4 +217,34 @@ describe('comments routes', () => {
       expect(response.statusCode).toBe(413)
     })
   })
+  describe('the ticket policy', () => {
+    let withoutPolicy: string
+
+    beforeAll(async () => {
+      const anonymous = await app.inject({
+        method: 'POST',
+        url: '/api/auth/dev-login',
+        payload: { policies: [] },
+      })
+      withoutPolicy = cookieValue(anonymous, SESSION_COOKIE_NAME)!
+    })
+
+    const routes: Array<[string, string]> = [
+      ['GET', '/api/tickets/:id/comments'],
+      ['GET', '/api/tickets/:id/timeline'],
+      ['POST', '/api/tickets/:id/comments'],
+    ]
+
+    it.each(routes)('answers 403 on %s %s for a session with no policy', async (method, url) => {
+      const response = await app.inject({
+        method: method as 'GET',
+        url: url.replace(':id', ticketId),
+        cookies: { [SESSION_COOKIE_NAME]: withoutPolicy },
+        payload: method === 'GET' ? undefined : { visibility: 'private', body: 'nope' },
+      })
+
+      expect(response.statusCode).toBe(403)
+      expect(response.json().error).toBe('ForbiddenError')
+    })
+  })
 })

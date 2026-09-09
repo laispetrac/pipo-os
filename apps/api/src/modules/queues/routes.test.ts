@@ -26,6 +26,7 @@ function cookieValue(
 describe('queues routes', () => {
   let app: FastifyInstance
   let sessionCookie: string
+  let ticketSessionCookie: string
 
   beforeAll(async () => {
     process.env.DEV_LOGIN_ENABLED = 'true'
@@ -38,6 +39,15 @@ describe('queues routes', () => {
       payload: { email: DEV_LOGIN_USER_ID, policies: [] },
     })
     sessionCookie = cookieValue(loginResponse, SESSION_COOKIE_NAME)!
+
+    // The queue structure asks for no policy; listing the tickets of a queue
+    // does, because what comes back is ticket data.
+    const ticketLogin = await app.inject({
+      method: 'POST',
+      url: '/api/auth/dev-login',
+      payload: { email: DEV_LOGIN_USER_ID, policies: ['admin/allow/administrate/ticket/*'] },
+    })
+    ticketSessionCookie = cookieValue(ticketLogin, SESSION_COOKIE_NAME)!
   })
 
   afterAll(async () => {
@@ -454,11 +464,21 @@ describe('queues routes', () => {
       expect(response.statusCode).toBe(401)
     })
 
-    it('returns 404 for nonexistent queue', async () => {
+    it('returns 403 for a session without the ticket policy', async () => {
       const response = await app.inject({
         method: 'GET',
         url: `/api/queues/${NONEXISTENT_ID}/tickets`,
         cookies: { [SESSION_COOKIE_NAME]: sessionCookie },
+      })
+      expect(response.statusCode).toBe(403)
+      expect(response.json().error).toBe('ForbiddenError')
+    })
+
+    it('returns 404 for nonexistent queue', async () => {
+      const response = await app.inject({
+        method: 'GET',
+        url: `/api/queues/${NONEXISTENT_ID}/tickets`,
+        cookies: { [SESSION_COOKIE_NAME]: ticketSessionCookie },
       })
       expect(response.statusCode).toBe(404)
     })
@@ -475,7 +495,7 @@ describe('queues routes', () => {
       const response = await app.inject({
         method: 'GET',
         url: `/api/queues/${queueId}/tickets`,
-        cookies: { [SESSION_COOKIE_NAME]: sessionCookie },
+        cookies: { [SESSION_COOKIE_NAME]: ticketSessionCookie },
       })
       expect(response.statusCode).toBe(200)
       expect(response.json()).toEqual({ data: [], total: 0, page: 1, pageSize: 20 })
@@ -500,13 +520,13 @@ describe('queues routes', () => {
       await app.inject({
         method: 'POST',
         url: '/api/tickets',
-        cookies: { [SESSION_COOKIE_NAME]: sessionCookie },
+        cookies: { [SESSION_COOKIE_NAME]: ticketSessionCookie },
         payload: { ...validTicketBody, queueId: queueAId },
       })
       await app.inject({
         method: 'POST',
         url: '/api/tickets',
-        cookies: { [SESSION_COOKIE_NAME]: sessionCookie },
+        cookies: { [SESSION_COOKIE_NAME]: ticketSessionCookie },
         payload: {
           ...validTicketBody,
           enrollmentId: '00000000-0000-4000-8000-000000000011',
@@ -517,7 +537,7 @@ describe('queues routes', () => {
       const response = await app.inject({
         method: 'GET',
         url: `/api/queues/${queueAId}/tickets`,
-        cookies: { [SESSION_COOKIE_NAME]: sessionCookie },
+        cookies: { [SESSION_COOKIE_NAME]: ticketSessionCookie },
       })
       const body = response.json()
 
@@ -540,7 +560,7 @@ describe('queues routes', () => {
         await app.inject({
           method: 'POST',
           url: '/api/tickets',
-          cookies: { [SESSION_COOKIE_NAME]: sessionCookie },
+          cookies: { [SESSION_COOKIE_NAME]: ticketSessionCookie },
           payload: {
             ...validTicketBody,
             enrollmentId: `00000000-0000-4000-8000-00000000001${i}`,
@@ -552,7 +572,7 @@ describe('queues routes', () => {
       const page1 = await app.inject({
         method: 'GET',
         url: `/api/queues/${queueId}/tickets?page=1&pageSize=2`,
-        cookies: { [SESSION_COOKIE_NAME]: sessionCookie },
+        cookies: { [SESSION_COOKIE_NAME]: ticketSessionCookie },
       })
       expect(page1.json().data).toHaveLength(2)
       expect(page1.json().total).toBe(3)

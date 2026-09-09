@@ -1064,4 +1064,58 @@ describe('tickets routes', () => {
       })
     })
   })
+  describe('the ticket policy', () => {
+    let withoutPolicy: string
+    let withAnotherDomain: string
+
+    beforeAll(async () => {
+      const anonymous = await app.inject({
+        method: 'POST',
+        url: '/api/auth/dev-login',
+        payload: { policies: [] },
+      })
+      withoutPolicy = cookieValue(anonymous, SESSION_COOKIE_NAME)!
+
+      const otherDomain = await app.inject({
+        method: 'POST',
+        url: '/api/auth/dev-login',
+        payload: { policies: ['admin/allow/administrate/company/*'] },
+      })
+      withAnotherDomain = cookieValue(otherDomain, SESSION_COOKIE_NAME)!
+    })
+
+    const routes: Array<[string, string]> = [
+      ['GET', '/api/tickets'],
+      ['GET', '/api/tickets/rows'],
+      ['GET', '/api/tickets/:id'],
+      ['POST', '/api/tickets'],
+      ['PATCH', '/api/tickets/:id'],
+      ['PATCH', '/api/tickets/:id/status'],
+      ['POST', '/api/tickets/:id/claim'],
+    ]
+
+    // The id can be one that does not exist: the policy is a door, not a lookup,
+    // and it closes before the ticket is searched for.
+    it.each(routes)('answers 403 on %s %s for a session with no policy', async (method, url) => {
+      const response = await app.inject({
+        method: method as 'GET',
+        url: url.replace(':id', NONEXISTENT_ID),
+        cookies: { [SESSION_COOKIE_NAME]: withoutPolicy },
+        payload: method === 'GET' ? undefined : validTicketBody,
+      })
+
+      expect(response.statusCode).toBe(403)
+      expect(response.json().error).toBe('ForbiddenError')
+    })
+
+    it('answers 403 for a session holding only another domain', async () => {
+      const response = await app.inject({
+        method: 'GET',
+        url: '/api/tickets',
+        cookies: { [SESSION_COOKIE_NAME]: withAnotherDomain },
+      })
+
+      expect(response.statusCode).toBe(403)
+    })
+  })
 })
