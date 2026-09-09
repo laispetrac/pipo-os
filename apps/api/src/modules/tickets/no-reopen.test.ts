@@ -32,7 +32,7 @@ describe('a closed ticket does not go back to an open state', () => {
     const login = await app.inject({
       method: 'POST',
       url: '/api/auth/dev-login',
-      payload: { policies: ['admin/allow/administrate/ticket/*'] },
+      payload: { policies: ['admin/allow/administrate/pipodesk/ticket'] },
     })
     const sessionCookie = login.cookies.find((c) => c.name === SESSION_COOKIE_NAME)!.value
     cookies = { [SESSION_COOKIE_NAME]: sessionCookie }
