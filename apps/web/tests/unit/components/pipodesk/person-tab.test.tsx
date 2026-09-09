@@ -194,4 +194,34 @@ describe('PersonTab', () => {
 
     expect(screen.getByRole('heading', { level: 2 })).not.toHaveFocus()
   })
+
+  /** É este ramo que justifica a ref guardar o id em vez de um booleano: com o
+   *  booleano, qualquer troca depois do clique movia o foco. */
+  it('should not focus the name when the page switches to someone other than the person asked for', async () => {
+    const user = userEvent.setup()
+    const records = recordsWith({
+      beneficiaries: [
+        person('holder'),
+        person('outra'),
+        person('dep', { role: 'dependent', holderId: 'holder' }),
+      ],
+    })
+    function Page() {
+      const [personId, setPersonId] = useState('dep')
+      // A página decide quem entra na tela, e aqui ela decide outra pessoa.
+      return (
+        <PersonTab
+          personId={personId}
+          records={records}
+          capturedAt="2026-08-01T12:00:00.000Z"
+          onSelectPerson={() => setPersonId('outra')}
+        />
+      )
+    }
+    render(<Page />)
+
+    await user.click(screen.getByRole('button', { name: 'Pessoa holder' }))
+
+    expect(screen.getByRole('heading', { level: 2, name: 'Pessoa outra' })).not.toHaveFocus()
+  })
 })
