@@ -19,7 +19,7 @@ export function registerCommentRoutes(app: FastifyInstance, service: CommentsSer
   server.get(
     '/api/tickets/:id/comments',
     {
-      config: { policy: TICKET_POLICY },
+      config: { policy: TICKET_POLICY, serviceAllowed: true },
       schema: {
         params: ticketParamsSchema,
         response: {

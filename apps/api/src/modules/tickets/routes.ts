@@ -22,7 +22,10 @@ export function registerTicketRoutes(app: FastifyInstance, service: TicketsServi
   server.get(
     '/api/tickets',
     {
-      config: { policy: TICKET_POLICY },
+      // The EI looks a ticket up by enrollmentId to stay idempotent. Route
+      // config cannot demand a query param, so this also lets it list without
+      // one — the same portfolio hole every holder of the policy has (ACE-147).
+      config: { policy: TICKET_POLICY, serviceAllowed: true },
       schema: {
         querystring: listTicketsQuerySchema,
         response: {
@@ -67,7 +70,7 @@ export function registerTicketRoutes(app: FastifyInstance, service: TicketsServi
   server.get(
     '/api/tickets/:id',
     {
-      config: { policy: TICKET_POLICY },
+      config: { policy: TICKET_POLICY, serviceAllowed: true },
       schema: {
         params: ticketParamsSchema,
         response: {
@@ -87,7 +90,7 @@ export function registerTicketRoutes(app: FastifyInstance, service: TicketsServi
   server.post(
     '/api/tickets',
     {
-      config: { policy: TICKET_POLICY },
+      config: { policy: TICKET_POLICY, serviceAllowed: true },
       schema: {
         body: createTicketBodySchema,
         response: {
