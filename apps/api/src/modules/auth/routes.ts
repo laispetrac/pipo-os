@@ -2,6 +2,7 @@ import { randomUUID } from 'node:crypto'
 import type { ZodTypeProvider } from '@fastify/type-provider-zod'
 import type { FastifyInstance } from 'fastify'
 import { z } from 'zod'
+import { errorResponseSchema } from '../../shared/schemas.js'
 import { requirePrincipal } from './authenticate.js'
 import type { AuthConfig } from './config.js'
 import { googleCallbackQuerySchema, googleLoginQuerySchema, meResponseSchema } from './schemas.js'
@@ -134,7 +135,9 @@ export function registerAuthRoutes(
 
   server.get(
     '/api/auth/me',
-    { schema: { response: { 200: meResponseSchema } } },
+    {
+      schema: { response: { 200: meResponseSchema, 401: errorResponseSchema } },
+    },
     async (request) => {
       const principal = requirePrincipal(request)
       return { email: principal.email, policies: principal.policies }

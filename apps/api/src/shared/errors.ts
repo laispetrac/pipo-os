@@ -1,5 +1,22 @@
+/** One field the caller got wrong. `code` is the machine token, `message` the
+ *  readable half; the pt-BR copy for the user lives in the web's constants. */
+export interface ErrorDetail {
+  field: string
+  message: string
+  code: string
+}
+
+/** At least one detail: `[]` would claim every field was checked and passed. */
+export type ErrorDetails = readonly [ErrorDetail, ...ErrorDetail[]]
+
 export abstract class DomainError extends Error {
   abstract readonly statusCode: number
+  readonly details?: ErrorDetails
+
+  constructor(message: string, details?: ErrorDetails) {
+    super(message)
+    this.details = details
+  }
 }
 
 export class NotFoundError extends DomainError {
@@ -40,11 +57,31 @@ export class ConflictError extends DomainError {
   }
 }
 
+export class ForbiddenError extends DomainError {
+  readonly statusCode = 403
+
+  constructor(message: string) {
+    super(message)
+    this.name = 'ForbiddenError'
+  }
+}
+
+/** The state machine refused: a closed ticket, a status that cannot follow the
+ *  current one. Field-level refusals are ValidationFailedError instead. */
 export class UnprocessableEntityError extends DomainError {
   readonly statusCode = 422
 
   constructor(message: string) {
     super(message)
     this.name = 'UnprocessableEntityError'
+  }
+}
+
+export class ValidationFailedError extends DomainError {
+  readonly statusCode = 422
+
+  constructor(message: string, details: ErrorDetails) {
+    super(message, details)
+    this.name = 'ValidationFailedError'
   }
 }

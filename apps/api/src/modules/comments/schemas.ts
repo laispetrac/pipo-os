@@ -18,7 +18,7 @@ export const commentSchema = z
 export const createCommentBodySchema = z
   .object({
     visibility: z.enum(['public', 'private']),
-    body: z.string().trim().min(1),
+    body: z.string().trim().min(1).max(50_000),
   })
   .strict()
   .meta({ id: 'CreateCommentBody' })
@@ -28,10 +28,6 @@ export const commentListSchema = z
     data: z.array(commentSchema),
   })
   .meta({ id: 'CommentList' })
-
-export const errorResponseSchema = z
-  .object({ error: z.string(), message: z.string() })
-  .meta({ id: 'ErrorResponse' })
 
 /**
  * The unified chronology of a ticket: manual comments and automated events

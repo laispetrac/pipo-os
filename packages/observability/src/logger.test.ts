@@ -55,6 +55,19 @@ describe('createLoggerOptions', () => {
     expect(entry.req.headers['content-type']).toBe('application/json')
   })
 
+  // `sub` is the JWT subject, and in Pipo's tokens it holds the person's
+  // e-mail — the same value as `email`, under a key redaction did not cover.
+  it('redacts the jwt subject, which carries the e-mail under another name', () => {
+    const { stream, lines } = captureLogs()
+    const logger = pino(createLoggerOptions({ nodeEnv: 'test' }), stream)
+
+    logger.warn({ sub: 'person@example.com', required: ['a/b/c/d/*'] }, 'request refused')
+
+    const entry = lastEntry(lines)
+    expect(entry.sub).toBe('[REDACTED]')
+    expect(entry.required).toEqual(['a/b/c/d/*'])
+  })
+
   it('redacts passwords, tokens, cpf, email, tax-id and address regardless of which object holds them', () => {
     const { stream, lines } = captureLogs()
     const logger = pino(createLoggerOptions({ nodeEnv: 'test' }), stream)

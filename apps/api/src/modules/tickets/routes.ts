@@ -2,10 +2,11 @@ import type { ZodTypeProvider } from '@fastify/type-provider-zod'
 import type { FastifyInstance } from 'fastify'
 import { requirePrincipal, requireUserId } from '../auth/authenticate.js'
 import { businessToday } from '../../shared/business-date.js'
+import { errorResponseSchema } from '../../shared/schemas.js'
+import { TICKET_POLICY } from './policy.js'
 import { ticketRowsQuerySchema, ticketRowsSchema } from './rows-schema.js'
 import {
   createTicketBodySchema,
-  errorResponseSchema,
   listTicketsQuerySchema,
   ticketListSchema,
   ticketParamsSchema,
@@ -21,14 +22,20 @@ export function registerTicketRoutes(app: FastifyInstance, service: TicketsServi
   server.get(
     '/api/tickets',
     {
+      config: { policy: TICKET_POLICY },
       schema: {
         querystring: listTicketsQuerySchema,
-        response: { 200: ticketListSchema, 401: errorResponseSchema },
+        response: {
+          200: ticketListSchema,
+          400: errorResponseSchema,
+          401: errorResponseSchema,
+          403: errorResponseSchema,
+        },
       },
     },
     async (request) => {
-      // TODO: enforce tenant scope from session claims before this endpoint goes to production
-      // Any authenticated user can currently list tickets from any company by omitting companyId
+      // TODO: the ticket policy is the door, not the portfolio: any holder still
+      // lists any company's tickets by omitting companyId (ACE-147)
       return service.list(request.query)
     },
   )
@@ -36,6 +43,7 @@ export function registerTicketRoutes(app: FastifyInstance, service: TicketsServi
   server.get(
     '/api/tickets/rows',
     {
+      config: { policy: TICKET_POLICY },
       schema: {
         querystring: ticketRowsQuerySchema,
         response: {
@@ -44,14 +52,14 @@ export function registerTicketRoutes(app: FastifyInstance, service: TicketsServi
           // limit out of range is a 400 the caller has to be able to read.
           400: errorResponseSchema,
           401: errorResponseSchema,
+          403: errorResponseSchema,
         },
       },
     },
     async (request) => {
       const { email } = requirePrincipal(request)
-      // TODO: enforce tenant scope from session claims before this endpoint goes to production
-      // Any authenticated user can currently read rows from any company, and this one
-      // answers up to 5000 of them at once, with beneficiary name and tax id
+      // TODO: no portfolio filter yet, and this one answers up to 5000 rows at
+      // once, with beneficiary name and tax id (ACE-147)
       return service.rows(request.query, email, businessToday())
     },
   )
@@ -59,9 +67,16 @@ export function registerTicketRoutes(app: FastifyInstance, service: TicketsServi
   server.get(
     '/api/tickets/:id',
     {
+      config: { policy: TICKET_POLICY },
       schema: {
         params: ticketParamsSchema,
-        response: { 200: ticketSchema, 401: errorResponseSchema, 404: errorResponseSchema },
+        response: {
+          200: ticketSchema,
+          400: errorResponseSchema,
+          401: errorResponseSchema,
+          403: errorResponseSchema,
+          404: errorResponseSchema,
+        },
       },
     },
     async (request) => {
@@ -72,9 +87,18 @@ export function registerTicketRoutes(app: FastifyInstance, service: TicketsServi
   server.post(
     '/api/tickets',
     {
+      config: { policy: TICKET_POLICY },
       schema: {
         body: createTicketBodySchema,
-        response: { 201: ticketSchema, 401: errorResponseSchema, 409: errorResponseSchema },
+        response: {
+          201: ticketSchema,
+          400: errorResponseSchema,
+          401: errorResponseSchema,
+          403: errorResponseSchema,
+          409: errorResponseSchema,
+          413: errorResponseSchema,
+          415: errorResponseSchema,
+        },
       },
     },
     async (request, reply) => {
@@ -87,6 +111,7 @@ export function registerTicketRoutes(app: FastifyInstance, service: TicketsServi
   server.patch(
     '/api/tickets/:id',
     {
+      config: { policy: TICKET_POLICY },
       schema: {
         params: ticketParamsSchema,
         body: updateTicketBodySchema,
@@ -94,7 +119,10 @@ export function registerTicketRoutes(app: FastifyInstance, service: TicketsServi
           200: ticketSchema,
           400: errorResponseSchema,
           401: errorResponseSchema,
+          403: errorResponseSchema,
           404: errorResponseSchema,
+          413: errorResponseSchema,
+          415: errorResponseSchema,
         },
       },
     },
@@ -106,6 +134,7 @@ export function registerTicketRoutes(app: FastifyInstance, service: TicketsServi
   server.patch(
     '/api/tickets/:id/status',
     {
+      config: { policy: TICKET_POLICY },
       schema: {
         params: ticketParamsSchema,
         body: updateTicketStatusBodySchema,
@@ -113,7 +142,10 @@ export function registerTicketRoutes(app: FastifyInstance, service: TicketsServi
           200: ticketSchema,
           400: errorResponseSchema,
           401: errorResponseSchema,
+          403: errorResponseSchema,
           404: errorResponseSchema,
+          413: errorResponseSchema,
+          415: errorResponseSchema,
           422: errorResponseSchema,
         },
       },
@@ -127,11 +159,14 @@ export function registerTicketRoutes(app: FastifyInstance, service: TicketsServi
   server.post(
     '/api/tickets/:id/claim',
     {
+      config: { policy: TICKET_POLICY },
       schema: {
         params: ticketParamsSchema,
         response: {
           200: ticketSchema,
+          400: errorResponseSchema,
           401: errorResponseSchema,
+          403: errorResponseSchema,
           404: errorResponseSchema,
           422: errorResponseSchema,
         },

@@ -2,11 +2,12 @@ import type { ZodTypeProvider } from '@fastify/type-provider-zod'
 import type { FastifyInstance } from 'fastify'
 import { z } from 'zod'
 import { requireUserId } from '../auth/authenticate.js'
+import { errorResponseSchema } from '../../shared/schemas.js'
+import { TICKET_POLICY } from '../tickets/policy.js'
 import { ticketListSchema } from '../tickets/schemas.js'
 import {
   addQueueGroupBodySchema,
   createQueueBodySchema,
-  errorResponseSchema,
   listQueueTicketsQuerySchema,
   listQueuesQuerySchema,
   queueGroupParamsSchema,
@@ -26,7 +27,13 @@ export function registerQueueRoutes(app: FastifyInstance, service: QueuesService
     {
       schema: {
         body: createQueueBodySchema,
-        response: { 201: queueSchema, 400: errorResponseSchema, 401: errorResponseSchema },
+        response: {
+          201: queueSchema,
+          400: errorResponseSchema,
+          401: errorResponseSchema,
+          413: errorResponseSchema,
+          415: errorResponseSchema,
+        },
       },
     },
     async (request, reply) => {
@@ -42,7 +49,7 @@ export function registerQueueRoutes(app: FastifyInstance, service: QueuesService
     {
       schema: {
         querystring: listQueuesQuerySchema,
-        response: { 200: queueListSchema, 401: errorResponseSchema },
+        response: { 200: queueListSchema, 400: errorResponseSchema, 401: errorResponseSchema },
       },
     },
     async (request) => {
@@ -55,7 +62,12 @@ export function registerQueueRoutes(app: FastifyInstance, service: QueuesService
     {
       schema: {
         params: queueParamsSchema,
-        response: { 200: queueSchema, 401: errorResponseSchema, 404: errorResponseSchema },
+        response: {
+          200: queueSchema,
+          400: errorResponseSchema,
+          401: errorResponseSchema,
+          404: errorResponseSchema,
+        },
       },
     },
     async (request) => {
@@ -74,6 +86,8 @@ export function registerQueueRoutes(app: FastifyInstance, service: QueuesService
           400: errorResponseSchema,
           401: errorResponseSchema,
           404: errorResponseSchema,
+          413: errorResponseSchema,
+          415: errorResponseSchema,
         },
       },
     },
@@ -90,6 +104,7 @@ export function registerQueueRoutes(app: FastifyInstance, service: QueuesService
         params: queueParamsSchema,
         response: {
           204: z.null(),
+          400: errorResponseSchema,
           401: errorResponseSchema,
           404: errorResponseSchema,
           409: errorResponseSchema,
@@ -115,6 +130,8 @@ export function registerQueueRoutes(app: FastifyInstance, service: QueuesService
           401: errorResponseSchema,
           404: errorResponseSchema,
           409: errorResponseSchema,
+          413: errorResponseSchema,
+          415: errorResponseSchema,
         },
       },
     },
@@ -132,6 +149,7 @@ export function registerQueueRoutes(app: FastifyInstance, service: QueuesService
         params: queueGroupParamsSchema,
         response: {
           204: z.null(),
+          400: errorResponseSchema,
           401: errorResponseSchema,
           404: errorResponseSchema,
         },
@@ -147,10 +165,17 @@ export function registerQueueRoutes(app: FastifyInstance, service: QueuesService
   server.get(
     '/api/queues/:id/tickets',
     {
+      config: { policy: TICKET_POLICY },
       schema: {
         params: queueParamsSchema,
         querystring: listQueueTicketsQuerySchema,
-        response: { 200: ticketListSchema, 401: errorResponseSchema, 404: errorResponseSchema },
+        response: {
+          200: ticketListSchema,
+          400: errorResponseSchema,
+          401: errorResponseSchema,
+          403: errorResponseSchema,
+          404: errorResponseSchema,
+        },
       },
     },
     async (request) => {

@@ -127,6 +127,33 @@ describe('auth/login', () => {
     })
   })
 
+  // The API renamed this domain once and the web kept the old string, so a local
+  // login passed and every ticket endpoint answered 403. The literal is the canary.
+  it('asks for the policy the ticket routes require', async () => {
+    let sent: unknown
+    setupApi([
+      { method: 'GET', path: '/api/auth/me', reply: () => jsonResponse({}, 401) },
+      {
+        method: 'POST',
+        path: '/api/auth/dev-login',
+        reply: (_input, init) => {
+          sent = JSON.parse(String(init?.body))
+          return new Response(null, { status: 204 })
+        },
+      },
+    ])
+    vi.stubGlobal('location', { ...window.location, assign: vi.fn() })
+
+    await routerRender('/login')
+    const user = userEvent.setup()
+
+    await user.click(await screen.findByRole('button', { name: devConstants.button }))
+
+    await waitFor(() => {
+      expect(sent).toEqual({ policies: ['admin/allow/administrate/pipodesk/ticket'] })
+    })
+  })
+
   it('warns when the dev-login endpoint is unavailable', async () => {
     setupApi([
       { method: 'GET', path: '/api/auth/me', reply: () => jsonResponse({}, 401) },

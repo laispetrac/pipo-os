@@ -165,10 +165,55 @@ A identidade vem de `DEV_LOGIN_EMAIL` (padrão `dev@piposaude.com.br`); as `poli
 ```bash
 curl -X POST http://localhost:3001/api/auth/dev-login \
   -H 'Content-Type: application/json' \
-  -d '{"policies":["admin/allow/administrate/ticket/*"]}'
+  -d '{"policies":["admin/allow/administrate/pipodesk/ticket"]}'
 ```
 
 Essas garantias são cobertas por testes em `apps/api/src/modules/auth/dev-login.test.ts` — inclusive as que verificam a recusa no boot.
+
+### Autorização
+
+Autenticar responde quem é a pessoa; a **policy** responde o que ela pode fazer. As policies vêm dentro do JWT do auth-service e são declaradas por rota, em `config.policy`, no formato da Pipo — `{context}/{effect}/{action}/{domain}/{specific}`, com `admin`, `allow`, `administrate` e `*` como padrões das partes omitidas.
+
+| Rotas                                                                                                  | Policy exigida                                                                                                                |
+| ------------------------------------------------------------------------------------------------------ | ----------------------------------------------------------------------------------------------------------------------------- |
+| `/api/tickets/**`, `/api/tickets/:id/comments`, `/api/tickets/:id/timeline`, `/api/queues/:id/tickets` | `admin/allow/administrate/pipodesk/ticket`                                                                                    |
+| `/api/queues/**` e `/api/groups/**` (estrutura)                                                        | nenhuma ainda ([ACE-208](https://linear.app/piposaudecom/issue/ACE-208)) — será `admin/allow/administrate/pipodesk/structure` |
+| `/api/auth/**`                                                                                         | nenhuma (identidade, não recurso)                                                                                             |
+
+**Por que o domínio é `pipodesk` e não `ticket`.** `admin/allow/administrate/ticket/*` já existe e pertence a outro serviço: é o papel de admin do `ticket-service` (squad opex). Reusar a string acoplaria os dois — analista do Pipodesk viraria admin lá, e o admin de lá entraria aqui. O domínio próprio também deixa o específico livre para separar as duas famílias de rota: `ticket` para chamado e `structure` para grupos e filas, com `admin/allow/administrate/pipodesk/*` cobrindo as duas. O `authorize.test.ts` tem um caso que recusa a policy do `ticket-service` com 403, para a colisão não voltar por descuido.
+
+O casamento é o mesmo do interceptor Clojure da casa (`com.piposaude.interceptors.auth.token`), em três regras:
+
+- **O curinga vale só do lado da sessão**: quem tem `.../pipodesk/*` passa numa rota que pede `pipodesk/ticket`, e quem tem só `pipodesk/ticket` não passa numa que peça `pipodesk/structure`.
+- **Policy mais curta casa pelo prefixo**: as partes que a sessão declara precisam bater, e as que ela omite não são perguntadas — é assim que `admin/allow/*/*`, o acesso total da Pipo, entra aqui como entra em qualquer serviço. O contrário não vale: policy mais longa que a exigida não passa.
+- **`deny` recusa antes de qualquer `allow`**: uma policy `admin/deny/...` que nomeie exatamente a exigida pela rota fecha o acesso, mesmo que a sessão também carregue um `allow` mais amplo. É o padrão de exclusão que o auth-service emite. Uma rota que não declara `policy` fica a cargo apenas da autenticação, e o inventário em `apps/api/src/modules/auth/authorize.test.ts` lista todas — rota nova sem decisão deixa o teste vermelho.
+
+Conceder e conferir é pelo `ppcli` (a identidade que roda precisa de `admin/allow/administrate/identity/*`):
+
+```bash
+ppcli user list-policies --email pessoa@piposaude.com.br -e stag
+ppcli user add-policy --email pessoa@piposaude.com.br --policy "admin/allow/administrate/pipodesk/*" -e stag
+```
+
+`GET /api/auth/me` devolve as policies da sessão, que é a forma mais rápida de conferir depois de conceder.
+
+**A policy é fronteira, a carteira é filtro.** Ter a policy de chamado diz que a identidade opera chamados — não _quais_. Restringir por empresa (a carteira do analista) é filtro de dados e ainda não existe: as rotas de listagem carregam o `TODO` correspondente e o trabalho está no ACE-147, que depende do módulo de usuários.
+
+### Formato de erro
+
+Todo erro da API responde com o mesmo corpo, o componente `ErrorResponse` do contrato:
+
+```json
+{
+  "error": "ValidationFailedError",
+  "message": "Ticket cannot be completed",
+  "details": [{ "field": "members.0.taxId", "message": "Required", "code": "invalid_type" }]
+}
+```
+
+`error` é o nome da classe de erro (contrato observado pelos testes), `message` é legível em inglês — a copy em pt-BR é do frontend — e `details` só aparece quando a falha é por campo: validação de payload (400) e recusa dos gates de conclusão (422). Um 422 de `UnprocessableEntityError` é violação de máquina de estados (chamado já fechado), e não traz `details`; um de `ValidationFailedError` traz todos os campos que falharam de uma vez, não o primeiro — o contrato existe, mas quem o produz são os gates de conclusão do PD-031, então hoje o único `details` que sai de verdade é o do 400.
+
+Limites de corpo, do mais externo para o mais interno: **1 MB** global (o mesmo corte do nginx-ingress), **256 KB** no `POST /api/tickets/:id/comments` e **50 mil caracteres** no campo `body` do comentário (o teto da rota é cinco vezes isso em bytes de UTF-8 cru, para que um texto de caracteres multibyte chegue à validação do campo em vez de esbarrar no limite de corpo; um cliente que escapa tudo em `\uXXXX` gasta 6 bytes por unidade e pode esbarrar no 413 antes). Passar dos dois primeiros responde `413`; passar do último responde `400` dizendo qual campo estourou.
 
 ### Payload de criação
 

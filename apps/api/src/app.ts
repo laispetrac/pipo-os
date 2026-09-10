@@ -20,6 +20,7 @@ import { z } from 'zod'
 import dbPlugin from './infrastructure/db.js'
 import errorHandlerPlugin from './infrastructure/error-handler.js'
 import authenticatePlugin from './modules/auth/authenticate.js'
+import authorizePlugin from './modules/auth/authorize.js'
 
 function corsOrigins(): string[] {
   return (process.env.CORS_ORIGIN ?? 'http://localhost:5173')
@@ -65,6 +66,9 @@ export function buildApp(): FastifyInstance {
     // A member id is an e-mail capped at 255 in addMemberBodySchema; the router
     // default of 100 answered 414 for a member the POST had just accepted.
     routerOptions: { maxParamLength: 255 },
+    // Fastify's own default, written down: it is the ceiling the nginx-ingress
+    // also applies, and no route should inherit it by accident.
+    bodyLimit: 1_048_576,
   })
 
   app.setValidatorCompiler(validatorCompiler)
@@ -73,6 +77,7 @@ export function buildApp(): FastifyInstance {
   app.register(cors, { origin: corsOrigins() })
   app.register(cookie, { secret: cookieSecret() })
   app.register(authenticatePlugin)
+  app.register(authorizePlugin)
   app.register(metricsPlugin)
   app.register(dbPlugin)
   app.register(errorHandlerPlugin)

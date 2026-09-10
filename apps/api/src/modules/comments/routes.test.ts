@@ -34,7 +34,7 @@ describe('comments routes', () => {
     const loginResponse = await app.inject({
       method: 'POST',
       url: '/api/auth/dev-login',
-      payload: { policies: ['admin/allow/administrate/ticket/*'] },
+      payload: { policies: ['admin/allow/administrate/pipodesk/ticket'] },
     })
     sessionCookie = cookieValue(loginResponse, SESSION_COOKIE_NAME)!
 
@@ -177,6 +177,74 @@ describe('comments routes', () => {
 
       expect(response.statusCode).toBe(201)
       expect(response.json().visibility).toBe('private')
+    })
+
+    it('accepts a long comment under the limit', async () => {
+      const response = await app.inject({
+        method: 'POST',
+        url: `/api/tickets/${ticketId}/comments`,
+        cookies: { [SESSION_COOKIE_NAME]: sessionCookie },
+        payload: { visibility: 'private', body: 'a'.repeat(50_000) },
+      })
+
+      expect(response.statusCode).toBe(201)
+    })
+
+    it('refuses a comment past the field limit with 400, naming the field', async () => {
+      const response = await app.inject({
+        method: 'POST',
+        url: `/api/tickets/${ticketId}/comments`,
+        cookies: { [SESSION_COOKIE_NAME]: sessionCookie },
+        payload: { visibility: 'private', body: 'a'.repeat(150_000) },
+      })
+
+      expect(response.statusCode).toBe(400)
+      expect(response.json().details).toEqual([
+        { field: 'body', message: expect.any(String), code: 'too_big' },
+      ])
+    })
+
+    // Past the route's own bodyLimit the payload never reaches the schema, so
+    // this is the only refusal the caller can get without the field name.
+    it('refuses a payload past the route limit with 413', async () => {
+      const response = await app.inject({
+        method: 'POST',
+        url: `/api/tickets/${ticketId}/comments`,
+        cookies: { [SESSION_COOKIE_NAME]: sessionCookie },
+        payload: { visibility: 'private', body: 'a'.repeat(300_000) },
+      })
+
+      expect(response.statusCode).toBe(413)
+    })
+  })
+  describe('the ticket policy', () => {
+    let withoutPolicy: string
+
+    beforeAll(async () => {
+      const anonymous = await app.inject({
+        method: 'POST',
+        url: '/api/auth/dev-login',
+        payload: { policies: [] },
+      })
+      withoutPolicy = cookieValue(anonymous, SESSION_COOKIE_NAME)!
+    })
+
+    const routes: Array<[string, string]> = [
+      ['GET', '/api/tickets/:id/comments'],
+      ['GET', '/api/tickets/:id/timeline'],
+      ['POST', '/api/tickets/:id/comments'],
+    ]
+
+    it.each(routes)('answers 403 on %s %s for a session with no policy', async (method, url) => {
+      const response = await app.inject({
+        method: method as 'GET',
+        url: url.replace(':id', ticketId),
+        cookies: { [SESSION_COOKIE_NAME]: withoutPolicy },
+        payload: method === 'GET' ? undefined : { visibility: 'private', body: 'nope' },
+      })
+
+      expect(response.statusCode).toBe(403)
+      expect(response.json().error).toBe('ForbiddenError')
     })
   })
 })
