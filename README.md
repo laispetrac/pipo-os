@@ -150,6 +150,15 @@ Ele entra por outra porta, a mesma que todo serviço da Pipo usa:
 2. A API não valida esse token sozinha: manda para o `POST /api/verify-token` do listener interno do auth-service, junto da policy que a rota exige.
 3. O auth-service resolve as claims do service account na identidade `<nome>.serviceaccount@piposaude.com.br`, confere as policies dela e devolve o `identity-id`.
 
+**Não existe `client_id`/`client_secret` de serviço.** Quem vem do Cognito, do Keycloak ou de outro IdP espera um par de credenciais trocado por token no `/oauth2/token`. Aqui não há segredo de serviço para guardar, distribuir, vazar ou rotacionar: a prova de identidade é o token que o Kubernetes já emite para o pod, assinado pelo OIDC issuer do cluster (o provider do EKS) e renovado por ele. O auth-service verifica essa assinatura e traduz as claims na identidade da Pipo.
+
+Duas consequências de desenho que valem saber:
+
+- **A autorização não viaja dentro do token.** As policies vivem na identidade e são consultadas a cada `verify-token`, então um `ppcli user remove-policy` vale já no request seguinte, sem esperar TTL. Em troca, cada request custa uma ida ao auth-service, e auth-service fora do ar vira `503` — por isso o guard de `serviceAllowed` recusa antes de tocar a rede.
+- **Não há cache.** O interceptor Clojure da casa também não tem; cachear sem número de latência real seria otimizar por suposição.
+
+`client_id`/`client_secret` na Pipo aparece só em integração de **saída** com terceiro (a API do Bradesco, no `automated-enrollment-service`). Um chamador que não seja um pod — n8n, parceiro externo — não tem service account e portanto não tem esta porta.
+
 O que a API cobra, em ordem, antes de deixar entrar:
 
 | Guarda                                            | Recusa                                                                                              |
