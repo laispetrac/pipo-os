@@ -87,7 +87,7 @@ Isso sobe `apps/api` e `apps/web` simultaneamente via `pnpm -r --parallel dev`.
 | `COOKIE_SECRET`             | valor de dev fixo fora de produção                    | Secret de assinatura HMAC dos cookies de sessão (`@fastify/cookie`). Obrigatório em produção — a API falha ao subir sem ele |
 | `AUTH_SERVICE_URL`          | `http://localhost:9090`                               | URL base do auth-service (backend de identidade da Pipo)                                                                    |
 | `AUTH_SERVICE_INTERNAL_URL` | `http://auth-service.platform:4000`                   | URL do listener **interno** do auth-service, o único que responde `/api/verify-token`. Usado só na autenticação de serviço  |
-| `SERVICE_ALLOWED_NAMES`     | _(vazio, nenhum serviço entra)_                       | Service accounts que podem chamar a API como serviço, separadas por vírgula                                                 |
+| `SERVICE_ALLOWED_ACCOUNTS`  | _(vazio, nenhum serviço entra)_                       | Service accounts que podem chamar a API como serviço, no formato `<namespace>/<nome>` e separadas por vírgula               |
 | `GOOGLE_OAUTH_CLIENT_ID`    | _(vazio)_                                             | Client ID OAuth do Google reaproveitado do client "Backoffice" já registrado no GCP (o mesmo usado pelo `tools`)            |
 | `APP_BASE_URL`              | `http://localhost:5173`                               | Origem pública da aplicação, usada para montar o `redirect_uri` do fluxo Google e os redirects de erro                      |
 | `ALLOWED_EMAIL_DOMAINS`     | `piposaude.com.br,pipo.ai`                            | Domínios de e-mail aceitos no login Google, separados por vírgula                                                           |
@@ -150,12 +150,15 @@ Ele entra por outra porta, a mesma que todo serviço da Pipo usa:
 2. A API não valida esse token sozinha: manda para o `POST /api/verify-token` do listener interno do auth-service, junto da policy que a rota exige.
 3. O auth-service resolve as claims do service account na identidade `<nome>.serviceaccount@piposaude.com.br`, confere as policies dela e devolve o `identity-id`.
 
-**Não existe `client_id`/`client_secret` de serviço.** Quem vem do Cognito, do Keycloak ou de outro IdP espera um par de credenciais trocado por token no `/oauth2/token`. Aqui não há segredo de serviço para guardar, distribuir, vazar ou rotacionar: a prova de identidade é o token que o Kubernetes já emite para o pod, assinado pelo OIDC issuer do cluster (o provider do EKS) e renovado por ele. O auth-service verifica essa assinatura e traduz as claims na identidade da Pipo.
+**Não existe `client_id`/`client_secret` de serviço.** Quem vem do Cognito, do Keycloak ou de outro IdP espera um par de credenciais trocado por token no `/oauth2/token`. Aqui não há segredo estático para guardar, distribuir ou rotacionar: a prova de identidade é o token que o Kubernetes já emite para o pod, assinado pelo OIDC issuer do cluster (o provider do EKS) e renovado por ele. O auth-service verifica essa assinatura e traduz as claims na identidade da Pipo.
+
+Isso não faz do token um dado inócuo: ele é uma credencial bearer, vale enquanto o `exp` valer e quem o tiver entra como o serviço. Não pode aparecer em log, em mensagem de erro nem em ticket — o `Authorization` já está na redaction do pino (`@pipo-os/observability`), e a API nunca escreve o token no corpo de uma resposta. O que limita o estrago é o prazo curto que o Kubernetes dá e a renovação automática, não a ausência de segredo.
 
 Duas consequências de desenho que valem saber:
 
 - **A autorização não viaja dentro do token.** As policies vivem na identidade e são consultadas a cada `verify-token`, então um `ppcli user remove-policy` vale já no request seguinte, sem esperar TTL. Em troca, cada request custa uma ida ao auth-service, e auth-service fora do ar vira `503` — por isso o guard de `serviceAllowed` recusa antes de tocar a rede.
 - **Não há cache.** O interceptor Clojure da casa também não tem; cachear sem número de latência real seria otimizar por suposição.
+- **O salto até o `verify-token` é HTTP dentro do cluster.** O listener interno do auth-service só fala HTTP na porta 4000, e é assim que todo BFF e serviço da casa o chama — a confidencialidade desse salto hoje é a rede do cluster, não TLS. Cifrar exige TLS no listener ou mTLS na malha, que é mudança no `platform/auth-service` e não aqui; enquanto isso, a API pelo menos recusa redirect nessa chamada, para o corpo com o token não ser reenviado a outro destino.
 
 `client_id`/`client_secret` na Pipo aparece só em integração de **saída** com terceiro (a API do Bradesco, no `automated-enrollment-service`). Um chamador que não seja um pod — n8n, parceiro externo — não tem service account e portanto não tem esta porta.
 
@@ -165,7 +168,7 @@ O que a API cobra, em ordem, antes de deixar entrar:
 | ------------------------------------------------------------ | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | A rota declara `serviceAllowed: true` e a `policy` que exige | `403` — rota nova nasce fechada para serviço, e a recusa acontece antes de qualquer chamada de rede. `serviceAllowed` sem `policy` derruba o boot, porque mandaria o `verify-token` conferir identidade sem exigir autorização nenhuma |
 | O token traz nome de service account                         | `401`                                                                                                                                                                                                                                  |
-| O nome está em `SERVICE_ALLOWED_NAMES`                       | `403`                                                                                                                                                                                                                                  |
+| O `<namespace>/<nome>` está em `SERVICE_ALLOWED_ACCOUNTS`    | `403` — o namespace entra na comparação porque o auth-service resolve a identidade só pelo nome, e um homônimo em outro namespace passaria                                                                                             |
 | O auth-service reconhece a identidade e a policy             | `401` (credencial) ou `403` (identidade ou policy)                                                                                                                                                                                     |
 | O auth-service responde                                      | `503`, nunca um 500 mudo                                                                                                                                                                                                               |
 
@@ -173,9 +176,9 @@ As rotas abertas a serviço são as quatro que abrir e acompanhar um chamado exi
 
 Quem escreve como serviço fica registrado como `svc:<nome>` na coluna de autor, ao lado do `sub` de uma pessoa. Mudar status não está aberto a serviço: quem muda status é gente, e o caminho de volta para o EI é o webhook.
 
-**Pré-requisito de infraestrutura**: a identidade `<nome>.serviceaccount@piposaude.com.br` precisa existir no auth-service de cada ambiente com a policy que as rotas de chamado exigem (ver [Autorização](#autorização)), concedida por `ppcli user add-policy`. Ligar `SERVICE_ALLOWED_NAMES` sem isso dá `403` no `verify-token`.
+**Pré-requisito de infraestrutura**: a identidade `<nome>.serviceaccount@piposaude.com.br` precisa existir no auth-service de cada ambiente com a policy que as rotas de chamado exigem (ver [Autorização](#autorização)), concedida por `ppcli user add-policy`. Ligar `SERVICE_ALLOWED_ACCOUNTS` sem isso dá `403` no `verify-token`.
 
-O `<nome>` é o do ServiceAccount do pod, sem namespace — e no EI ele **não** é `enrollment-integrations`. Quem processa movimentação é o `--handler=enrollment`, que roda no namespace `cronjobs` com o service account `enrollment-integrations-worker`; o `enrollment-integrations` do `default` carrega só o `--handler=server`. A identidade, portanto, é `enrollment-integrations-worker.serviceaccount@piposaude.com.br`.
+O `<nome>` da identidade no auth-service é o do ServiceAccount do pod, sem namespace — e no EI ele **não** é `enrollment-integrations`. Quem processa movimentação é o `--handler=enrollment`, que roda no namespace `cronjobs` com o service account `enrollment-integrations-worker`; o `enrollment-integrations` do `default` carrega só o `--handler=server`. A identidade, portanto, é `enrollment-integrations-worker.serviceaccount@piposaude.com.br`, e a entrada correspondente em `SERVICE_ALLOWED_ACCOUNTS` é `cronjobs/enrollment-integrations-worker` — com o namespace, que o auth-service descarta e a allowlist daqui não.
 
 #### Autenticação em desenvolvimento
 

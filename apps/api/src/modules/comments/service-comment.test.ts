@@ -47,7 +47,7 @@ describe('a comment written by a service', () => {
 
   beforeAll(async () => {
     process.env.DEV_LOGIN_ENABLED = 'true'
-    process.env.SERVICE_ALLOWED_NAMES = SERVICE_NAME
+    process.env.SERVICE_ALLOWED_ACCOUNTS = `default/${SERVICE_NAME}`
     app = buildApp()
     await app.ready()
 
@@ -78,7 +78,7 @@ describe('a comment written by a service', () => {
     await app.db.deleteFrom('tickets').execute()
     await app.close()
     delete process.env.DEV_LOGIN_ENABLED
-    delete process.env.SERVICE_ALLOWED_NAMES
+    delete process.env.SERVICE_ALLOWED_ACCOUNTS
   })
 
   beforeEach(() => {

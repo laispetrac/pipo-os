@@ -4,11 +4,17 @@ import { verifyToken } from '../../infrastructure/auth-service-internal.js'
 import { ForbiddenError, UnauthorizedError } from '../../shared/errors.js'
 import { authServiceInternalUrl } from './config.js'
 import { policyString, requiredPolicies } from './policy.js'
-import { SESSION_COOKIE_NAME, extractSessionClaims, type SessionClaims } from './session.js'
 import {
-  allowedServiceNames,
+  SESSION_COOKIE_NAME,
+  decodeJwtPayload,
+  extractSessionClaims,
+  type SessionClaims,
+} from './session.js'
+import {
+  allowedServiceAccounts,
   bearerToken,
-  serviceNameFromToken,
+  serviceAccountKey,
+  serviceAccountOf,
   tokenExpired,
 } from './service-principal.js'
 
@@ -111,29 +117,38 @@ async function servicePrincipal(
   token: string,
   policies: string[],
 ): Promise<ServicePrincipal> {
-  const name = serviceNameFromToken(token)
+  // Decoded once: the account, the namespace and the expiry are all claims of
+  // the same payload.
+  const payload = decodeJwtPayload(token)
+  const account = serviceAccountOf(payload)
 
-  if (!name) {
+  if (!account) {
     throw new UnauthorizedError('Not a service account token')
   }
 
-  if (tokenExpired(token)) {
+  if (tokenExpired(payload)) {
     throw new UnauthorizedError('Service account token is expired')
   }
 
-  if (!allowedServiceNames().has(name)) {
-    request.log.warn({ service: name }, 'request refused: service is not in the allowlist')
-    throw new ForbiddenError(`Service ${name} is not allowed`)
+  // Namespace included: the allowlist is our own fence, and the auth-service
+  // resolves the identity by name alone, so a homonym elsewhere would pass.
+  const accountKey = serviceAccountKey(account)
+  if (!allowedServiceAccounts().has(accountKey)) {
+    request.log.warn(
+      { serviceAccount: accountKey },
+      'request refused: service account is not in the allowlist',
+    )
+    throw new ForbiddenError(`Service account ${accountKey} is not allowed`)
   }
 
   const identityId = await verifyToken({
     baseUrl: authServiceInternalUrl(),
     token,
     policies,
-    audit: auditOf(request, name),
+    audit: auditOf(request, account.name),
   })
 
-  return { kind: 'service', name, identityId, policies }
+  return { kind: 'service', name: account.name, identityId, policies }
 }
 
 export default fp(

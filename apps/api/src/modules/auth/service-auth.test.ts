@@ -7,6 +7,7 @@ const TICKET = { domain: 'pipodesk', specific: 'ticket' }
 const TICKET_POLICY = 'admin/allow/administrate/pipodesk/ticket'
 const IDENTITY_ID = '3f1a6d6e-9c1e-4f0b-9d0e-2b7a1c5f8e42'
 const SERVICE_NAME_IN_TEST = 'enrollment-integrations-worker'
+const SERVICE_NAMESPACE = 'cronjobs'
 
 function base64url(value: string): string {
   return Buffer.from(value).toString('base64url')
@@ -16,14 +17,18 @@ function base64url(value: string): string {
  *  account name lives under the `kubernetes.io` claim, and `sub` repeats it as
  *  `system:serviceaccount:<namespace>:<name>`. Nothing here is signed — the
  *  auth-service is what validates the token, and it is stubbed in these tests. */
-function serviceAccountToken(name: string, expiresInSeconds = 3600): string {
+function serviceAccountToken(
+  name: string,
+  expiresInSeconds = 3600,
+  namespace = SERVICE_NAMESPACE,
+): string {
   const header = base64url(JSON.stringify({ alg: 'RS256', typ: 'JWT' }))
   const payload = base64url(
     JSON.stringify({
       iss: 'https://oidc.eks.sa-east-1.amazonaws.com/id/PIPO',
-      sub: `system:serviceaccount:default:${name}`,
+      sub: `system:serviceaccount:${namespace}:${name}`,
       exp: Math.floor(Date.now() / 1000) + expiresInSeconds,
-      'kubernetes.io': { namespace: 'default', serviceaccount: { name } },
+      'kubernetes.io': { namespace, serviceaccount: { name } },
     }),
   )
   return `${header}.${payload}.not-a-signature`
@@ -39,10 +44,10 @@ function jsonResponse(body: unknown, status = 200): Response {
 describe('a service calling the API', () => {
   let app: FastifyInstance
   const fetchMock = vi.fn()
-  const eiToken = serviceAccountToken('enrollment-integrations-worker')
+  const eiToken = serviceAccountToken(SERVICE_NAME_IN_TEST)
 
   beforeAll(async () => {
-    process.env.SERVICE_ALLOWED_NAMES = 'enrollment-integrations-worker'
+    process.env.SERVICE_ALLOWED_ACCOUNTS = `${SERVICE_NAMESPACE}/${SERVICE_NAME_IN_TEST}`
     app = buildApp()
 
     // On the root instance, where the onRequest hook treats them like any
@@ -65,7 +70,7 @@ describe('a service calling the API', () => {
 
   afterAll(async () => {
     await app.close()
-    delete process.env.SERVICE_ALLOWED_NAMES
+    delete process.env.SERVICE_ALLOWED_ACCOUNTS
   })
 
   beforeEach(() => {
@@ -119,6 +124,66 @@ describe('a service calling the API', () => {
     })
 
     expect(response.statusCode).toBe(403)
+    expect(fetchMock).not.toHaveBeenCalled()
+  })
+
+  // RFC 7235 §2.1: the scheme name is case-insensitive, and a client sending
+  // `bearer` holds a token as valid as any other.
+  it('accepts the authorization scheme in any case', async () => {
+    fetchMock.mockResolvedValueOnce(jsonResponse({ 'identity-id': IDENTITY_ID }))
+
+    const response = await app.inject({
+      method: 'GET',
+      url: '/__test/open-to-service',
+      headers: { authorization: `bearer ${eiToken}` },
+    })
+
+    expect(response.statusCode).toBe(200)
+  })
+
+  // A 307/308 replays the body, token included, at the Location it names.
+  it('does not follow a redirect while carrying the token', async () => {
+    fetchMock.mockResolvedValueOnce(jsonResponse({ 'identity-id': IDENTITY_ID }))
+
+    await app.inject({
+      method: 'GET',
+      url: '/__test/open-to-service',
+      headers: { authorization: `Bearer ${eiToken}` },
+    })
+
+    expect(fetchMock.mock.calls[0][1].redirect).toBe('error')
+  })
+
+  // The auth-service resolves the identity by name alone, so the namespace is
+  // a fence only this allowlist can hold.
+  it('is refused when the name matches but the namespace does not', async () => {
+    const homonym = serviceAccountToken(SERVICE_NAME_IN_TEST, 3600, 'default')
+
+    const response = await app.inject({
+      method: 'GET',
+      url: '/__test/open-to-service',
+      headers: { authorization: `Bearer ${homonym}` },
+    })
+
+    expect(response.statusCode).toBe(403)
+    expect(fetchMock).not.toHaveBeenCalled()
+  })
+
+  it('answers 401 when the token names no namespace at all', async () => {
+    const noNamespace = `${base64url(JSON.stringify({ alg: 'RS256' }))}.${base64url(
+      JSON.stringify({
+        exp: Math.floor(Date.now() / 1000) + 3600,
+        'kubernetes.io': { serviceaccount: { name: SERVICE_NAME_IN_TEST } },
+      }),
+    )}.x`
+
+    const response = await app.inject({
+      method: 'GET',
+      url: '/__test/open-to-service',
+      headers: { authorization: `Bearer ${noNamespace}` },
+    })
+
+    expect(response.statusCode).toBe(401)
     expect(fetchMock).not.toHaveBeenCalled()
   })
 
@@ -217,7 +282,12 @@ describe('a service calling the API', () => {
 
   it('does not call the auth-service for a token with no expiry at all', async () => {
     const noExpiry = `${base64url(JSON.stringify({ alg: 'RS256' }))}.${base64url(
-      JSON.stringify({ 'kubernetes.io': { serviceaccount: { name: SERVICE_NAME_IN_TEST } } }),
+      JSON.stringify({
+        'kubernetes.io': {
+          namespace: SERVICE_NAMESPACE,
+          serviceaccount: { name: SERVICE_NAME_IN_TEST },
+        },
+      }),
     )}.x`
 
     const response = await app.inject({

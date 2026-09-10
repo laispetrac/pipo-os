@@ -60,6 +60,9 @@ export async function verifyToken({
       method: 'POST',
       headers: { 'Content-Type': 'application/json', ...auditHeaders(audit) },
       body: JSON.stringify({ token, policies }),
+      // A 307/308 would replay this body, token included, at whatever Location
+      // the answer named.
+      redirect: 'error',
       signal: AbortSignal.timeout(VERIFY_TIMEOUT_MS),
     })
   } catch (error) {
