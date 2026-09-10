@@ -86,6 +86,18 @@ describe('error handler', () => {
       async () => ({ ok: true as const }),
     )
 
+    server.get(
+      '/__test/search',
+      {
+        config: { public: true },
+        schema: {
+          querystring: z.object({ page: z.coerce.number().int().min(1) }),
+          response: { 200: z.object({ ok: z.literal(true) }), 400: errorResponseSchema },
+        },
+      },
+      async () => ({ ok: true as const }),
+    )
+
     // The handler returns what the response schema does not accept.
     server.get(
       '/__test/broken-contract',
@@ -148,6 +160,15 @@ describe('error handler', () => {
     expect(response.statusCode).toBe(400)
     expect(response.json().details).toEqual([
       { field: 'params.id', message: expect.any(String), code: 'invalid_format' },
+    ])
+  })
+
+  it('calls the query string `query`, the word the rest of the contract uses', async () => {
+    const response = await app.inject({ method: 'GET', url: '/__test/search?page=0' })
+
+    expect(response.statusCode).toBe(400)
+    expect(response.json().details).toEqual([
+      { field: 'query.page', message: expect.any(String), code: 'too_small' },
     ])
   })
 

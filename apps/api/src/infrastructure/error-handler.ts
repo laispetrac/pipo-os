@@ -12,14 +12,16 @@ function toErrorDetails(
   validation: ZodFastifySchemaValidationError[],
   context: string | undefined,
 ): ErrorDetail[] {
+  // Fastify calls it `querystring`; the contract says `query` everywhere else.
+  const part = context === 'querystring' ? 'query' : (context ?? 'body')
   // Everything but the body is prefixed: a bare `id` cannot tell a bad path
   // param from a body field with the same name.
-  const prefix = context === undefined || context === 'body' ? '' : `${context}.`
+  const prefix = part === 'body' ? '' : `${part}.`
 
   return validation.map((entry) => {
     const path = entry.instancePath.slice(1).split('/').join('.')
     return {
-      field: path ? `${prefix}${path}` : (context ?? 'body'),
+      field: path ? `${prefix}${path}` : part,
       message: entry.message ?? 'Invalid value',
       code: entry.keyword,
     }
