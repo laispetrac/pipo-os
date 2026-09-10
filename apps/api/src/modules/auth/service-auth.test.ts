@@ -127,8 +127,7 @@ describe('a service calling the API', () => {
     expect(fetchMock).not.toHaveBeenCalled()
   })
 
-  // RFC 7235 §2.1: the scheme name is case-insensitive, and a client sending
-  // `bearer` holds a token as valid as any other.
+  // RFC 7235 §2.1: the scheme name is case-insensitive.
   it('accepts the authorization scheme in any case', async () => {
     fetchMock.mockResolvedValueOnce(jsonResponse({ 'identity-id': IDENTITY_ID }))
 

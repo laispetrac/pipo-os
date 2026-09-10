@@ -14,10 +14,8 @@ export interface ServiceAccount {
 
 export type TokenPayload = Record<string, unknown>
 
-/** Reads the service account from the `kubernetes.io` claim, falling back to
- *  the `system:serviceaccount:ns:name` subject. Decoding without verifying is
- *  safe here because it decides nothing on its own: the token still has to
- *  survive the auth-service. */
+/** Decoding without verifying is safe here because it decides nothing on its
+ *  own: the token still has to survive the auth-service. */
 export function serviceAccountOf(payload: TokenPayload | null): ServiceAccount | null {
   if (!payload) {
     return null
@@ -56,9 +54,8 @@ export function serviceAccountKey({ namespace, name }: ServiceAccount): string {
 let parsedFrom: string | undefined
 let parsedAccounts = new Set<string>()
 
-/** Empty until someone lists the accounts, which is deliberate: one that nobody
- *  named cannot get in, even holding the policy. Parsed once per value and not
- *  per request — the variable is fixed at boot, but a test may rewrite it. */
+/** Empty until someone lists the accounts: one that nobody named cannot get in,
+ *  even holding the policy. Reparsed only when the variable itself changes. */
 export function allowedServiceAccounts(): ReadonlySet<string> {
   const configured = process.env.SERVICE_ALLOWED_ACCOUNTS ?? ''
 

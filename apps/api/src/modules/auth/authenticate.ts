@@ -117,8 +117,6 @@ async function servicePrincipal(
   token: string,
   policies: string[],
 ): Promise<ServicePrincipal> {
-  // Decoded once: the account, the namespace and the expiry are all claims of
-  // the same payload.
   const payload = decodeJwtPayload(token)
   const account = serviceAccountOf(payload)
 
