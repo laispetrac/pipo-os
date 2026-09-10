@@ -107,6 +107,26 @@ describe('isAuthorized', () => {
     ).toBe(true)
   })
 
+  // A deny is compared as an exact string, not by the prefix rule that widens
+  // an allow: has-denied-policies? swaps the effect and asks a set for the key.
+  it('does not let a deny shorter than the requirement block the route', () => {
+    expect(
+      isAuthorized(
+        ['admin/allow/administrate/pipodesk/*', 'admin/deny/administrate/pipodesk'],
+        [{ domain: 'pipodesk', specific: 'ticket' }],
+      ),
+    ).toBe(true)
+  })
+
+  it('does not expand a wildcard in a deny', () => {
+    expect(
+      isAuthorized(
+        ['admin/allow/administrate/pipodesk/ticket', 'admin/deny/administrate/pipodesk/*'],
+        [{ domain: 'pipodesk', specific: 'ticket' }],
+      ),
+    ).toBe(true)
+  })
+
   // Neither allow nor deny: the shared interceptor groups by effect and never
   // looks at it, so a wildcard there must not stand in for an allow.
   it('refuses a policy whose effect is a wildcard', () => {
