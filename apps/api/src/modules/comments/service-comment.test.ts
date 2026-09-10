@@ -92,9 +92,6 @@ describe('a comment written by a service', () => {
     await app.db.deleteFrom('ticket_comments').execute()
   })
 
-  // The author column is text and holds a person's `sub` today. A service has
-  // no `sub`, and blanking the column would lose who wrote it — the `svc:`
-  // prefix is what keeps the two apart in the same column.
   it('is stored with the service as its author', async () => {
     const response = await app.inject({
       method: 'POST',

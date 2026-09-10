@@ -31,11 +31,8 @@ export function serviceNameFromToken(token: string): string | null {
   return null
 }
 
-/** The deadline the token carries. Same rule the session claims use, and the
- *  reason it is read here: a name in an unsigned payload costs nothing to
- *  forge, so refusing a stale or absent deadline locally keeps a forged token
- *  from spending a round trip to the auth-service. It does not replace that
- *  call — only the auth-service can say the signature is real. */
+/** Refused locally so a forged token does not cost a round trip. Does not
+ *  replace verify-token — only the auth-service reads the signature. */
 export function tokenExpired(token: string): boolean {
   const exp = decodeJwtPayload(token)?.exp
 

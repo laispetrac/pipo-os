@@ -45,8 +45,9 @@ describe('a service calling the API', () => {
     process.env.SERVICE_ALLOWED_NAMES = 'enrollment-integrations-worker'
     app = buildApp()
 
-    // Added before ready() so the hooks bind to them exactly as they bind to an
-    // autoloaded route.
+    // On the root instance, where the onRequest hook treats them like any
+    // autoloaded route. The onRoute hook does not see them — which is why the
+    // boot test at the end of this file builds its own app.
     app.get(
       '/__test/open-to-service',
       { config: { serviceAllowed: true, policy: TICKET } },
@@ -189,8 +190,7 @@ describe('a service calling the API', () => {
     expect(response.statusCode).toBe(401)
   })
 
-  // A handler that needs a person — an author, an assignee, the @me of a queue
-  // — must refuse a service instead of reading an e-mail that is not there.
+  // Reading a service's e-mail would answer undefined instead of refusing.
   it('is refused by a handler that needs a person, even holding the policy', async () => {
     fetchMock.mockResolvedValueOnce(jsonResponse({ 'identity-id': IDENTITY_ID }))
 
@@ -203,9 +203,7 @@ describe('a service calling the API', () => {
     expect(response.statusCode).toBe(403)
   })
 
-  // Anyone can write a name into an unsigned payload, and the auth-service is
-  // what catches that — but not before the API has already called it. Reading
-  // the expiry first keeps a stale or empty deadline from costing a round trip.
+  // Reading the deadline first keeps a forged token from costing a round trip.
   it('does not call the auth-service for a token that is already expired', async () => {
     const response = await app.inject({
       method: 'GET',
@@ -241,8 +239,8 @@ describe('a service calling the API', () => {
       }))
     })
 
-    // Caught by hand, not with rejects: an app whose boot failed throws again
-    // when the assertion helper inspects it.
+    // By hand, not with rejects: an app whose boot failed throws again when the
+    // assertion helper inspects it.
     let caught: unknown
     try {
       await unguarded.ready()

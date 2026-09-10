@@ -47,10 +47,8 @@ describe('the set of routes a service may call', () => {
     ])
   })
 
-  // The V0 opens the ticket family to a service and nothing else. Structure
-  // routes — queues, groups — answer to `pipodesk/structure` and are a decision
-  // nobody has taken yet, so one appearing here is a scope change that has to be
-  // argued, not a line that slips in with a `serviceAllowed` copied from above.
+  // Structure routes — queues, groups — are a decision nobody has taken. One
+  // appearing here is a scope change, not a `serviceAllowed` copied from above.
   it('opens ticket routes only, and leaves the structure family closed', () => {
     const outsideTheTicketDomain = serviceRoutes.filter(
       (route) => !route.split(' ')[1].startsWith('/api/tickets'),

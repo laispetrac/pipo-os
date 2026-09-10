@@ -16,8 +16,8 @@ export interface UserPrincipal extends SessionClaims {
   kind: 'user'
 }
 
-/** A caller that is not a person: another Pipo service, recognised by the
- *  service account token of its pod instead of a login. */
+/** A caller that is not a person: a Pipo service, recognised by the service
+ *  account token of its pod instead of a login. */
 export interface ServicePrincipal {
   kind: 'service'
   name: string
@@ -135,10 +135,9 @@ export default fp(
   async function authenticatePlugin(app) {
     app.decorateRequest('principal')
 
-    // A service is only ever let in against the policy its route names, so a
-    // route that opens to services without naming one would send an empty
-    // requirement to verify-token and get an identity check with no
-    // authorisation behind it.
+    // A service is let in against the policy its route names, so a route that
+    // opens to services without naming one would reach verify-token with an
+    // empty requirement: identity checked, authorisation not.
     app.addHook('onRoute', (route) => {
       if (route.config?.serviceAllowed === true && route.config.policy === undefined) {
         throw new Error(

@@ -21,9 +21,7 @@ export function policyString(requirement: PolicyRequirement): string {
   return [context, effect, action, domain, specific].join('/')
 }
 
-/** What a route's `policy` config demands, as a list. An array there means any
- *  one of them is enough, like the :pipo-authenticated vector the Clojure
- *  services declare. */
+/** A route's `policy` config as a list, whichever shape it was declared in. */
 export function requiredPolicies(
   declared: PolicyRequirement | PolicyRequirement[],
 ): PolicyRequirement[] {

@@ -66,8 +66,6 @@ export class ForbiddenError extends DomainError {
   }
 }
 
-/** An upstream this API depends on is unreachable or broken. Keeps the failure
- *  legible to the caller instead of surfacing as our own 500. */
 export class ServiceUnavailableError extends DomainError {
   readonly statusCode = 503
 

@@ -61,10 +61,9 @@ function resolveDevLoginEnabled(
   return true
 }
 
-// A second listener, not a second service: /api/verify-token only answers on
-// the internal port (4000), never through the public host. Not
-// requiredInProduction like its neighbours: the address is fixed in the
-// cluster, and a missing variable must not take the whole API down.
+// Not requiredInProduction like its neighbours: the address is fixed in the
+// cluster, and a missing variable must not take down the screens that never
+// call a service. Wrong, it surfaces as a 503 on the service call instead.
 export function authServiceInternalUrl(): string {
   return process.env.AUTH_SERVICE_INTERNAL_URL ?? 'http://auth-service.platform:4000'
 }

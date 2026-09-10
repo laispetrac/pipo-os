@@ -22,9 +22,8 @@ export function registerTicketRoutes(app: FastifyInstance, service: TicketsServi
   server.get(
     '/api/tickets',
     {
-      // The EI looks a ticket up by enrollmentId to stay idempotent. Route
-      // config cannot demand a query param, so this also lets it list without
-      // one — the same portfolio hole every holder of the policy has (ACE-147).
+      // The EI looks a ticket up by enrollmentId to stay idempotent, and route
+      // config cannot demand a query param — so this opens the bare list too.
       config: { policy: TICKET_POLICY, serviceAllowed: true },
       schema: {
         querystring: listTicketsQuerySchema,

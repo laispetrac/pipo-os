@@ -54,9 +54,6 @@ describe('verifyToken', () => {
     ).rejects.toMatchObject({ name: 'UnauthorizedError', statusCode: 401 })
   })
 
-  // The auth-service answers 403 for three different violations — unknown
-  // identity, malformed token and missing policy — and none of them says which,
-  // on purpose. All three are "you are not getting in" for the caller.
   it('refuses with 403 when the identity lacks the policy', async () => {
     fetchMock.mockResolvedValueOnce(jsonResponse({ error: 'Unauthorized' }, 403))
 
