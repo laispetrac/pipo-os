@@ -127,8 +127,8 @@ describe('auth/login', () => {
     })
   })
 
-  // The API renamed this domain once and the web kept the old string, so a local
-  // login passed and every ticket endpoint answered 403. The literals are the canary.
+  // The API renamed this domain once and the web kept the old string: 403 on
+  // every endpoint after a login that passed. The literals are the canary.
   it('asks for the policies the Pipodesk routes require', async () => {
     let sent: unknown
     setupApi([

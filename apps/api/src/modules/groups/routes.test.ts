@@ -828,8 +828,7 @@ describe('groups routes', () => {
       ['DELETE', '/api/groups/:id/members/:memberId'],
     ]
 
-    // Ids that do not exist are enough: the policy is a door, and it closes
-    // before the group is searched for.
+    // Ids that do not exist are enough: the policy closes before the lookup.
     it.each(routes)('answers 403 on %s %s for a session with no policy', async (method, url) => {
       const response = await app.inject({
         method: method as 'GET',
@@ -842,9 +841,7 @@ describe('groups routes', () => {
       expect(response.json().error).toBe('ForbiddenError')
     })
 
-    // The README promises one grant for whoever administers both families. It is
-    // the wildcard on the session side that delivers it, so it is asserted on a
-    // real route, not only on the matcher.
+    // The wildcard only ever matches on the session side (see policy.test.ts).
     it('opens the route for a session holding the whole product', async () => {
       const response = await app.inject({
         method: 'GET',
@@ -855,8 +852,6 @@ describe('groups routes', () => {
       expect(response.statusCode).toBe(200)
     })
 
-    // The ticket policy opens the eleven ticket routes and must not open these:
-    // an analyst who works tickets is not an administrator of the pods.
     it('answers 403 for a session holding only the ticket policy', async () => {
       const response = await app.inject({
         method: 'GET',

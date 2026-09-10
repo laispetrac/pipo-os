@@ -220,9 +220,8 @@ describe('the policy hook', () => {
 })
 
 // The inventory of which routes stand behind a policy. A route added without
-// deciding its side lands here as null and turns this red, the same way
-// public-routes.test.ts guards the authentication side. The nulls left are the
-// session's own routes: /me and logout ask for a session, not a permission.
+// deciding its side lands here as null and turns this red. The nulls left are
+// the session's own routes, which ask for a session and not a permission.
 describe('the policy each route requires', () => {
   const TICKET = { domain: 'pipodesk', specific: 'ticket' }
   const STRUCTURE = { domain: 'pipodesk', specific: 'structure' }

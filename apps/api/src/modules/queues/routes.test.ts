@@ -43,8 +43,7 @@ describe('queues routes', () => {
     })
     sessionCookie = cookieValue(loginResponse, SESSION_COOKIE_NAME)!
 
-    // The queue structure and the tickets a queue serves are different doors:
-    // this session holds only the ticket one.
+    // Only the ticket door; the structure one is on sessionCookie.
     const ticketLogin = await app.inject({
       method: 'POST',
       url: '/api/auth/dev-login',
@@ -826,9 +825,6 @@ describe('queues routes', () => {
       expect(response.json().error).toBe('ForbiddenError')
     })
 
-    // The two doors in this module, each closed to the other's key. The tickets
-    // of a queue are ticket data: whoever redraws the structure does not read
-    // them by holding the structure policy alone.
     it('answers 403 on the tickets of a queue for the structure policy alone', async () => {
       const response = await app.inject({
         method: 'GET',
@@ -840,8 +836,6 @@ describe('queues routes', () => {
       expect(response.json().error).toBe('ForbiddenError')
     })
 
-    // The ticket policy opens GET /api/queues/:id/tickets, which serves ticket
-    // data, and must not open the structure around it.
     it('answers 403 for a session holding only the ticket policy', async () => {
       const response = await app.inject({
         method: 'GET',
