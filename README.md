@@ -172,7 +172,7 @@ O que a API cobra, em ordem, antes de deixar entrar:
 | O auth-service reconhece a identidade e a policy             | `401` (credencial) ou `403` (identidade ou policy)                                                                                                                                                                                     |
 | O auth-service responde                                      | `503`, nunca um 500 mudo                                                                                                                                                                                                               |
 
-As rotas abertas a serviço são as quatro que abrir e acompanhar um chamado exige — criar, ler por id, procurar pelo `enrollmentId` e ler comentários — mais escrever comentário. A lista inteira é asserção em `apps/api/src/modules/auth/service-routes.test.ts`: abrir uma quinta é uma linha visível no diff.
+As rotas abertas a serviço são as quatro que abrir e acompanhar um chamado exige — criar, ler por id, procurar pelo `enrollmentId` (`GET /api/tickets?enrollmentId=…`, que é como o EI fica idempotente) e ler comentários — mais escrever comentário. A lista inteira é asserção em `apps/api/src/modules/auth/service-routes.test.ts`: abrir uma quinta é uma linha visível no diff.
 
 Quem escreve como serviço fica registrado como `svc:<nome>` na coluna de autor, ao lado do `sub` de uma pessoa. Mudar status não está aberto a serviço: quem muda status é gente, e o caminho de volta para o EI é o webhook.
 

@@ -115,6 +115,7 @@ export const updateTicketStatusBodySchema = z
 
 export const listTicketsQuerySchema = z.object({
   status: ticketStatusSchema.optional(),
+  enrollmentId: z.uuid().optional(),
   queueId: z.uuid().optional(),
   assigneeId: z.string().min(1).optional(),
   enrollmentType: z.string().optional(),
