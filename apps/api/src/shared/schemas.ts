@@ -17,6 +17,6 @@ export const errorResponseSchema = z
     message: z.string(),
     // Optional, never an empty array: a 404 has no fields to report, and [] would
     // claim the fields were checked and all passed.
-    details: z.array(errorDetailSchema).optional(),
+    details: z.array(errorDetailSchema).nonempty().optional(),
   })
   .meta({ id: 'ErrorResponse' })

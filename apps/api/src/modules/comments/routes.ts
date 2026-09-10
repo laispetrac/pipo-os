@@ -2,8 +2,8 @@ import type { ZodTypeProvider } from '@fastify/type-provider-zod'
 import type { FastifyInstance } from 'fastify'
 import { requireUserId } from '../auth/authenticate.js'
 import { errorResponseSchema } from '../../shared/schemas.js'
-import { ticketParamsSchema } from '../tickets/schemas.js'
 import { TICKET_POLICY } from '../tickets/policy.js'
+import { ticketParamsSchema } from '../tickets/schemas.js'
 import {
   commentListSchema,
   commentSchema,
@@ -76,6 +76,7 @@ export function registerCommentRoutes(app: FastifyInstance, service: CommentsSer
           403: errorResponseSchema,
           404: errorResponseSchema,
           413: errorResponseSchema,
+          415: errorResponseSchema,
         },
       },
     },

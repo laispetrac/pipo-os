@@ -25,7 +25,13 @@ export function registerGroupRoutes(app: FastifyInstance, service: GroupsService
     {
       schema: {
         body: createGroupBodySchema,
-        response: { 201: groupSchema, 400: errorResponseSchema, 401: errorResponseSchema },
+        response: {
+          201: groupSchema,
+          400: errorResponseSchema,
+          401: errorResponseSchema,
+          413: errorResponseSchema,
+          415: errorResponseSchema,
+        },
       },
     },
     async (request, reply) => {
@@ -78,6 +84,8 @@ export function registerGroupRoutes(app: FastifyInstance, service: GroupsService
           400: errorResponseSchema,
           401: errorResponseSchema,
           404: errorResponseSchema,
+          413: errorResponseSchema,
+          415: errorResponseSchema,
         },
       },
     },
@@ -120,6 +128,8 @@ export function registerGroupRoutes(app: FastifyInstance, service: GroupsService
           401: errorResponseSchema,
           404: errorResponseSchema,
           409: errorResponseSchema,
+          413: errorResponseSchema,
+          415: errorResponseSchema,
         },
       },
     },
@@ -161,6 +171,8 @@ export function registerGroupRoutes(app: FastifyInstance, service: GroupsService
           400: errorResponseSchema,
           401: errorResponseSchema,
           404: errorResponseSchema,
+          413: errorResponseSchema,
+          415: errorResponseSchema,
         },
       },
     },

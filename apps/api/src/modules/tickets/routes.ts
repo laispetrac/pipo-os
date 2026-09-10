@@ -3,8 +3,8 @@ import type { FastifyInstance } from 'fastify'
 import { requirePrincipal, requireUserId } from '../auth/authenticate.js'
 import { businessToday } from '../../shared/business-date.js'
 import { errorResponseSchema } from '../../shared/schemas.js'
-import { ticketRowsQuerySchema, ticketRowsSchema } from './rows-schema.js'
 import { TICKET_POLICY } from './policy.js'
+import { ticketRowsQuerySchema, ticketRowsSchema } from './rows-schema.js'
 import {
   createTicketBodySchema,
   listTicketsQuerySchema,
@@ -96,6 +96,8 @@ export function registerTicketRoutes(app: FastifyInstance, service: TicketsServi
           401: errorResponseSchema,
           403: errorResponseSchema,
           409: errorResponseSchema,
+          413: errorResponseSchema,
+          415: errorResponseSchema,
         },
       },
     },
@@ -119,6 +121,8 @@ export function registerTicketRoutes(app: FastifyInstance, service: TicketsServi
           401: errorResponseSchema,
           403: errorResponseSchema,
           404: errorResponseSchema,
+          413: errorResponseSchema,
+          415: errorResponseSchema,
         },
       },
     },
@@ -140,6 +144,8 @@ export function registerTicketRoutes(app: FastifyInstance, service: TicketsServi
           401: errorResponseSchema,
           403: errorResponseSchema,
           404: errorResponseSchema,
+          413: errorResponseSchema,
+          415: errorResponseSchema,
           422: errorResponseSchema,
         },
       },

@@ -3,8 +3,8 @@ import type { FastifyInstance } from 'fastify'
 import { z } from 'zod'
 import { requireUserId } from '../auth/authenticate.js'
 import { errorResponseSchema } from '../../shared/schemas.js'
-import { ticketListSchema } from '../tickets/schemas.js'
 import { TICKET_POLICY } from '../tickets/policy.js'
+import { ticketListSchema } from '../tickets/schemas.js'
 import {
   addQueueGroupBodySchema,
   createQueueBodySchema,
@@ -27,7 +27,13 @@ export function registerQueueRoutes(app: FastifyInstance, service: QueuesService
     {
       schema: {
         body: createQueueBodySchema,
-        response: { 201: queueSchema, 400: errorResponseSchema, 401: errorResponseSchema },
+        response: {
+          201: queueSchema,
+          400: errorResponseSchema,
+          401: errorResponseSchema,
+          413: errorResponseSchema,
+          415: errorResponseSchema,
+        },
       },
     },
     async (request, reply) => {
@@ -80,6 +86,8 @@ export function registerQueueRoutes(app: FastifyInstance, service: QueuesService
           400: errorResponseSchema,
           401: errorResponseSchema,
           404: errorResponseSchema,
+          413: errorResponseSchema,
+          415: errorResponseSchema,
         },
       },
     },
@@ -122,6 +130,8 @@ export function registerQueueRoutes(app: FastifyInstance, service: QueuesService
           401: errorResponseSchema,
           404: errorResponseSchema,
           409: errorResponseSchema,
+          413: errorResponseSchema,
+          415: errorResponseSchema,
         },
       },
     },
