@@ -792,6 +792,7 @@ describe('groups routes', () => {
   describe('the structure policy', () => {
     let withoutPolicy: string
     let withTicketPolicy: string
+    let withWholeProduct: string
 
     beforeAll(async () => {
       const anonymous = await app.inject({
@@ -807,6 +808,13 @@ describe('groups routes', () => {
         payload: { policies: ['admin/allow/administrate/pipodesk/ticket'] },
       })
       withTicketPolicy = cookieValue(ticketOnly, SESSION_COOKIE_NAME)!
+
+      const wholeProduct = await app.inject({
+        method: 'POST',
+        url: '/api/auth/dev-login',
+        payload: { policies: ['admin/allow/administrate/pipodesk/*'] },
+      })
+      withWholeProduct = cookieValue(wholeProduct, SESSION_COOKIE_NAME)!
     })
 
     const routes: Array<[string, string]> = [
@@ -832,6 +840,19 @@ describe('groups routes', () => {
 
       expect(response.statusCode).toBe(403)
       expect(response.json().error).toBe('ForbiddenError')
+    })
+
+    // The README promises one grant for whoever administers both families. It is
+    // the wildcard on the session side that delivers it, so it is asserted on a
+    // real route, not only on the matcher.
+    it('opens the route for a session holding the whole product', async () => {
+      const response = await app.inject({
+        method: 'GET',
+        url: '/api/groups',
+        cookies: { [SESSION_COOKIE_NAME]: withWholeProduct },
+      })
+
+      expect(response.statusCode).toBe(200)
     })
 
     // The ticket policy opens the eleven ticket routes and must not open these:

@@ -2,8 +2,8 @@ import type { ZodTypeProvider } from '@fastify/type-provider-zod'
 import type { FastifyInstance } from 'fastify'
 import { z } from 'zod'
 import { requireUserId } from '../auth/authenticate.js'
-import { STRUCTURE_POLICY } from './policy.js'
 import { errorResponseSchema } from '../../shared/schemas.js'
+import { STRUCTURE_POLICY } from './policy.js'
 import {
   addMemberBodySchema,
   createGroupBodySchema,
