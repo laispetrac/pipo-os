@@ -3,6 +3,7 @@ import { afterAll, afterEach, beforeAll, beforeEach, describe, expect, it, vi } 
 import { buildApp } from '../../app.js'
 import { requirePrincipal, requireUser } from './authenticate.js'
 
+const TICKET = { domain: 'pipodesk', specific: 'ticket' }
 const TICKET_POLICY = 'admin/allow/administrate/pipodesk/ticket'
 const IDENTITY_ID = '3f1a6d6e-9c1e-4f0b-9d0e-2b7a1c5f8e42'
 const SERVICE_NAME_IN_TEST = 'enrollment-integrations-worker'
@@ -46,13 +47,17 @@ describe('a service calling the API', () => {
 
     // Added before ready() so the hooks bind to them exactly as they bind to an
     // autoloaded route.
-    app.get('/__test/open-to-service', { config: { serviceAllowed: true } }, async (request) => ({
-      principal: requirePrincipal(request),
-    }))
+    app.get(
+      '/__test/open-to-service',
+      { config: { serviceAllowed: true, policy: TICKET } },
+      async (request) => ({ principal: requirePrincipal(request) }),
+    )
     app.get('/__test/people-only', async () => ({ ok: true }))
-    app.get('/__test/reads-the-person', { config: { serviceAllowed: true } }, async (request) => ({
-      email: requireUser(request).email,
-    }))
+    app.get(
+      '/__test/reads-the-person',
+      { config: { serviceAllowed: true, policy: TICKET } },
+      async (request) => ({ email: requireUser(request).email }),
+    )
 
     await app.ready()
   })
@@ -225,5 +230,30 @@ describe('a service calling the API', () => {
 
     expect(response.statusCode).toBe(401)
     expect(fetchMock).not.toHaveBeenCalled()
+  })
+  // Inside a plugin, which is where the module routes live: the onRoute hook
+  // only sees what is registered after it, and it loads with the plugins.
+  it('refuses to boot a route that accepts a service without naming a policy', async () => {
+    const unguarded = buildApp()
+    unguarded.register(async (scope) => {
+      scope.get('/__test/no-policy', { config: { serviceAllowed: true } }, async () => ({
+        ok: true,
+      }))
+    })
+
+    // Caught by hand, not with rejects: an app whose boot failed throws again
+    // when the assertion helper inspects it.
+    let caught: unknown
+    try {
+      await unguarded.ready()
+    } catch (error) {
+      caught = error
+    } finally {
+      await unguarded.close().catch(() => {})
+    }
+
+    expect((caught as Error | undefined)?.message).toMatch(
+      /accepts a service but declares no policy/,
+    )
   })
 })

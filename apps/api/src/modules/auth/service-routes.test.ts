@@ -47,12 +47,11 @@ describe('the set of routes a service may call', () => {
     ])
   })
 
-  // The hook asks the auth-service for one policy — `pipodesk/ticket` — for
-  // every service-allowed route. Opening a route of the structure family (a
-  // queue, a group), which answers to `pipodesk/structure`, would ask for the
-  // wrong one and pass or fail for the wrong reason, so that mistake has to be
-  // red here before it reaches the hook.
-  it('opens only ticket routes, which is the policy the hook asks for', () => {
+  // The V0 opens the ticket family to a service and nothing else. Structure
+  // routes — queues, groups — answer to `pipodesk/structure` and are a decision
+  // nobody has taken yet, so one appearing here is a scope change that has to be
+  // argued, not a line that slips in with a `serviceAllowed` copied from above.
+  it('opens ticket routes only, and leaves the structure family closed', () => {
     const outsideTheTicketDomain = serviceRoutes.filter(
       (route) => !route.split(' ')[1].startsWith('/api/tickets'),
     )

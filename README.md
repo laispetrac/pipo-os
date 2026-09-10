@@ -161,13 +161,13 @@ Duas consequências de desenho que valem saber:
 
 O que a API cobra, em ordem, antes de deixar entrar:
 
-| Guarda                                            | Recusa                                                                                              |
-| ------------------------------------------------- | --------------------------------------------------------------------------------------------------- |
-| A rota declara `config: { serviceAllowed: true }` | `403` — rota nova nasce fechada para serviço, e a recusa acontece antes de qualquer chamada de rede |
-| O token traz nome de service account              | `401`                                                                                               |
-| O nome está em `SERVICE_ALLOWED_NAMES`            | `403`                                                                                               |
-| O auth-service reconhece a identidade e a policy  | `401` (credencial) ou `403` (identidade ou policy)                                                  |
-| O auth-service responde                           | `503`, nunca um 500 mudo                                                                            |
+| Guarda                                                       | Recusa                                                                                                                                                                                                                                 |
+| ------------------------------------------------------------ | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| A rota declara `serviceAllowed: true` e a `policy` que exige | `403` — rota nova nasce fechada para serviço, e a recusa acontece antes de qualquer chamada de rede. `serviceAllowed` sem `policy` derruba o boot, porque mandaria o `verify-token` conferir identidade sem exigir autorização nenhuma |
+| O token traz nome de service account                         | `401`                                                                                                                                                                                                                                  |
+| O nome está em `SERVICE_ALLOWED_NAMES`                       | `403`                                                                                                                                                                                                                                  |
+| O auth-service reconhece a identidade e a policy             | `401` (credencial) ou `403` (identidade ou policy)                                                                                                                                                                                     |
+| O auth-service responde                                      | `503`, nunca um 500 mudo                                                                                                                                                                                                               |
 
 As rotas abertas a serviço são as quatro que abrir e acompanhar um chamado exige — criar, ler por id, procurar pelo `enrollmentId` e ler comentários — mais escrever comentário. A lista inteira é asserção em `apps/api/src/modules/auth/service-routes.test.ts`: abrir uma quinta é uma linha visível no diff.
 

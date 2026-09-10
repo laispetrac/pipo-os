@@ -3,12 +3,12 @@ import fp from 'fastify-plugin'
 import { verifyToken } from '../../infrastructure/auth-service-internal.js'
 import { ForbiddenError, UnauthorizedError } from '../../shared/errors.js'
 import { authServiceInternalUrl } from './config.js'
+import { policyString, requiredPolicies } from './policy.js'
 import { SESSION_COOKIE_NAME, extractSessionClaims, type SessionClaims } from './session.js'
 import {
   allowedServiceNames,
   bearerToken,
   serviceNameFromToken,
-  SERVICE_PIPODESK_TICKET_POLICY,
   tokenExpired,
 } from './service-principal.js'
 
@@ -101,7 +101,11 @@ function auditOf(request: FastifyRequest, serviceName: string) {
   }
 }
 
-async function servicePrincipal(request: FastifyRequest, token: string): Promise<ServicePrincipal> {
+async function servicePrincipal(
+  request: FastifyRequest,
+  token: string,
+  policies: string[],
+): Promise<ServicePrincipal> {
   const name = serviceNameFromToken(token)
 
   if (!name) {
@@ -120,16 +124,28 @@ async function servicePrincipal(request: FastifyRequest, token: string): Promise
   const identityId = await verifyToken({
     baseUrl: authServiceInternalUrl(),
     token,
-    policies: [SERVICE_PIPODESK_TICKET_POLICY],
+    policies,
     audit: auditOf(request, name),
   })
 
-  return { kind: 'service', name, identityId, policies: [SERVICE_PIPODESK_TICKET_POLICY] }
+  return { kind: 'service', name, identityId, policies }
 }
 
 export default fp(
   async function authenticatePlugin(app) {
     app.decorateRequest('principal')
+
+    // A service is only ever let in against the policy its route names, so a
+    // route that opens to services without naming one would send an empty
+    // requirement to verify-token and get an identity check with no
+    // authorisation behind it.
+    app.addHook('onRoute', (route) => {
+      if (route.config?.serviceAllowed === true && route.config.policy === undefined) {
+        throw new Error(
+          `Route ${route.method} ${route.url} accepts a service but declares no policy`,
+        )
+      }
+    })
 
     app.addHook('onRequest', async (request) => {
       // The 404 context inherits root hooks with an empty config: without this
@@ -160,11 +176,16 @@ export default fp(
       // Read before the token is decoded, and before any call upstream: a route
       // that does not accept services closes here, and a broken auth-service
       // cannot turn that refusal into a 503.
-      if (request.routeOptions.config.serviceAllowed !== true) {
+      const declared = request.routeOptions.config.policy
+      if (request.routeOptions.config.serviceAllowed !== true || declared === undefined) {
         throw new ForbiddenError('This route does not accept a service caller')
       }
 
-      request.principal = await servicePrincipal(request, token)
+      request.principal = await servicePrincipal(
+        request,
+        token,
+        requiredPolicies(declared).map(policyString),
+      )
     })
   },
   // Both run their own onRequest hook, and hooks fire in registration order:

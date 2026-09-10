@@ -21,6 +21,15 @@ export function policyString(requirement: PolicyRequirement): string {
   return [context, effect, action, domain, specific].join('/')
 }
 
+/** What a route's `policy` config demands, as a list. An array there means any
+ *  one of them is enough, like the :pipo-authenticated vector the Clojure
+ *  services declare. */
+export function requiredPolicies(
+  declared: PolicyRequirement | PolicyRequirement[],
+): PolicyRequirement[] {
+  return Array.isArray(declared) ? declared : [declared]
+}
+
 const effectOf = (policy: string): string | undefined => policy.split('/')[1]
 
 /** The effect swapped for `allow`, to compare a deny against a requirement. */

@@ -48,6 +48,15 @@ export class UnauthorizedError extends DomainError {
   }
 }
 
+export class ConflictError extends DomainError {
+  readonly statusCode = 409
+
+  constructor(message: string) {
+    super(message)
+    this.name = 'ConflictError'
+  }
+}
+
 export class ForbiddenError extends DomainError {
   readonly statusCode = 403
 
@@ -65,15 +74,6 @@ export class ServiceUnavailableError extends DomainError {
   constructor(message: string) {
     super(message)
     this.name = 'ServiceUnavailableError'
-  }
-}
-
-export class ConflictError extends DomainError {
-  readonly statusCode = 409
-
-  constructor(message: string) {
-    super(message)
-    this.name = 'ConflictError'
   }
 }
 
