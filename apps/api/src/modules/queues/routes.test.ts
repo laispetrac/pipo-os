@@ -826,6 +826,20 @@ describe('queues routes', () => {
       expect(response.json().error).toBe('ForbiddenError')
     })
 
+    // The two doors in this module, each closed to the other's key. The tickets
+    // of a queue are ticket data: whoever redraws the structure does not read
+    // them by holding the structure policy alone.
+    it('answers 403 on the tickets of a queue for the structure policy alone', async () => {
+      const response = await app.inject({
+        method: 'GET',
+        url: `/api/queues/${NONEXISTENT_ID}/tickets`,
+        cookies: { [SESSION_COOKIE_NAME]: sessionCookie },
+      })
+
+      expect(response.statusCode).toBe(403)
+      expect(response.json().error).toBe('ForbiddenError')
+    })
+
     // The ticket policy opens GET /api/queues/:id/tickets, which serves ticket
     // data, and must not open the structure around it.
     it('answers 403 for a session holding only the ticket policy', async () => {
