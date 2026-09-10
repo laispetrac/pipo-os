@@ -3,6 +3,7 @@ import type { FastifyInstance } from 'fastify'
 import { z } from 'zod'
 import { requireUserId } from '../auth/authenticate.js'
 import { errorResponseSchema } from '../../shared/schemas.js'
+import { STRUCTURE_POLICY } from '../groups/policy.js'
 import { TICKET_POLICY } from '../tickets/policy.js'
 import { ticketListSchema } from '../tickets/schemas.js'
 import {
@@ -25,12 +26,14 @@ export function registerQueueRoutes(app: FastifyInstance, service: QueuesService
   server.post(
     '/api/queues',
     {
+      config: { policy: STRUCTURE_POLICY },
       schema: {
         body: createQueueBodySchema,
         response: {
           201: queueSchema,
           400: errorResponseSchema,
           401: errorResponseSchema,
+          403: errorResponseSchema,
           413: errorResponseSchema,
           415: errorResponseSchema,
         },
@@ -47,9 +50,15 @@ export function registerQueueRoutes(app: FastifyInstance, service: QueuesService
   server.get(
     '/api/queues',
     {
+      config: { policy: STRUCTURE_POLICY },
       schema: {
         querystring: listQueuesQuerySchema,
-        response: { 200: queueListSchema, 400: errorResponseSchema, 401: errorResponseSchema },
+        response: {
+          200: queueListSchema,
+          400: errorResponseSchema,
+          401: errorResponseSchema,
+          403: errorResponseSchema,
+        },
       },
     },
     async (request) => {
@@ -60,12 +69,14 @@ export function registerQueueRoutes(app: FastifyInstance, service: QueuesService
   server.get(
     '/api/queues/:id',
     {
+      config: { policy: STRUCTURE_POLICY },
       schema: {
         params: queueParamsSchema,
         response: {
           200: queueSchema,
           400: errorResponseSchema,
           401: errorResponseSchema,
+          403: errorResponseSchema,
           404: errorResponseSchema,
         },
       },
@@ -78,6 +89,7 @@ export function registerQueueRoutes(app: FastifyInstance, service: QueuesService
   server.patch(
     '/api/queues/:id',
     {
+      config: { policy: STRUCTURE_POLICY },
       schema: {
         params: queueParamsSchema,
         body: updateQueueBodySchema,
@@ -85,6 +97,7 @@ export function registerQueueRoutes(app: FastifyInstance, service: QueuesService
           200: queueSchema,
           400: errorResponseSchema,
           401: errorResponseSchema,
+          403: errorResponseSchema,
           404: errorResponseSchema,
           413: errorResponseSchema,
           415: errorResponseSchema,
@@ -100,12 +113,14 @@ export function registerQueueRoutes(app: FastifyInstance, service: QueuesService
   server.delete(
     '/api/queues/:id',
     {
+      config: { policy: STRUCTURE_POLICY },
       schema: {
         params: queueParamsSchema,
         response: {
           204: z.null(),
           400: errorResponseSchema,
           401: errorResponseSchema,
+          403: errorResponseSchema,
           404: errorResponseSchema,
           409: errorResponseSchema,
         },
@@ -121,6 +136,7 @@ export function registerQueueRoutes(app: FastifyInstance, service: QueuesService
   server.post(
     '/api/queues/:id/groups',
     {
+      config: { policy: STRUCTURE_POLICY },
       schema: {
         params: queueParamsSchema,
         body: addQueueGroupBodySchema,
@@ -128,6 +144,7 @@ export function registerQueueRoutes(app: FastifyInstance, service: QueuesService
           201: queueGroupSchema,
           400: errorResponseSchema,
           401: errorResponseSchema,
+          403: errorResponseSchema,
           404: errorResponseSchema,
           409: errorResponseSchema,
           413: errorResponseSchema,
@@ -145,12 +162,14 @@ export function registerQueueRoutes(app: FastifyInstance, service: QueuesService
   server.delete(
     '/api/queues/:id/groups/:groupId',
     {
+      config: { policy: STRUCTURE_POLICY },
       schema: {
         params: queueGroupParamsSchema,
         response: {
           204: z.null(),
           400: errorResponseSchema,
           401: errorResponseSchema,
+          403: errorResponseSchema,
           404: errorResponseSchema,
         },
       },

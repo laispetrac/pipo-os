@@ -5,9 +5,13 @@
 //
 // Callers must guard on `import.meta.env.DEV` so Vite drops this from the
 // production bundle at build time.
-// What the Pipodesk routes require: without it the local session logs in and
-// then gets 403 from every ticket endpoint.
-export const DEV_POLICIES = ['admin/allow/administrate/pipodesk/ticket']
+// What the Pipodesk routes require: without them the local session logs in and
+// then gets 403 — `ticket` on every chamado endpoint, `structure` on pods and
+// queues. Spelled out instead of `pipodesk/*` so both doors stay visible here.
+export const DEV_POLICIES = [
+  'admin/allow/administrate/pipodesk/ticket',
+  'admin/allow/administrate/pipodesk/structure',
+]
 
 // Explicit on purpose: a default would hand out a privileged session to a
 // caller that meant to exercise one without policies.

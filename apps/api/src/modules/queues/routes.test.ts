@@ -36,12 +36,15 @@ describe('queues routes', () => {
     const loginResponse = await app.inject({
       method: 'POST',
       url: '/api/auth/dev-login',
-      payload: { email: DEV_LOGIN_USER_ID, policies: [] },
+      payload: {
+        email: DEV_LOGIN_USER_ID,
+        policies: ['admin/allow/administrate/pipodesk/structure'],
+      },
     })
     sessionCookie = cookieValue(loginResponse, SESSION_COOKIE_NAME)!
 
-    // The queue structure asks for no policy; listing the tickets of a queue
-    // does, because what comes back is ticket data.
+    // The queue structure and the tickets a queue serves are different doors:
+    // this session holds only the ticket one.
     const ticketLogin = await app.inject({
       method: 'POST',
       url: '/api/auth/dev-login',
@@ -786,6 +789,53 @@ describe('queues routes', () => {
         payload: { groupId: GROUP_ID },
       })
       expect(relink.statusCode).toBe(201)
+    })
+  })
+
+  describe('the structure policy', () => {
+    let withoutPolicy: string
+
+    beforeAll(async () => {
+      const anonymous = await app.inject({
+        method: 'POST',
+        url: '/api/auth/dev-login',
+        payload: { email: DEV_LOGIN_USER_ID, policies: [] },
+      })
+      withoutPolicy = cookieValue(anonymous, SESSION_COOKIE_NAME)!
+    })
+
+    const routes: Array<[string, string]> = [
+      ['GET', '/api/queues'],
+      ['POST', '/api/queues'],
+      ['GET', '/api/queues/:id'],
+      ['PATCH', '/api/queues/:id'],
+      ['DELETE', '/api/queues/:id'],
+      ['POST', '/api/queues/:id/groups'],
+      ['DELETE', '/api/queues/:id/groups/:groupId'],
+    ]
+
+    it.each(routes)('answers 403 on %s %s for a session with no policy', async (method, url) => {
+      const response = await app.inject({
+        method: method as 'GET',
+        url: url.replace(':id', NONEXISTENT_ID).replace(':groupId', GROUP_ID),
+        cookies: { [SESSION_COOKIE_NAME]: withoutPolicy },
+        payload: method === 'GET' || method === 'DELETE' ? undefined : { name: 'Fila' },
+      })
+
+      expect(response.statusCode).toBe(403)
+      expect(response.json().error).toBe('ForbiddenError')
+    })
+
+    // The ticket policy opens GET /api/queues/:id/tickets, which serves ticket
+    // data, and must not open the structure around it.
+    it('answers 403 for a session holding only the ticket policy', async () => {
+      const response = await app.inject({
+        method: 'GET',
+        url: '/api/queues',
+        cookies: { [SESSION_COOKIE_NAME]: ticketSessionCookie },
+      })
+
+      expect(response.statusCode).toBe(403)
     })
   })
 })

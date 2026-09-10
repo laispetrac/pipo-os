@@ -221,10 +221,11 @@ describe('the policy hook', () => {
 
 // The inventory of which routes stand behind a policy. A route added without
 // deciding its side lands here as null and turns this red, the same way
-// public-routes.test.ts guards the authentication side. The nulls on queue and
-// group structure are ACE-208, not an omission.
+// public-routes.test.ts guards the authentication side. The nulls left are the
+// session's own routes: /me and logout ask for a session, not a permission.
 describe('the policy each route requires', () => {
   const TICKET = { domain: 'pipodesk', specific: 'ticket' }
+  const STRUCTURE = { domain: 'pipodesk', specific: 'structure' }
 
   // With the flag on, buildApp registers dev-login, which EXPECTED does not list.
   const flag = process.env.DEV_LOGIN_ENABLED
@@ -238,33 +239,33 @@ describe('the policy each route requires', () => {
   })
 
   const EXPECTED: Array<[string, PolicyRequirement | null]> = [
-    ['DELETE /api/groups/:id', null],
-    ['DELETE /api/groups/:id/members/:memberId', null],
-    ['DELETE /api/queues/:id', null],
-    ['DELETE /api/queues/:id/groups/:groupId', null],
+    ['DELETE /api/groups/:id', STRUCTURE],
+    ['DELETE /api/groups/:id/members/:memberId', STRUCTURE],
+    ['DELETE /api/queues/:id', STRUCTURE],
+    ['DELETE /api/queues/:id/groups/:groupId', STRUCTURE],
     ['GET /api/auth/google', null],
     ['GET /api/auth/google/callback', null],
     ['GET /api/auth/me', null],
-    ['GET /api/groups', null],
-    ['GET /api/groups/:id', null],
-    ['GET /api/queues', null],
-    ['GET /api/queues/:id', null],
+    ['GET /api/groups', STRUCTURE],
+    ['GET /api/groups/:id', STRUCTURE],
+    ['GET /api/queues', STRUCTURE],
+    ['GET /api/queues/:id', STRUCTURE],
     ['GET /api/queues/:id/tickets', TICKET],
     ['GET /api/tickets', TICKET],
     ['GET /api/tickets/:id', TICKET],
     ['GET /api/tickets/:id/comments', TICKET],
     ['GET /api/tickets/:id/timeline', TICKET],
     ['GET /api/tickets/rows', TICKET],
-    ['PATCH /api/groups/:id', null],
-    ['PATCH /api/groups/:id/members/:memberId', null],
-    ['PATCH /api/queues/:id', null],
+    ['PATCH /api/groups/:id', STRUCTURE],
+    ['PATCH /api/groups/:id/members/:memberId', STRUCTURE],
+    ['PATCH /api/queues/:id', STRUCTURE],
     ['PATCH /api/tickets/:id', TICKET],
     ['PATCH /api/tickets/:id/status', TICKET],
     ['POST /api/auth/logout', null],
-    ['POST /api/groups', null],
-    ['POST /api/groups/:id/members', null],
-    ['POST /api/queues', null],
-    ['POST /api/queues/:id/groups', null],
+    ['POST /api/groups', STRUCTURE],
+    ['POST /api/groups/:id/members', STRUCTURE],
+    ['POST /api/queues', STRUCTURE],
+    ['POST /api/queues/:id/groups', STRUCTURE],
     ['POST /api/tickets', TICKET],
     ['POST /api/tickets/:id/claim', TICKET],
     ['POST /api/tickets/:id/comments', TICKET],
