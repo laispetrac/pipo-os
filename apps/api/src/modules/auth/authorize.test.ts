@@ -221,7 +221,8 @@ describe('the policy hook', () => {
 
 // The inventory of which routes stand behind a policy. A route added without
 // deciding its side lands here as null and turns this red, the same way
-// public-routes.test.ts guards the authentication side.
+// public-routes.test.ts guards the authentication side. The nulls on queue and
+// group structure are ACE-208, not an omission.
 describe('the policy each route requires', () => {
   const TICKET = { domain: 'pipodesk', specific: 'ticket' }
 

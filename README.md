@@ -174,11 +174,11 @@ Essas garantias são cobertas por testes em `apps/api/src/modules/auth/dev-login
 
 Autenticar responde quem é a pessoa; a **policy** responde o que ela pode fazer. As policies vêm dentro do JWT do auth-service e são declaradas por rota, em `config.policy`, no formato da Pipo — `{context}/{effect}/{action}/{domain}/{specific}`, com `admin`, `allow`, `administrate` e `*` como padrões das partes omitidas.
 
-| Rotas                                                                                                  | Policy exigida                                                     |
-| ------------------------------------------------------------------------------------------------------ | ------------------------------------------------------------------ |
-| `/api/tickets/**`, `/api/tickets/:id/comments`, `/api/tickets/:id/timeline`, `/api/queues/:id/tickets` | `admin/allow/administrate/pipodesk/ticket`                         |
-| `/api/queues/**` e `/api/groups/**` (estrutura)                                                        | nenhuma ainda — será `admin/allow/administrate/pipodesk/structure` |
-| `/api/auth/**`                                                                                         | nenhuma (identidade, não recurso)                                  |
+| Rotas                                                                                                  | Policy exigida                                                                                                                |
+| ------------------------------------------------------------------------------------------------------ | ----------------------------------------------------------------------------------------------------------------------------- |
+| `/api/tickets/**`, `/api/tickets/:id/comments`, `/api/tickets/:id/timeline`, `/api/queues/:id/tickets` | `admin/allow/administrate/pipodesk/ticket`                                                                                    |
+| `/api/queues/**` e `/api/groups/**` (estrutura)                                                        | nenhuma ainda ([ACE-208](https://linear.app/piposaudecom/issue/ACE-208)) — será `admin/allow/administrate/pipodesk/structure` |
+| `/api/auth/**`                                                                                         | nenhuma (identidade, não recurso)                                                                                             |
 
 **Por que o domínio é `pipodesk` e não `ticket`.** `admin/allow/administrate/ticket/*` já existe e pertence a outro serviço: é o papel de admin do `ticket-service` (squad opex). Reusar a string acoplaria os dois — analista do Pipodesk viraria admin lá, e o admin de lá entraria aqui. O domínio próprio também deixa o específico livre para separar as duas famílias de rota: `ticket` para chamado e `structure` para grupos e filas, com `admin/allow/administrate/pipodesk/*` cobrindo as duas. O `authorize.test.ts` tem um caso que recusa a policy do `ticket-service` com 403, para a colisão não voltar por descuido.
 
