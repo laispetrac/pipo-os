@@ -69,9 +69,10 @@ export class ForbiddenError extends DomainError {
 export class ServiceUnavailableError extends DomainError {
   readonly statusCode = 503
 
-  constructor(message: string) {
+  constructor(message: string, options?: { cause: unknown }) {
     super(message)
     this.name = 'ServiceUnavailableError'
+    this.cause = options?.cause
   }
 }
 

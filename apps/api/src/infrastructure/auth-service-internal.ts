@@ -63,9 +63,10 @@ export async function verifyToken({
       signal: AbortSignal.timeout(VERIFY_TIMEOUT_MS),
     })
   } catch (error) {
-    throw new ServiceUnavailableError(
-      `auth-service verify-token is unreachable: ${(error as Error).message}`,
-    )
+    // The upstream's own words travel as `cause`, which the error handler logs
+    // and never publishes: a DomainError's message goes into the response body
+    // as written, and this is the only one here the API did not write itself.
+    throw new ServiceUnavailableError('auth-service verify-token is unreachable', { cause: error })
   }
 
   if (response.status === 401) {

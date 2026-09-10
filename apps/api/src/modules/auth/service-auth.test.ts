@@ -254,4 +254,32 @@ describe('a service calling the API', () => {
       /accepts a service but declares no policy/,
     )
   })
+
+  // An empty array is a `policy` config too, and it reaches verify-token as no
+  // requirement at all — the exact hole the guard above exists to close.
+  it('refuses to boot a route whose policy is an empty array', async () => {
+    const unguarded = buildApp()
+    unguarded.register(async (scope) => {
+      scope.get(
+        '/__test/empty-policy',
+        { config: { serviceAllowed: true, policy: [] } },
+        async () => ({
+          ok: true,
+        }),
+      )
+    })
+
+    let caught: unknown
+    try {
+      await unguarded.ready()
+    } catch (error) {
+      caught = error
+    } finally {
+      await unguarded.close().catch(() => {})
+    }
+
+    expect((caught as Error | undefined)?.message).toMatch(
+      /accepts a service but declares no policy/,
+    )
+  })
 })

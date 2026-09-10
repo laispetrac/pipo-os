@@ -78,6 +78,21 @@ describe('verifyToken', () => {
     ).rejects.toMatchObject({ name: 'ServiceUnavailableError', statusCode: 503 })
   })
 
+  // The error handler publishes a DomainError's message as written, so the
+  // upstream's own words must ride in `cause` and stop at the log.
+  it('keeps the upstream error out of the message and puts it in the cause', async () => {
+    const upstream = new Error('getaddrinfo ENOTFOUND auth-service.platform')
+    fetchMock.mockRejectedValueOnce(upstream)
+
+    await expect(
+      verifyToken({ baseUrl: BASE_URL, token: SERVICE_TOKEN, policies: [TICKET_POLICY] }),
+    ).rejects.toMatchObject({
+      name: 'ServiceUnavailableError',
+      message: 'auth-service verify-token is unreachable',
+      cause: upstream,
+    })
+  })
+
   it('answers 503 when a 200 carries no identity', async () => {
     fetchMock.mockResolvedValueOnce(jsonResponse({}))
 

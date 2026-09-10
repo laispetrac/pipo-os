@@ -93,11 +93,16 @@ function auditOf(request: FastifyRequest, serviceName: string) {
     return typeof value === 'string' ? value : undefined
   }
 
+  // The last entry, not the whole header: the ingress appends the peer it saw,
+  // so everything before it is whatever the caller chose to send. With
+  // trustProxy off, request.ip is the ingress itself, which audits nothing.
+  const forwardedFor = header('x-forwarded-for')?.split(',').pop()?.trim()
+
   return {
     requestId: request.id,
     correlationId: header('x-correlation-id'),
     userId: `svc:${serviceName}`,
-    sourceIp: header('x-forwarded-for') ?? request.ip,
+    sourceIp: forwardedFor || request.ip,
   }
 }
 
@@ -139,7 +144,12 @@ export default fp(
     // opens to services without naming one would reach verify-token with an
     // empty requirement: identity checked, authorisation not.
     app.addHook('onRoute', (route) => {
-      if (route.config?.serviceAllowed === true && route.config.policy === undefined) {
+      // `?? []` and not `=== undefined`: an empty array is a policy config too,
+      // and it would reach verify-token as no requirement at all.
+      if (
+        route.config?.serviceAllowed === true &&
+        requiredPolicies(route.config.policy ?? []).length === 0
+      ) {
         throw new Error(
           `Route ${route.method} ${route.url} accepts a service but declares no policy`,
         )
@@ -175,16 +185,19 @@ export default fp(
       // Read before the token is decoded, and before any call upstream: a route
       // that does not accept services closes here, and a broken auth-service
       // cannot turn that refusal into a 503.
-      const declared = request.routeOptions.config.policy
-      if (request.routeOptions.config.serviceAllowed !== true || declared === undefined) {
+      if (request.routeOptions.config.serviceAllowed !== true) {
         throw new ForbiddenError('This route does not accept a service caller')
       }
 
-      request.principal = await servicePrincipal(
-        request,
-        token,
-        requiredPolicies(declared).map(policyString),
-      )
+      // The boot guard is what normally catches this; a route that reached here
+      // without a policy escaped it, and saying so beats blaming the caller.
+      const wanted = requiredPolicies(request.routeOptions.config.policy ?? []).map(policyString)
+      if (wanted.length === 0) {
+        request.log.error({ url: request.url }, 'route accepts a service but declares no policy')
+        throw new ForbiddenError('This route is not configured to accept a service caller')
+      }
+
+      request.principal = await servicePrincipal(request, token, wanted)
     })
   },
   // Both run their own onRequest hook, and hooks fire in registration order:
