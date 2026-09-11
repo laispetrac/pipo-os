@@ -42,6 +42,9 @@ describe('groups routes', () => {
      both `companies` and `members`. A table added in the wrong position here
      reintroduces FK violations that read as unrelated test failures. */
   afterEach(async () => {
+    await app.db.deleteFrom('tickets').execute()
+    await app.db.deleteFrom('ticket_queues_x_group').execute()
+    await app.db.deleteFrom('ticket_queues').execute()
     await app.db.deleteFrom('ticket_group_member_companies').execute()
     await app.db.deleteFrom('ticket_group_companies').execute()
     await app.db.deleteFrom('ticket_group_members').execute()
@@ -776,6 +779,86 @@ describe('groups routes', () => {
       })
 
       expect(response.statusCode).toBe(409)
+      expect(response.json().message).toContain('members')
+    })
+
+    /* Every link below answers the same 23503 and used to come back as
+       "still has members", which sends whoever reads it to the wrong screen. */
+    it('says it is the child group that blocks the delete', async () => {
+      const geben = await createGroup('Gestão de Benefícios')
+      await createGroup('POD 3', geben)
+
+      const response = await app.inject({
+        method: 'DELETE',
+        url: `/api/groups/${geben}`,
+        cookies: { [SESSION_COOKIE_NAME]: sessionCookie },
+      })
+
+      expect(response.statusCode).toBe(409)
+      expect(response.json().message).toContain('child groups')
+    })
+
+    it('says it is the portfolio that blocks the delete', async () => {
+      const pod = await createGroup('POD 3')
+      await app.db
+        .insertInto('ticket_group_companies')
+        .values({ group_id: pod, company_id: COMPANY_A })
+        .execute()
+
+      const response = await app.inject({
+        method: 'DELETE',
+        url: `/api/groups/${pod}`,
+        cookies: { [SESSION_COOKIE_NAME]: sessionCookie },
+      })
+
+      expect(response.statusCode).toBe(409)
+      expect(response.json().message).toContain('companies')
+    })
+
+    it('says it is the queue that blocks the delete', async () => {
+      const pod = await createGroup('POD 3')
+      const queue = await app.db
+        .insertInto('ticket_queues')
+        .values({ name: 'Fila do POD 3', created_by: 'test' })
+        .returning('id')
+        .executeTakeFirstOrThrow()
+      await app.db
+        .insertInto('ticket_queues_x_group')
+        .values({ queue_id: queue.id, group_id: pod })
+        .execute()
+
+      const response = await app.inject({
+        method: 'DELETE',
+        url: `/api/groups/${pod}`,
+        cookies: { [SESSION_COOKIE_NAME]: sessionCookie },
+      })
+
+      expect(response.statusCode).toBe(409)
+      expect(response.json().message).toContain('queues')
+    })
+
+    it('says it is the ticket that blocks the delete', async () => {
+      const pod = await createGroup('POD 3')
+      await app.db
+        .insertInto('tickets')
+        .values({
+          status: 'open',
+          enrollment_id: COMPANY_A,
+          enrollment_type: 'inclusion',
+          company_id: COMPANY_A,
+          source_system: 'test',
+          group_id: pod,
+        })
+        .execute()
+
+      const response = await app.inject({
+        method: 'DELETE',
+        url: `/api/groups/${pod}`,
+        cookies: { [SESSION_COOKIE_NAME]: sessionCookie },
+      })
+
+      expect(response.statusCode).toBe(409)
+      expect(response.json().message).toContain('tickets')
     })
   })
 
