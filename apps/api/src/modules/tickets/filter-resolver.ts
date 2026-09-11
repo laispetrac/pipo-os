@@ -3,7 +3,7 @@ import type { Database } from '../../infrastructure/db.js'
 import { startOfBusinessDay } from '../../shared/business-date.js'
 import { snapshotString } from './enrollment-snapshot.js'
 import type { TicketFilter } from './filter-schema.js'
-import { toStored, type VocabularyName } from './vocabulary.js'
+import { INSURANCE_SUFFIX, toStored, type VocabularyName } from './vocabulary.js'
 
 /** Twin of SLEEP_DAYS in web/src/lib/pipodesk/filter.ts. The two boundary
  *  tickets in contract/ticket-filter-cases.json fail whichever side moves alone. */
@@ -43,7 +43,7 @@ const SUBJECT = sql`coalesce(
     concat_ws(
       ' · ',
       carrier_name,
-      regexp_replace(product, '-insurance$', ''),
+      regexp_replace(product, ${INSURANCE_SUFFIX}, ''),
       ${snapshotString(['primary', 'profile'], ['preferred_name', 'preferred-name', 'preferredName', 'name'])}
     ),
     ''
