@@ -1,5 +1,6 @@
 export interface AuthConfig {
   authServiceUrl: string
+  authServiceInternalUrl: string
   googleClientId: string
   appBaseUrl: string
   allowedEmailDomains: string[]
@@ -60,6 +61,13 @@ function resolveDevLoginEnabled(
   return true
 }
 
+// Not requiredInProduction like its neighbours: the address is fixed in the
+// cluster, and a missing variable must not take down the screens that never
+// call a service. Wrong, it surfaces as a 503 on the service call instead.
+export function authServiceInternalUrl(): string {
+  return process.env.AUTH_SERVICE_INTERNAL_URL ?? 'http://auth-service.platform:4000'
+}
+
 export function authConfig(): AuthConfig {
   const isProduction = process.env.NODE_ENV === 'production'
   const allowedEmailDomains = (process.env.ALLOWED_EMAIL_DOMAINS ?? 'piposaude.com.br,pipo.ai')
@@ -70,6 +78,7 @@ export function authConfig(): AuthConfig {
 
   return {
     authServiceUrl: requiredInProduction('AUTH_SERVICE_URL', 'http://localhost:9090', isProduction),
+    authServiceInternalUrl: authServiceInternalUrl(),
     googleClientId: requiredInProduction('GOOGLE_OAUTH_CLIENT_ID', '', isProduction),
     appBaseUrl: requiredInProduction('APP_BASE_URL', 'http://localhost:5173', isProduction),
     allowedEmailDomains,

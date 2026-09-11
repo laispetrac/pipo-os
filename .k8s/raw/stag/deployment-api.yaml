@@ -53,6 +53,10 @@ spec:
               value: https://os.pipo.health
             - name: AUTH_SERVICE_URL
               value: https://auth-service.pipo.health
+            - name: AUTH_SERVICE_INTERNAL_URL
+              value: http://auth-service.platform:4000
+            - name: SERVICE_ALLOWED_ACCOUNTS
+              value: cronjobs/enrollment-integrations-worker
             - name: ALLOWED_EMAIL_DOMAINS
               value: piposaude.com.br,pipo.ai
             - name: COOKIE_SECRET
