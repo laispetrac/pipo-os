@@ -231,6 +231,13 @@ describe('GET /api/tickets/rows', () => {
     ])
   })
 
+  it('leaves out the ticket with no subject, instead of taking it for a match', async () => {
+    await seed([{ title: 'Inclusão de Marta' }])
+    await app.db.updateTable('tickets').set({ title: null }).execute()
+
+    expect((await get('?subjectQuery=marta')).body.data).toEqual([])
+  })
+
   it('takes a percent sign as text, not as a wildcard', async () => {
     await seed([{ title: 'Reajuste de 10% na fatura' }, { title: 'Inclusão de Marta' }])
 
