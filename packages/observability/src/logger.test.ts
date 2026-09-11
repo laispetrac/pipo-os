@@ -236,6 +236,17 @@ describe('redactUrl', () => {
     expect(entry.req.url).not.toContain('Maria')
   })
 
+  it('redacts the search of the older route too, which matches name and tax id', () => {
+    expect(redactUrl('/api/tickets?search=Maria%20Silva')).not.toContain('Maria')
+    expect(redactUrl('/api/tickets?search=12345678901')).not.toContain('12345678901')
+  })
+
+  it('writes the censor unescaped, so a redacted line stays greppable', () => {
+    expect(redactUrl('/api/tickets/rows?subjectQuery=Maria')).toBe(
+      '/api/tickets/rows?subjectQuery=[REDACTED]',
+    )
+  })
+
   it('leaves a url with nothing to redact exactly as it came', () => {
     expect(redactUrl('/api/tickets/rows?tags=vip&window=all')).toBe(
       '/api/tickets/rows?tags=vip&window=all',
