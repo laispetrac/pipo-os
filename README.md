@@ -233,11 +233,38 @@ O casamento é o mesmo do interceptor Clojure da casa (`com.piposaude.intercepto
 Conceder e conferir é pelo `ppcli` (a identidade que roda precisa de `admin/allow/administrate/identity/*`):
 
 ```bash
-ppcli user list-policies --email pessoa@piposaude.com.br -e stag
-ppcli user add-policy --email pessoa@piposaude.com.br --policy "admin/allow/administrate/pipodesk/*" -e stag
+eval "$(aws configure export-credentials --profile pipo --format env)" && \
+  AWS_REGION=sa-east-1 ppcli user list-policies --email pessoa@piposaude.com.br -e stag
+
+eval "$(aws configure export-credentials --profile pipo --format env)" && \
+  AWS_REGION=sa-east-1 ppcli user add-policy --email pessoa@piposaude.com.br \
+  --policy "admin/allow/administrate/pipodesk/*" -e stag
 ```
 
-`GET /api/auth/me` devolve as policies da sessão, que é a forma mais rápida de conferir depois de conceder.
+Os dois prefixos são obrigatórios e nenhum dispensa o outro. O `ppcli` **não resolve credencial de perfil SSO**: com `AWS_PROFILE=pipo` ele lê do perfil a região, não a credencial, e responde `AWS credentials not configured` — daí o `eval`, que materializa a credencial temporária no ambiente. E o `eval` **não exporta região**, então sozinho ele falha com `Invalid region: region was not a valid DNS name`; o bucket de secrets do `pipo-cli` fica em `sa-east-1`, e com outra região o S3 devolve `PermanentRedirect`, que não diz qual é a certa.
+
+Antes do primeiro comando, `ppcli auth login -e <env>` (OAuth no navegador, com os mesmos prefixos). **O token é por ambiente**: o login de stag não habilita prod, e o sintoma é `credentials required: ... or run 'ppcli auth login' first` num comando que acabou de funcionar do outro lado. Se a sessão SSO tiver expirado, `aws sso login --profile pipo` antes de tudo.
+
+Para liberar o Pipodesk a um time, é uma concessão por pessoa **e por ambiente** — não existe concessão por grupo. Com os dois logins feitos, o `eval` vale para a sessão inteira do shell e não precisa repetir por comando:
+
+```bash
+eval "$(aws configure export-credentials --profile pipo --format env)"
+
+for email in pessoa1@piposaude.com.br pessoa2@piposaude.com.br; do
+  for env in stag prod; do
+    AWS_REGION=sa-east-1 ppcli user add-policy --email "$email" \
+      --policy "admin/allow/administrate/pipodesk/*" -e "$env"
+  done
+done
+```
+
+O curinga `pipodesk/*` no lugar de `pipodesk/structure` é deliberado: cobre chamado e estrutura de uma vez e evita uma segunda concessão por pessoa quando surgir um terceiro segmento. Quem já tem `pipodesk/ticket` fica com as duas na lista — redundante e inofensivo, porque é um `allow` mais específico dentro do mesmo curinga, e só um `deny` mudaria o resultado.
+
+Quem **não** recebe a policy passa a tomar `403` nas rotas de chamado e de estrutura, o que na interface é a lista de chamados e a árvore de pods inteiras vazias — então a lista de e-mails precisa estar fechada antes de a policy chegar à `main`, não depois.
+
+Conceder **não** basta: a pessoa precisa refazer o login no Pipodesk. Diferente do caminho de serviço, que consulta o `verify-token` a cada request, a sessão de pessoa é o access-token guardado no cookie assinado, e `policies` sai das claims desse JWT (`extractSessionClaims`, em `modules/auth/session.ts`) — o que foi concedido depois do login só aparece no login seguinte, ou quando o token expira (`DEFAULT_SESSION_MAX_AGE_SECONDS`, 8 h). O mesmo vale ao remover: a sessão já aberta continua valendo até lá.
+
+`GET /api/auth/me` devolve as policies da sessão, que é a forma mais rápida de conferir depois do relogin — e, se ele não foi feito, a forma mais rápida de descobrir que a sessão está com a lista antiga.
 
 **Por que uma policy só para grupos e filas.** Pod, membro de pod e fila salva são a mesma superfície de administração — quem redesenha a hierarquia mexe nas duas —, então separar em `group` e `queue` custaria duas concessões por pessoa para distinguir papéis que a V0 não tem. A leitura da estrutura exige a mesma policy da escrita pelo mesmo motivo: a árvore de pods diz quem atende o quê, e isso não é público dentro da Pipo. O filtro por papel de membro (`canEditStructure`, no PD-050) é uma segunda camada, sobre esta. A exceção é `GET /api/queues/:id/tickets`: mora no módulo de filas mas devolve `ticketListSchema`, então continua exigindo a policy de chamado — sem isso, ela seria a porta lateral para a mesma lista.
 
