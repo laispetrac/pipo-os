@@ -17,8 +17,7 @@ export const groupSchema = z
   })
   .meta({ id: 'Group' })
 
-/** admin is the coordination of the pod, member the analyst. Same pair the
- *  CHECK of migration 0024 admits. */
+/** Must stay the pair the CHECK of migration 0024 admits. */
 export const memberRoleSchema = z.enum(['admin', 'member']).meta({ id: 'GroupMemberRole' })
 
 /** Response only, so no `trimmedInput()` here: trimming on the way out would
@@ -33,8 +32,6 @@ export const groupMemberSchema = z
   })
   .meta({ id: 'GroupMember' })
 
-/** The member as the group reads it: no groupId, which the group already is,
- *  and with the slice of the portfolio that follows the person. */
 export const groupDetailMemberSchema = z
   .object({
     userId: z.string().min(1),

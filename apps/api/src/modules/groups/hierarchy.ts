@@ -5,8 +5,8 @@ export interface GroupNode {
   parentId: string | null
 }
 
-/** GEBEN → pod → subtime. Also bounds every walk below, so a cycle that got in
- *  through another door cannot spin forever. */
+/** Also bounds every walk below: a cycle that got in through another door
+ *  cannot spin forever. */
 export const MAX_DEPTH = 3
 
 function refuse(message: string, code: string): never {

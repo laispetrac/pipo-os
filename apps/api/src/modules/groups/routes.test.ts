@@ -475,8 +475,7 @@ describe('groups routes', () => {
       expect(response.statusCode).toBe(201)
     }
 
-    /* The portfolio has no write route yet — it is PD-051 —, so the rows go in
-       through the database. */
+    /* The portfolio has no write route yet: it is PD-051. */
     const carry = (groupId: string, companyId: string): Promise<unknown> =>
       app.db
         .insertInto('ticket_group_companies')
@@ -782,8 +781,6 @@ describe('groups routes', () => {
       expect(response.json().message).toContain('members')
     })
 
-    /* Every link below answers the same 23503 and used to come back as
-       "still has members", which sends whoever reads it to the wrong screen. */
     it('says it is the child group that blocks the delete', async () => {
       const geben = await createGroup('Gestão de Benefícios')
       await createGroup('POD 3', geben)

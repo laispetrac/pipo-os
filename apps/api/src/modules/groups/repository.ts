@@ -15,7 +15,7 @@ import type {
   UpdateMemberBody,
 } from './schemas.js'
 
-/** What a page of groups reads with, keyed by group id. */
+/** Both maps are keyed by group id, not by user id. */
 export interface GroupRelations {
   companyIds: Map<string, string[]>
   members: Map<string, GroupDetailMember[]>
@@ -120,16 +120,13 @@ export class GroupsRepository implements GroupsRepositoryPort {
     return { data: [], total: Number(count) }
   }
 
-  /** The whole tree, which the hierarchy rules walk in memory: three levels and
-   *  dozens of rows make a recursive query a cost with no payer. */
   async findNodes(): Promise<GroupNode[]> {
     const rows = await this.db.selectFrom('ticket_groups').select(['id', 'parent_id']).execute()
 
     return rows.map((row) => ({ id: row.id, parentId: row.parent_id }))
   }
 
-  /** Two queries for a whole page, never one per group: the portfolio, and the
-   *  members already joined with the slice each of them follows. */
+  /** Two queries for a whole page, never one per group. */
   async findRelations(groupIds: readonly string[]): Promise<GroupRelations> {
     const companyIds = new Map<string, string[]>()
     const members = new Map<string, GroupDetailMember[]>()

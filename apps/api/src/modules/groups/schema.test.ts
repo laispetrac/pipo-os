@@ -107,9 +107,7 @@ describe('groups schema — hierarchy and portfolio constraints', () => {
       expect(code).toBe(CHECK_VIOLATION)
     })
 
-    /** A unique partial index on `parent_id IS NULL` cannot coexist with a
-     *  table that starts empty, so the single-root rule lives in the service —
-     *  see the hierarchy cases in routes.test.ts. */
+    /** The refusal lives in the service: see routes.test.ts. */
     it('accepts a second root, because the rule that refuses it is in the API', async () => {
       await group('Gestão de Benefícios')
 
