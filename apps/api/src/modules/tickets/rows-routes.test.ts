@@ -97,6 +97,9 @@ describe('GET /api/tickets/rows', () => {
   const titles = (body: { data: { title: string | null }[] }) =>
     body.data.map((row) => row.title).sort()
 
+  const names = (body: { data: { beneficiaryName: string | null }[] }) =>
+    body.data.map((row) => row.beneficiaryName).sort()
+
   it('does not carry the snapshot, which is the point of the endpoint', async () => {
     await seed([{ title: 'a', snapshot: { huge: 'x'.repeat(1000) } }])
 
@@ -254,6 +257,29 @@ describe('GET /api/tickets/rows', () => {
     expect(body.data.map((row: { beneficiaryName: string }) => row.beneficiaryName)).toEqual([
       'Beatriz Lima',
     ])
+  })
+
+  /* The row and the search read the same spelling, or a ticket matches the
+     filter while the name it matched on is not in the subject on screen. */
+  it('searches the name in the spelling the row reads it, not only in kebab', async () => {
+    await seed([
+      {
+        title: null,
+        carrierName: 'Amil',
+        snapshot: { primary: { profile: { preferredName: 'Beatriz Lima' } } },
+      },
+      {
+        title: null,
+        carrierName: 'Amil',
+        snapshot: { primary: { profile: { preferred_name: 'Marta Ribeiro' } } },
+      },
+    ])
+
+    const camel = await get('?subjectQuery=beatriz')
+    const snake = await get('?subjectQuery=marta')
+
+    expect(names(camel.body)).toEqual(['Beatriz Lima'])
+    expect(names(snake.body)).toEqual(['Marta Ribeiro'])
   })
 
   it('reads the product as the screen shows it, not as the column stores it', async () => {

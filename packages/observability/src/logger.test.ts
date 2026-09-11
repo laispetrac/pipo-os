@@ -247,6 +247,14 @@ describe('redactUrl', () => {
     )
   })
 
+  /* `URLSearchParams.set` writes over the first occurrence in place, so the
+     redacted line stays greppable by position for whoever is debugging. */
+  it('keeps the parameters in the order they arrived', () => {
+    expect(redactUrl('/api/tickets/rows?subjectQuery=Maria&tags=vip&window=all')).toBe(
+      '/api/tickets/rows?subjectQuery=[REDACTED]&tags=vip&window=all',
+    )
+  })
+
   it('leaves a url with nothing to redact exactly as it came', () => {
     expect(redactUrl('/api/tickets/rows?tags=vip&window=all')).toBe(
       '/api/tickets/rows?tags=vip&window=all',

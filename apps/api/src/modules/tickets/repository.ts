@@ -193,14 +193,9 @@ export class TicketsRepository implements TicketsRepositoryPort {
         'updated_at',
       ])
       .select([
-        snapshotString(['company'], ['company_name', 'company-name', 'companyName', 'name']).as(
-          'company_name',
-        ),
-        snapshotString(
-          ['primary', 'profile'],
-          ['preferred_name', 'preferred-name', 'preferredName', 'name'],
-        ).as('beneficiary_name'),
-        snapshotString(['primary', 'profile'], ['tax_id', 'tax-id', 'taxId']).as('tax_id'),
+        snapshotString(['company'], ['company-name', 'name']).as('company_name'),
+        snapshotString(['primary', 'profile'], ['preferred-name', 'name']).as('beneficiary_name'),
+        snapshotString(['primary', 'profile'], ['tax-id']).as('tax_id'),
       ])
       .select(sql<string>`count(*) over ()`.as('total_count'))
       .orderBy('created_at', 'desc')

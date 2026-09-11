@@ -18,6 +18,11 @@ const snakeOf = (key: string): string => key.replace(/-/g, '_')
 
 const kebabOf = (key: string): string => key.replace(/_/g, '-')
 
+/** The spellings a key may arrive in, in the order the web tries them. */
+const spellingsOf = (key: string): string[] => [
+  ...new Set([key, camelOf(key), snakeOf(key), kebabOf(key)]),
+]
+
 /** The snapshot contract is not frozen (PD-001), so a separator must not
  *  decide whether a column is filled. Twin of `readPath` in web's ticket-row. */
 function readPath(snapshot: Record<string, unknown>, path: string[]): unknown {
@@ -25,7 +30,7 @@ function readPath(snapshot: Record<string, unknown>, path: string[]): unknown {
   for (const segment of path) {
     if (!isRecord(current)) return undefined
     const source = current
-    const key = [segment, camelOf(segment), snakeOf(segment), kebabOf(segment)].find((candidate) =>
+    const key = spellingsOf(segment).find((candidate) =>
       Object.prototype.hasOwnProperty.call(source, candidate),
     )
     if (key === undefined) return undefined
@@ -105,10 +110,13 @@ export function movementFieldsOf(snapshot: unknown): MovementFields {
 }
 
 /**
- * The first spelling under `parent` that holds a real word, mirroring the
- * web's `readString` in `ticket-row.ts` — the queue has to read the snapshot
- * the same way on both sides or the number a node announces stops matching
- * the list the screen draws.
+ * The first key under `parent` that holds a real word, mirroring the web's
+ * `readString` in `ticket-row.ts` — the queue has to read the snapshot the
+ * same way on both sides or the number a node announces stops matching the
+ * list the screen draws.
+ *
+ * Pass the keys the web passes: each expands to the spellings `readPath`
+ * accepts. Only the leaf expands — every parent in use is a single word.
  *
  * Two rules that `coalesce` alone would miss, and each one is a divergence
  * the web does not have:
@@ -117,7 +125,7 @@ export function movementFieldsOf(snapshot: unknown): MovementFields {
  *     while the web reads it as nothing.
  */
 export function snapshotString(parent: string[], keys: string[]): RawBuilder<string | null> {
-  const candidates = keys.map((key) => {
+  const candidates = keys.flatMap(spellingsOf).map((key) => {
     /* `array[...]` of literals, not a `'{a,b}'` string built by concatenation:
        the segments are constants today, and this keeps a future caller from
        turning a key with a comma or a brace into a different path. */

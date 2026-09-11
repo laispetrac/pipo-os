@@ -44,7 +44,7 @@ const SUBJECT = sql`coalesce(
       ' · ',
       carrier_name,
       regexp_replace(product, ${INSURANCE_SUFFIX}, ''),
-      ${snapshotString(['primary', 'profile'], ['preferred_name', 'preferred-name', 'preferredName', 'name'])}
+      ${snapshotString(['primary', 'profile'], ['preferred-name', 'name'])}
     ),
     ''
   ),
