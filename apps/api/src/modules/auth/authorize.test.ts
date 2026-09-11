@@ -228,14 +228,42 @@ describe('the policy each route requires', () => {
 
   // With the flag on, buildApp registers dev-login, which EXPECTED does not list.
   const flag = process.env.DEV_LOGIN_ENABLED
-  beforeAll(() => {
+  const registered: RouteOptions[] = []
+  let inventoried: FastifyInstance
+
+  beforeAll(async () => {
     delete process.env.DEV_LOGIN_ENABLED
+    inventoried = buildApp()
+    inventoried.addHook('onRoute', (route) => {
+      registered.push(route)
+    })
+    // The final config value is only there after ready(): a route stamped by a
+    // scope of its own, like the docs, has nothing on it before that.
+    await inventoried.ready()
   })
-  afterAll(() => {
+
+  afterAll(async () => {
     if (flag !== undefined) {
       process.env.DEV_LOGIN_ENABLED = flag
     }
+    // Otherwise the pool dbPlugin opened stays behind.
+    await inventoried.close().catch(() => {})
   })
+
+  const apiRoutes = () =>
+    registered
+      .flatMap((route) => {
+        const methods = Array.isArray(route.method) ? route.method : [route.method]
+        return methods.map((method) => ({
+          method,
+          url: route.url,
+          config: route.config,
+          schema: route.schema,
+        }))
+      })
+      .filter(
+        ({ method, url }) => url.startsWith('/api') && method !== 'HEAD' && method !== 'OPTIONS',
+      )
 
   const EXPECTED: Array<[string, PolicyRequirement | null]> = [
     ['DELETE /api/groups/:id', STRUCTURE],
@@ -270,36 +298,29 @@ describe('the policy each route requires', () => {
     ['POST /api/tickets/:id/comments', TICKET],
   ]
 
-  it('is exactly the routes whose side is already stated', async () => {
-    const routes: RouteOptions[] = []
-    const inventoried = buildApp()
-    inventoried.addHook('onRoute', (route) => {
-      routes.push(route)
-    })
+  it('is exactly the routes whose side is already stated', () => {
+    const inventory = apiRoutes()
+      .map(({ method, url, config }): [string, PolicyRequirement | null] => [
+        `${method} ${url}`,
+        config?.policy === undefined ? null : (config.policy as PolicyRequirement),
+      ])
+      .sort(([a], [b]) => a.localeCompare(b))
 
-    // The final config value is only there after ready(): a route stamped by a
-    // scope of its own, like the docs, has nothing on it before that.
-    try {
-      await inventoried.ready()
+    expect(inventory).toEqual(EXPECTED)
+  })
 
-      const inventory = routes
-        .flatMap((route) => {
-          const methods = Array.isArray(route.method) ? route.method : [route.method]
-          return methods.map((method) => ({ method, url: route.url, config: route.config }))
-        })
-        .filter(
-          ({ method, url }) => url.startsWith('/api') && method !== 'HEAD' && method !== 'OPTIONS',
-        )
-        .map(({ method, url, config }): [string, PolicyRequirement | null] => [
-          `${method} ${url}`,
-          config?.policy === undefined ? null : (config.policy as PolicyRequirement),
-        ])
-        .sort(([a], [b]) => a.localeCompare(b))
+  // The hook answers 403 either way; a route missing it ships a contract, and a
+  // generated client, that do not know the route can refuse.
+  it('declares the 403 on every route it closes', () => {
+    const missing = apiRoutes()
+      .filter(({ config }) => config?.policy !== undefined)
+      .filter(
+        ({ schema }) =>
+          (schema?.response as Record<string, unknown> | undefined)?.['403'] === undefined,
+      )
+      .map(({ method, url }) => `${method} ${url}`)
+      .sort()
 
-      expect(inventory).toEqual(EXPECTED)
-    } finally {
-      // A failed assertion would otherwise leave the pool dbPlugin opened.
-      await inventoried.close().catch(() => {})
-    }
+    expect(missing).toEqual([])
   })
 })
