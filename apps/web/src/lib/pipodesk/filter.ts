@@ -47,11 +47,13 @@ export function assertNever(value: never): never {
  *  API by the boundary tickets in contract/ticket-filter-cases.json. */
 export const SLEEP_DAYS = 2
 
-/** Accent- and case-insensitive: `Conceição` must match `conceicao`. Twin of
- *  `foldQuery` in api/src/modules/tickets/filter-resolver.ts — combining marks
- *  only, since the SQL side folds a fixed list of letters and keeps `·`. */
+/** Twin of `foldQuery` in api/src/modules/tickets/filter-resolver.ts:
+ *  decompose, drop the combining marks, lower. Change one, change both. */
 export const normalizeText = (text: string): string =>
-  text.normalize('NFD').replace(/[̀-ͯ]/g, '').toLowerCase()
+  text
+    .normalize('NFD')
+    .replace(/[\u0300-\u036f]/g, '')
+    .toLowerCase()
 
 const addDays = (isoDate: string, days: number): string =>
   new Date(Date.parse(`${isoDate}T00:00:00Z`) + days * 86_400_000).toISOString().slice(0, 10)

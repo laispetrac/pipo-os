@@ -18,7 +18,9 @@ const CASES_PATH = fileURLToPath(
 
 type FixtureTicket = {
   id: string
-  title: string
+  title: string | null
+  carrierName: string | null
+  beneficiaryName: string | null
   status: string
   companyId: string
   enrollmentType: string
@@ -46,8 +48,8 @@ type CaseFile = {
 
 const fixture = JSON.parse(readFileSync(CASES_PATH, 'utf8')) as CaseFile
 
-/** `title` is the subject `subjectQuery` searches, so the case id rides on
- *  `enrollment_id` instead of on it. */
+/** Every column the subject is built from is the corpus's own, so the case id
+ *  rides on `enrollment_id`, which nothing reads. */
 const enrollmentIdByCase = new Map(fixture.tickets.map((seed) => [seed.id, randomUUID()] as const))
 const caseIdByEnrollment = new Map(
   [...enrollmentIdByCase].map(([caseId, enrollmentId]) => [enrollmentId as string, caseId]),
@@ -88,6 +90,10 @@ describe('the shared filter corpus, resolved in SQL', () => {
           contract_type: seed.stored.contractType,
           company_size: seed.stored.companySize,
           title: seed.title,
+          carrier_name: seed.carrierName,
+          enrollment_snapshot: JSON.stringify({
+            primary: { profile: { 'preferred-name': seed.beneficiaryName } },
+          }),
         })),
       )
       .execute()

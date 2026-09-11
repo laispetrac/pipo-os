@@ -8,7 +8,8 @@ import { SESSION_COOKIE_NAME } from '../auth/session.js'
 const COMPANY = '00000000-0000-4000-8000-0000000000d1'
 
 type Seed = {
-  title: string
+  title: string | null
+  carrierName?: string | null
   status?: string
   assigneeId?: string | null
   priority?: string | null
@@ -78,6 +79,7 @@ describe('GET /api/tickets/rows', () => {
           enrollment_snapshot: JSON.stringify(row.snapshot ?? {}),
           tags: [],
           title: row.title,
+          carrier_name: row.carrierName ?? null,
         })),
       )
       .execute()
@@ -231,9 +233,45 @@ describe('GET /api/tickets/rows', () => {
     ])
   })
 
-  it('leaves out the ticket with no subject, instead of taking it for a match', async () => {
-    await seed([{ title: 'Inclusão de Marta' }])
-    await app.db.updateTable('tickets').set({ title: null }).execute()
+  it('searches the subject the queue builds when no title was written', async () => {
+    await seed([
+      {
+        title: null,
+        carrierName: 'SulAmérica',
+        product: 'dental-insurance',
+        snapshot: { primary: { profile: { 'preferred-name': 'Beatriz Lima' } } },
+      },
+      {
+        title: null,
+        carrierName: 'Amil',
+        product: 'health-insurance',
+        snapshot: { primary: { profile: { 'preferred-name': 'Marta Ribeiro' } } },
+      },
+    ])
+
+    const { body } = await get('?subjectQuery=beatriz')
+
+    expect(body.data.map((row: { beneficiaryName: string }) => row.beneficiaryName)).toEqual([
+      'Beatriz Lima',
+    ])
+  })
+
+  it('reads the product as the screen shows it, not as the column stores it', async () => {
+    await seed([
+      {
+        title: null,
+        carrierName: 'SulAmérica',
+        product: 'dental-insurance',
+        snapshot: { primary: { profile: { 'preferred-name': 'Beatriz Lima' } } },
+      },
+    ])
+
+    expect((await get('?subjectQuery=sulamerica%20%C2%B7%20dental')).body.total).toBe(1)
+    expect((await get('?subjectQuery=dental-insurance')).body.total).toBe(0)
+  })
+
+  it('leaves out the ticket whose subject has no word at all', async () => {
+    await seed([{ title: null }])
 
     expect((await get('?subjectQuery=marta')).body.data).toEqual([])
   })

@@ -8,7 +8,9 @@
   "tickets": [
     {
       "id": "livre-urgente",
-      "title": "Inclusão de José Conceição",
+      "title": null,
+      "carrierName": "Unimed",
+      "beneficiaryName": "José Conceição",
       "status": "broker-processing",
       "companyId": "00000000-0000-4000-8000-0000000000a1",
       "enrollmentType": "inclusion",
@@ -35,7 +37,9 @@
     },
     {
       "id": "da-ana-atrasado",
-      "title": "Exclusão de Marta Ribeiro",
+      "title": null,
+      "carrierName": "Amil",
+      "beneficiaryName": "Marta Ribeiro",
       "status": "missing-documents",
       "companyId": "00000000-0000-4000-8000-0000000000a1",
       "enrollmentType": "exclusion",
@@ -62,7 +66,9 @@
     },
     {
       "id": "da-ana-sem-prioridade",
-      "title": "Petlove · Pet · Pedro Alves",
+      "title": null,
+      "carrierName": "Petlove",
+      "beneficiaryName": "Pedro Alves",
       "status": "carrier-processing",
       "companyId": "00000000-0000-4000-8000-0000000000b2",
       "enrollmentType": "inclusion",
@@ -89,7 +95,9 @@
     },
     {
       "id": "do-bruno",
-      "title": "Inclusão de dependente de Carla Nunes",
+      "title": null,
+      "carrierName": "Amil",
+      "beneficiaryName": "Carla Nunes",
       "status": "incorrect-data",
       "companyId": "00000000-0000-4000-8000-0000000000b2",
       "enrollmentType": "plan_change",
@@ -116,7 +124,9 @@
     },
     {
       "id": "fechado",
-      "title": "Wellhub · Academia · Ana Paula Dias",
+      "title": null,
+      "carrierName": "Wellhub",
+      "beneficiaryName": "Ana Paula Dias",
       "status": "completed",
       "companyId": "00000000-0000-4000-8000-0000000000a1",
       "enrollmentType": "inclusion",
@@ -143,7 +153,9 @@
     },
     {
       "id": "acorda-no-limite",
-      "title": "SulAmérica · Odonto · Beatriz Lima",
+      "title": null,
+      "carrierName": "SulAmérica",
+      "beneficiaryName": "Beatriz Lima",
       "status": "carrier-processing",
       "companyId": "00000000-0000-4000-8000-0000000000b2",
       "enrollmentType": "exclusion",
@@ -170,7 +182,9 @@
     },
     {
       "id": "dorme-um-dia-alem",
-      "title": "SulAmérica · Odonto · Rafael Souza",
+      "title": "Exclusão de Rafael Souza — reenvio",
+      "carrierName": "SulAmérica",
+      "beneficiaryName": "Rafael Souza",
       "status": "carrier-processing",
       "companyId": "00000000-0000-4000-8000-0000000000b2",
       "enrollmentType": "exclusion",
@@ -197,7 +211,9 @@
     },
     {
       "id": "vira-o-dia-so-em-utc",
-      "title": "SulAmérica · Odonto · Helena Prado",
+      "title": null,
+      "carrierName": null,
+      "beneficiaryName": "Helena Prado",
       "status": "carrier-processing",
       "companyId": "00000000-0000-4000-8000-0000000000b2",
       "enrollmentType": "exclusion",
@@ -489,26 +505,47 @@
       "expected": ["livre-urgente"]
     },
     {
-      "name": "subjectQuery ignores case, accent included",
+      "name": "subjectQuery ignores case",
       "filter": {
-        "subjectQuery": "INCLUSAO"
+        "subjectQuery": "AMIL"
       },
-      "expected": ["do-bruno", "livre-urgente"]
+      "expected": ["da-ana-atrasado", "do-bruno"]
     },
     {
-      "name": "subjectQuery matches any part of the subject",
+      "name": "subjectQuery reads the product as the screen shows it, not as the column stores it",
       "filter": {
-        "subjectQuery": "odonto"
+        "subjectQuery": "dental"
       },
-      "expected": ["acorda-no-limite", "dorme-um-dia-alem", "vira-o-dia-so-em-utc"]
+      "expected": ["acorda-no-limite", "vira-o-dia-so-em-utc"]
+    },
+    {
+      "name": "the stored word behind that product selects nothing, because nobody sees it",
+      "filter": {
+        "subjectQuery": "dental-insurance"
+      },
+      "expected": []
+    },
+    {
+      "name": "a written title takes the place of the subject built from the movement",
+      "filter": {
+        "subjectQuery": "reenvio"
+      },
+      "expected": ["dorme-um-dia-alem"]
+    },
+    {
+      "name": "subjectQuery skips a part the movement does not have",
+      "filter": {
+        "subjectQuery": "dental · helena"
+      },
+      "expected": ["vira-o-dia-so-em-utc"]
     },
     {
       "name": "subjectQuery narrows on top of the other fields",
       "filter": {
-        "subjectQuery": "inclusao",
+        "subjectQuery": "amil",
         "groupIds": ["00000000-0000-4000-8000-0000000000c3"]
       },
-      "expected": ["do-bruno", "livre-urgente"]
+      "expected": ["da-ana-atrasado", "do-bruno"]
     },
     {
       "name": "a subject nobody wrote selects nothing",
@@ -516,13 +553,6 @@
         "subjectQuery": "reembolso"
       },
       "expected": []
-    },
-    {
-      "name": "subjectQuery keeps the separator the subject is built with",
-      "filter": {
-        "subjectQuery": "odonto · beatriz"
-      },
-      "expected": ["acorda-no-limite"]
     }
   ]
 }

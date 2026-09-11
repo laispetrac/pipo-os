@@ -4,6 +4,7 @@
  * the edge. A bridge until the EI sends the fields in the body (PD-207).
  */
 
+import { sql, type RawBuilder } from 'kysely'
 import type { z } from 'zod'
 import type { relationshipSchema } from './schemas.js'
 
@@ -101,4 +102,28 @@ export function movementFieldsOf(snapshot: unknown): MovementFields {
     ),
     companySize: readString(snapshot, ['company', 'company-size'], ['company', 'porte']),
   }
+}
+
+/**
+ * The first spelling under `parent` that holds a real word, mirroring the
+ * web's `readString` in `ticket-row.ts` — the queue has to read the snapshot
+ * the same way on both sides or the number a node announces stops matching
+ * the list the screen draws.
+ *
+ * Two rules that `coalesce` alone would miss, and each one is a divergence
+ * the web does not have:
+ *   - a blank counts as absent, so `company-name: ''` falls through to `name`;
+ *   - only a JSON string counts, so a number does not become `"42"` here
+ *     while the web reads it as nothing.
+ */
+export function snapshotString(parent: string[], keys: string[]): RawBuilder<string | null> {
+  const candidates = keys.map((key) => {
+    /* `array[...]` of literals, not a `'{a,b}'` string built by concatenation:
+       the segments are constants today, and this keeps a future caller from
+       turning a key with a comma or a brace into a different path. */
+    const path = sql`array[${sql.join([...parent, key].map(sql.lit), sql`, `)}]`
+    return sql`nullif(btrim(case when jsonb_typeof(enrollment_snapshot #> ${path}) = 'string'
+                                 then enrollment_snapshot #>> ${path} end), '')`
+  })
+  return sql<string | null>`coalesce(${sql.join(candidates, sql`, `)})`
 }

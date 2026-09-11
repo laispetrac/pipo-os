@@ -4,7 +4,7 @@ import { fileURLToPath } from 'node:url'
 import { describe, expect, it } from 'vitest'
 import { businessDay } from '@/lib/date'
 import { applyFilter, windowOf, type TicketFilter, type WindowMode } from '@/lib/pipodesk/filter'
-import type { Priority, TicketRow } from '@/lib/pipodesk/ticket-row'
+import { buildSubject, type Priority, type TicketRow } from '@/lib/pipodesk/ticket-row'
 
 /** Twin of filter-resolver.contract.test.ts in apps/api: change one, change both. */
 const CASES_PATH = fileURLToPath(
@@ -13,7 +13,9 @@ const CASES_PATH = fileURLToPath(
 
 type FixtureTicket = {
   id: string
-  title: string
+  title: string | null
+  carrierName: string | null
+  beneficiaryName: string | null
   status: string
   companyId: string
   enrollmentType: string
@@ -48,8 +50,14 @@ const toRow = (seed: FixtureTicket): TicketRow => ({
   status: seed.status as TicketRow['status'],
   display: 'broker-processing',
   reason: null,
-  subject: seed.title,
-  beneficiaryName: null,
+  subject: buildSubject({
+    id: seed.id,
+    title: seed.title,
+    carrierName: seed.carrierName,
+    product: seed.client.product,
+    beneficiaryName: seed.beneficiaryName,
+  }),
+  beneficiaryName: seed.beneficiaryName,
   taxId: null,
   companyName: null,
   // GET /tickets/rows has no parent column, so parity on the matriz expansion
@@ -58,7 +66,7 @@ const toRow = (seed: FixtureTicket): TicketRow => ({
   parentCompanyName: null,
   companySize: seed.client.companySize,
   carrierId: seed.carrierId,
-  carrierName: null,
+  carrierName: seed.carrierName,
   product: seed.client.product,
   enrollmentType: seed.enrollmentType,
   contractType: seed.client.contractType,
