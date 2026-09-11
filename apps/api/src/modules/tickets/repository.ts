@@ -250,6 +250,7 @@ export class TicketsRepository implements TicketsRepositoryPort {
           source_system: data.sourceSystem,
           enrollment_snapshot: JSON.stringify(data.enrollmentSnapshot),
           title: data.title,
+          action_date: data.actionDate,
           requester: data.requester ? JSON.stringify(data.requester) : null,
           collaborators: JSON.stringify(data.collaborators ?? []),
           carrier_id: data.carrierId ?? derived.carrierId,

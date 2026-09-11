@@ -2186,6 +2186,8 @@ export interface components {
                 [key: string]: unknown;
             };
             title?: string;
+            /** Format: date-time */
+            actionDate?: string;
             requester?: {
                 /** Format: email */
                 email: string;

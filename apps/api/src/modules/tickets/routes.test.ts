@@ -169,6 +169,31 @@ describe('tickets routes', () => {
       expect(response.statusCode).toBe(400)
     })
 
+    it('stores the date the movement is scheduled for', async () => {
+      const actionDate = '2026-10-01T03:00:00.000Z'
+
+      const response = await app.inject({
+        method: 'POST',
+        url: '/api/tickets',
+        payload: { ...validTicketBody, actionDate },
+        cookies: { [SESSION_COOKIE_NAME]: sessionCookie },
+      })
+
+      expect(response.statusCode).toBe(201)
+      expect(response.json().actionDate).toBe(actionDate)
+    })
+
+    it('refuses a scheduled date without a timezone, which would move the day', async () => {
+      const response = await app.inject({
+        method: 'POST',
+        url: '/api/tickets',
+        payload: { ...validTicketBody, actionDate: '2026-10-01' },
+        cookies: { [SESSION_COOKIE_NAME]: sessionCookie },
+      })
+
+      expect(response.statusCode).toBe(400)
+    })
+
     it('returns 409 when enrollment already has an open ticket', async () => {
       await app.inject({
         method: 'POST',

@@ -91,6 +91,9 @@ export const createTicketBodySchema = z
     // Stored as sent. The cap is a guard, not formatting: the subject reaches
     // the queue projection, and the EI already cuts it at 150 runes.
     title: z.string().min(1).max(500).optional(),
+    // With an offset, always: a date alone would have to guess a timezone, and
+    // the guess moves the day the queue shows.
+    actionDate: z.iso.datetime({ offset: true }).optional(),
     // Strict on the way in and not on the way out: a caller typo must fail
     // loudly, a hand-edited row must not 500 the whole read.
     requester: ticketPersonSchema.strict().optional(),
