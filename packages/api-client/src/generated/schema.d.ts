@@ -1715,7 +1715,7 @@ export interface paths {
                         [name: string]: unknown;
                     };
                     content: {
-                        "application/json": components["schemas"]["ErrorResponse"];
+                        "application/json": components["schemas"]["OpenTicketConflict"];
                     };
                 };
                 /** @description Default Response */
@@ -2363,6 +2363,13 @@ export interface components {
             createdAt: string;
             /** Format: date-time */
             updatedAt: string;
+        };
+        OpenTicketConflict: {
+            error: string;
+            message: string;
+            details?: components["schemas"]["ErrorDetail"][];
+            /** Format: uuid */
+            ticketId?: string;
         };
         TicketList: {
             data: components["schemas"]["Ticket"][];

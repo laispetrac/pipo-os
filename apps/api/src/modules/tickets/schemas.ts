@@ -1,4 +1,5 @@
 import { z } from 'zod'
+import { errorResponseSchema } from '../../shared/schemas.js'
 
 export const ticketStatusSchema = z
   .enum([
@@ -176,6 +177,12 @@ export const LIST_QUERY_FIELD_PII = {
   page: 'number',
   pageSize: 'number',
 } satisfies Record<keyof ListTicketsQuery, true | string>
+
+/** Only this route carries an id in the error body; the shared ErrorResponse
+ *  stays the same for everyone else. */
+export const openTicketConflictSchema = errorResponseSchema
+  .extend({ ticketId: z.uuid().optional() })
+  .meta({ id: 'OpenTicketConflict' })
 
 export const ticketListSchema = z
   .object({

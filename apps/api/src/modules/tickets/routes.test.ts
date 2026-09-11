@@ -283,6 +283,25 @@ describe('tickets routes', () => {
       expect(response.json().error).toBe('ConflictError')
     })
 
+    it('says which ticket is already open, so the caller does not have to ask', async () => {
+      const first = await app.inject({
+        method: 'POST',
+        url: '/api/tickets',
+        payload: validTicketBody,
+        cookies: { [SESSION_COOKIE_NAME]: sessionCookie },
+      })
+
+      const response = await app.inject({
+        method: 'POST',
+        url: '/api/tickets',
+        payload: validTicketBody,
+        cookies: { [SESSION_COOKIE_NAME]: sessionCookie },
+      })
+
+      expect(response.statusCode).toBe(409)
+      expect(response.json().ticketId).toBe(first.json().id)
+    })
+
     // Cases from the vocabulary; the partial index must list the same statuses.
     it.each([...CLOSED_STATUSES])(
       'frees the enrollment for a new ticket once the old one is %s',

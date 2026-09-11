@@ -1,7 +1,8 @@
 import { sql, type Kysely, type Selectable } from 'kysely'
 import type { Database } from '../../infrastructure/db.js'
 import type { Tickets } from '../../infrastructure/db-types.js'
-import { ConflictError, ValidationFailedError } from '../../shared/errors.js'
+import { ValidationFailedError } from '../../shared/errors.js'
+import { OpenTicketConflictError } from './errors.js'
 import { movementFieldsOf, relationshipOf, snapshotString } from './enrollment-snapshot.js'
 import { actionDateWindowCondition, ticketFilterConditions } from './filter-resolver.js'
 import type { TicketRowPayload, TicketRowsQuery } from './rows-schema.js'
@@ -288,7 +289,19 @@ export class TicketsRepository implements TicketsRepositoryPort {
         'constraint' in err &&
         err.constraint === OPEN_ENROLLMENT_CONSTRAINT
       ) {
-        throw new ConflictError(`Enrollment ${data.enrollmentId} already has an open ticket`)
+        // Optional on purpose: the open ticket may have been closed between
+        // the failed INSERT and this read, and a retry would hide that.
+        const open = await this.db
+          .selectFrom('tickets')
+          .select('id')
+          .where('enrollment_id', '=', data.enrollmentId)
+          .where('status', 'not in', [...CLOSED_STATUSES])
+          .executeTakeFirst()
+
+        throw new OpenTicketConflictError(
+          `Enrollment ${data.enrollmentId} already has an open ticket`,
+          open?.id,
+        )
       }
       if (err instanceof Error && 'code' in err && err.code === '23503' && 'constraint' in err) {
         const field = FK_FIELDS[err.constraint as string]
