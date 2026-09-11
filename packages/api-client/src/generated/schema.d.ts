@@ -2186,6 +2186,22 @@ export interface components {
                 [key: string]: unknown;
             };
             title?: string;
+            requester?: {
+                /** Format: email */
+                email: string;
+                name?: string;
+                phone?: string;
+                /** @enum {string} */
+                preferredChannel?: "platform" | "email";
+            };
+            collaborators?: {
+                /** Format: email */
+                email: string;
+                name?: string;
+                phone?: string;
+                /** @enum {string} */
+                preferredChannel?: "platform" | "email";
+            }[];
             carrierId?: string;
             carrierName?: string;
             product?: string;
@@ -2287,6 +2303,14 @@ export interface components {
         Relationship: "holder" | "dependent" | "family-group";
         /** @enum {string} */
         TicketPriority: "urgent" | "high" | "medium" | "low";
+        TicketPerson: {
+            /** Format: email */
+            email: string;
+            name?: string;
+            phone?: string;
+            /** @enum {string} */
+            preferredChannel?: "platform" | "email";
+        };
         Ticket: {
             /** Format: uuid */
             id: string;
@@ -2305,12 +2329,8 @@ export interface components {
             companyId: string;
             tags: string[];
             pendingDocumentation: string[];
-            requester: {
-                [key: string]: unknown;
-            } | null;
-            collaborators: {
-                [key: string]: unknown;
-            }[];
+            requester: components["schemas"]["TicketPerson"] | null;
+            collaborators: components["schemas"]["TicketPerson"][];
             forceCompletion: boolean;
             enrollmentSnapshot: {
                 [key: string]: unknown;

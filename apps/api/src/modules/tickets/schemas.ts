@@ -26,6 +26,17 @@ export const ticketPrioritySchema = z
   .enum(['urgent', 'high', 'medium', 'low'])
   .meta({ id: 'TicketPriority' })
 
+/** The HR side of the ticket. E-mail is the identity: it is what the EI
+ *  resolves and what tells two contacts apart. */
+export const ticketPersonSchema = z
+  .object({
+    email: z.email(),
+    name: z.string().min(1).optional(),
+    phone: z.string().min(1).optional(),
+    preferredChannel: z.enum(['platform', 'email']).optional(),
+  })
+  .meta({ id: 'TicketPerson' })
+
 export const ticketSchema = z
   .object({
     id: z.uuid(),
@@ -42,8 +53,8 @@ export const ticketSchema = z
     companyId: z.uuid(),
     tags: z.array(z.string()),
     pendingDocumentation: z.array(z.string()),
-    requester: z.record(z.string(), z.unknown()).nullable(),
-    collaborators: z.array(z.record(z.string(), z.unknown())),
+    requester: ticketPersonSchema.nullable(),
+    collaborators: z.array(ticketPersonSchema),
     forceCompletion: z.boolean(),
     enrollmentSnapshot: z.record(z.string(), z.unknown()),
     /** `.min(1)` as in `assigneeId`: a word or null, and `''` is neither —
@@ -80,6 +91,10 @@ export const createTicketBodySchema = z
     // Stored as sent. The cap is a guard, not formatting: the subject reaches
     // the queue projection, and the EI already cuts it at 150 runes.
     title: z.string().min(1).max(500).optional(),
+    // Strict on the way in and not on the way out: a caller typo must fail
+    // loudly, a hand-edited row must not 500 the whole read.
+    requester: ticketPersonSchema.strict().optional(),
+    collaborators: z.array(ticketPersonSchema.strict()).optional(),
     carrierId: z.string().min(1).optional(),
     carrierName: z.string().min(1).optional(),
     product: z.string().min(1).optional(),

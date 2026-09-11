@@ -114,6 +114,61 @@ describe('tickets routes', () => {
       expect(response.statusCode).toBe(400)
     })
 
+    it('stores the HR requester and the people in copy', async () => {
+      const requester = {
+        email: 'rh@acme.com.br',
+        name: 'Sergio Gouveia',
+        phone: '11999998888',
+        preferredChannel: 'platform',
+      }
+      const collaborators = [{ email: 'financeiro@acme.com.br' }, { email: 'dp@acme.com.br' }]
+
+      const response = await app.inject({
+        method: 'POST',
+        url: '/api/tickets',
+        payload: { ...validTicketBody, requester, collaborators },
+        cookies: { [SESSION_COOKIE_NAME]: sessionCookie },
+      })
+
+      expect(response.statusCode).toBe(201)
+
+      const read = await app.inject({
+        method: 'GET',
+        url: `/api/tickets/${response.json().id}`,
+        cookies: { [SESSION_COOKIE_NAME]: sessionCookie },
+      })
+
+      expect(read.json().requester).toEqual(requester)
+      expect(read.json().collaborators).toEqual(collaborators)
+    })
+
+    it('leaves the requester null and the copy list empty when the caller omits them', async () => {
+      const response = await app.inject({
+        method: 'POST',
+        url: '/api/tickets',
+        payload: validTicketBody,
+        cookies: { [SESSION_COOKIE_NAME]: sessionCookie },
+      })
+
+      expect(response.json().requester).toBeNull()
+      expect(response.json().collaborators).toEqual([])
+    })
+
+    it.each([
+      ['no e-mail', { name: 'Sergio Gouveia' }],
+      ['an e-mail that is not one', { email: 'sergio' }],
+      ['a field nobody reads', { email: 'rh@acme.com.br', cargo: 'RH' }],
+    ])('refuses a requester with %s', async (_label, requester) => {
+      const response = await app.inject({
+        method: 'POST',
+        url: '/api/tickets',
+        payload: { ...validTicketBody, requester },
+        cookies: { [SESSION_COOKIE_NAME]: sessionCookie },
+      })
+
+      expect(response.statusCode).toBe(400)
+    })
+
     it('returns 409 when enrollment already has an open ticket', async () => {
       await app.inject({
         method: 'POST',
