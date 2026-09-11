@@ -333,6 +333,7 @@ describe('FIELD_RESOLVERS', () => {
     tags: ['vip'],
     assigneeIds: ['@me'],
     priorities: ['high'],
+    subjectQuery: 'jose',
     actionDateBefore: TODAY,
     urgentBy: TODAY,
     createdSince: TODAY,

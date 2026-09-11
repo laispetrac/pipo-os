@@ -180,6 +180,8 @@ describe('toTicketRow — derivação do enrollmentSnapshot', () => {
   })
 })
 
+/** The API resolves `subjectQuery` against this same subject, built in SQL:
+ *  see `rows-routes.test.ts` in apps/api. Change one, change both. */
 describe('toTicketRow — assunto da linha', () => {
   it('should use the ticket title when the api provides one', () => {
     const row = toTicketRow(apiTicket({ title: 'Assunto vindo do EI' }))

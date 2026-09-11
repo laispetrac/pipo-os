@@ -125,24 +125,33 @@ function readString(source: Record<string, unknown>, ...paths: string[][]): stri
   return null
 }
 
-/** Subject shaped like the Zendesk one: carrier · product · person. */
-function buildSubject(ticket: Ticket, snapshot: Record<string, unknown>): string {
-  const explicit =
-    typeof ticket.title === 'string' && ticket.title.trim() !== '' ? ticket.title : null
+/** Carrier · product · person. Twin of `SUBJECT` in
+ *  api/src/modules/tickets/filter-resolver.ts: change one, change both. */
+export function buildSubject(parts: {
+  id: string
+  title: string | null
+  carrierName: string | null
+  product: string | null
+  beneficiaryName: string | null
+}): string {
+  const explicit = parts.title !== null && parts.title.trim() !== '' ? parts.title : null
   if (explicit) return explicit
 
-  const parts = [
-    ticket.carrierName,
-    ticket.product,
-    readString(snapshot, ['primary', 'profile', 'preferred-name'], ['primary', 'profile', 'name']),
-  ].filter((part): part is string => part !== null)
+  const words = [parts.carrierName, parts.product, parts.beneficiaryName].filter(
+    (word): word is string => word !== null,
+  )
 
-  return parts.length > 0 ? parts.join(' · ') : ticket.id
+  return words.length > 0 ? words.join(' · ') : parts.id
 }
 
 export function toTicketRow(ticket: Ticket): TicketRow {
   const snapshot = isRecord(ticket.enrollmentSnapshot) ? ticket.enrollmentSnapshot : {}
   const { status: display, reason } = toDisplayStatus(ticket.status)
+  const beneficiaryName = readString(
+    snapshot,
+    ['primary', 'profile', 'preferred-name'],
+    ['primary', 'profile', 'name'],
+  )
 
   return {
     id: ticket.id,
@@ -152,12 +161,8 @@ export function toTicketRow(ticket: Ticket): TicketRow {
     status: ticket.status,
     display,
     reason,
-    subject: buildSubject(ticket, snapshot),
-    beneficiaryName: readString(
-      snapshot,
-      ['primary', 'profile', 'preferred-name'],
-      ['primary', 'profile', 'name'],
-    ),
+    subject: buildSubject({ ...ticket, beneficiaryName }),
+    beneficiaryName,
     taxId: readString(snapshot, ['primary', 'profile', 'tax-id']),
     companyName: readString(snapshot, ['company', 'company-name'], ['company', 'name']),
     // No column for the parent in `GET /tickets/rows` yet — PD-043 adds it.

@@ -1,7 +1,7 @@
 import { readFileSync } from 'node:fs'
 import { fileURLToPath } from 'node:url'
 import { describe, expect, it } from 'vitest'
-import { toClient, toStored, VOCABULARIES } from './vocabulary.js'
+import { INSURANCE_SUFFIX, VOCABULARIES, toClient, toStored } from './vocabulary.js'
 
 describe('toClient', () => {
   it('translates each stored value the EI can send', () => {
@@ -95,4 +95,15 @@ describe('the client words declared in the contract', () => {
 
     expect([...(vocabulary.clientWords ?? [])].sort()).toEqual([...clientWords[name]].sort())
   })
+})
+
+/** The SQL side folds the product with `regexp_replace(product, INSURANCE_SUFFIX, '')`.
+ *  This proves the pattern still says what `toClient` does. */
+describe('INSURANCE_SUFFIX', () => {
+  it.each(['health-insurance', 'dental-insurance', 'pet-insurance', 'gym', 'mental-health'])(
+    'folds %s the same way toClient does',
+    (stored) => {
+      expect(stored.replace(new RegExp(INSURANCE_SUFFIX), '')).toBe(toClient('product', stored))
+    },
+  )
 })

@@ -8,7 +8,8 @@ import { SESSION_COOKIE_NAME } from '../auth/session.js'
 const COMPANY = '00000000-0000-4000-8000-0000000000d1'
 
 type Seed = {
-  title: string
+  title: string | null
+  carrierName?: string | null
   status?: string
   assigneeId?: string | null
   priority?: string | null
@@ -78,6 +79,7 @@ describe('GET /api/tickets/rows', () => {
           enrollment_snapshot: JSON.stringify(row.snapshot ?? {}),
           tags: [],
           title: row.title,
+          carrier_name: row.carrierName ?? null,
         })),
       )
       .execute()
@@ -94,6 +96,9 @@ describe('GET /api/tickets/rows', () => {
 
   const titles = (body: { data: { title: string | null }[] }) =>
     body.data.map((row) => row.title).sort()
+
+  const names = (body: { data: { beneficiaryName: string | null }[] }) =>
+    body.data.map((row) => row.beneficiaryName).sort()
 
   it('does not carry the snapshot, which is the point of the endpoint', async () => {
     await seed([{ title: 'a', snapshot: { huge: 'x'.repeat(1000) } }])
@@ -216,6 +221,125 @@ describe('GET /api/tickets/rows', () => {
     const { body } = await get('?statuses=missing-documents&assigneeIds=@me&priorities=urgent')
 
     expect(titles(body)).toEqual(['urgente-da-ana'])
+  })
+
+  it('searches the subject ignoring accent and case', async () => {
+    await seed([
+      { title: 'Inclusão de José Conceição' },
+      { title: 'EXCLUSAO DE JOSE RIBEIRO' },
+      { title: 'Mudança de plano de Marta Alves' },
+    ])
+
+    expect(titles((await get('?subjectQuery=jose')).body)).toEqual([
+      'EXCLUSAO DE JOSE RIBEIRO',
+      'Inclusão de José Conceição',
+    ])
+  })
+
+  it('searches the subject the queue builds when no title was written', async () => {
+    await seed([
+      {
+        title: null,
+        carrierName: 'SulAmérica',
+        product: 'dental-insurance',
+        snapshot: { primary: { profile: { 'preferred-name': 'Beatriz Lima' } } },
+      },
+      {
+        title: null,
+        carrierName: 'Amil',
+        product: 'health-insurance',
+        snapshot: { primary: { profile: { 'preferred-name': 'Marta Ribeiro' } } },
+      },
+    ])
+
+    const { body } = await get('?subjectQuery=beatriz')
+
+    expect(body.data.map((row: { beneficiaryName: string }) => row.beneficiaryName)).toEqual([
+      'Beatriz Lima',
+    ])
+  })
+
+  /* The row and the search read the same spelling, or a ticket matches the
+     filter while the name it matched on is not in the subject on screen. */
+  it('searches the name in the spelling the row reads it, not only in kebab', async () => {
+    await seed([
+      {
+        title: null,
+        carrierName: 'Amil',
+        snapshot: { primary: { profile: { preferredName: 'Beatriz Lima' } } },
+      },
+      {
+        title: null,
+        carrierName: 'Amil',
+        snapshot: { primary: { profile: { preferred_name: 'Marta Ribeiro' } } },
+      },
+    ])
+
+    const camel = await get('?subjectQuery=beatriz')
+    const snake = await get('?subjectQuery=marta')
+
+    expect(names(camel.body)).toEqual(['Beatriz Lima'])
+    expect(names(snake.body)).toEqual(['Marta Ribeiro'])
+  })
+
+  it('reads the product as the screen shows it, not as the column stores it', async () => {
+    await seed([
+      {
+        title: null,
+        carrierName: 'SulAmérica',
+        product: 'dental-insurance',
+        snapshot: { primary: { profile: { 'preferred-name': 'Beatriz Lima' } } },
+      },
+    ])
+
+    expect((await get('?subjectQuery=sulamerica%20%C2%B7%20dental')).body.total).toBe(1)
+    expect((await get('?subjectQuery=dental-insurance')).body.total).toBe(0)
+  })
+
+  it('falls back to the id when the movement has no word to build a subject from', async () => {
+    await seed([{ title: null }])
+    const [{ id }] = (await get()).body.data as { id: string }[]
+
+    expect((await get('?subjectQuery=marta')).body.data).toEqual([])
+    expect((await get(`?subjectQuery=${id.slice(0, 8)}`)).body.total).toBe(1)
+  })
+
+  it('keeps the separator the subject is built with', async () => {
+    await seed([
+      { title: 'SulAmérica · Odonto · Beatriz Lima' },
+      { title: 'SulAmérica · Saúde · Beatriz Lima' },
+    ])
+
+    expect(titles((await get('?subjectQuery=odonto%20%C2%B7%20beatriz')).body)).toEqual([
+      'SulAmérica · Odonto · Beatriz Lima',
+    ])
+  })
+
+  it('drops a query that folds to nothing, instead of taking every ticket with a subject', async () => {
+    await seed([{ title: 'Inclusão de Marta' }])
+    await app.db
+      .insertInto('tickets')
+      .values({
+        enrollment_id: randomUUID(),
+        enrollment_type: 'inclusion',
+        company_id: COMPANY,
+        source_system: 'enrollment-integrations',
+        status: 'broker-processing',
+        tags: [],
+        title: null,
+      })
+      .execute()
+
+    // `%CC%81` is a lone combining acute: non-empty for the schema, empty once folded.
+    expect((await get('?subjectQuery=%CC%81')).body.total).toBe(2)
+  })
+
+  it('takes a percent sign as text, not as a wildcard', async () => {
+    await seed([{ title: 'Reajuste de 10% na fatura' }, { title: 'Inclusão de Marta' }])
+
+    expect(titles((await get('?subjectQuery=10%25%20na')).body)).toEqual([
+      'Reajuste de 10% na fatura',
+    ])
   })
 
   it('reads @none as the null the panel offers', async () => {

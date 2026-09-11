@@ -1,8 +1,8 @@
-import { sql, type Kysely, type RawBuilder, type Selectable } from 'kysely'
+import { sql, type Kysely, type Selectable } from 'kysely'
 import type { Database } from '../../infrastructure/db.js'
 import type { Tickets } from '../../infrastructure/db-types.js'
 import { ConflictError } from '../../shared/errors.js'
-import { movementFieldsOf, relationshipOf } from './enrollment-snapshot.js'
+import { movementFieldsOf, relationshipOf, snapshotString } from './enrollment-snapshot.js'
 import { actionDateWindowCondition, ticketFilterConditions } from './filter-resolver.js'
 import type { TicketRowPayload, TicketRowsQuery } from './rows-schema.js'
 import { toClient } from './vocabulary.js'
@@ -78,30 +78,6 @@ export interface TicketsRepositoryPort {
     viewerId: string,
     today: string,
   ): Promise<{ data: TicketRowPayload[]; total: number }>
-}
-
-/**
- * The first spelling under `parent` that holds a real word, mirroring the
- * web's `readString` in `ticket-row.ts` — the queue has to read the snapshot
- * the same way on both sides or the number a node announces stops matching
- * the list the screen draws.
- *
- * Two rules that `coalesce` alone would miss, and each one is a divergence
- * the web does not have:
- *   - a blank counts as absent, so `company-name: ''` falls through to `name`;
- *   - only a JSON string counts, so a number does not become `"42"` here
- *     while the web reads it as nothing.
- */
-function snapshotString(parent: string[], keys: string[]): RawBuilder<string | null> {
-  const candidates = keys.map((key) => {
-    /* `array[...]` of literals, not a `'{a,b}'` string built by concatenation:
-       the segments are constants today, and this keeps a future caller from
-       turning a key with a comma or a brace into a different path. */
-    const path = sql`array[${sql.join([...parent, key].map(sql.lit), sql`, `)}]`
-    return sql`nullif(btrim(case when jsonb_typeof(enrollment_snapshot #> ${path}) = 'string'
-                                 then enrollment_snapshot #>> ${path} end), '')`
-  })
-  return sql<string | null>`coalesce(${sql.join(candidates, sql`, `)})`
 }
 
 export class TicketsRepository implements TicketsRepositoryPort {
@@ -217,14 +193,9 @@ export class TicketsRepository implements TicketsRepositoryPort {
         'updated_at',
       ])
       .select([
-        snapshotString(['company'], ['company_name', 'company-name', 'companyName', 'name']).as(
-          'company_name',
-        ),
-        snapshotString(
-          ['primary', 'profile'],
-          ['preferred_name', 'preferred-name', 'preferredName', 'name'],
-        ).as('beneficiary_name'),
-        snapshotString(['primary', 'profile'], ['tax_id', 'tax-id', 'taxId']).as('tax_id'),
+        snapshotString(['company'], ['company-name', 'name']).as('company_name'),
+        snapshotString(['primary', 'profile'], ['preferred-name', 'name']).as('beneficiary_name'),
+        snapshotString(['primary', 'profile'], ['tax-id']).as('tax_id'),
       ])
       .select(sql<string>`count(*) over ()`.as('total_count'))
       .orderBy('created_at', 'desc')

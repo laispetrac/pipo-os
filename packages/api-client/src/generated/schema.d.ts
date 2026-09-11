@@ -1767,6 +1767,7 @@ export interface paths {
                     tags?: string[];
                     assigneeIds?: (string | null)[];
                     priorities?: (components["schemas"]["TicketPriorityInput"] | null)[];
+                    subjectQuery?: string;
                     actionDateBefore?: string;
                     urgentBy?: string;
                     createdSince?: string;
@@ -2243,6 +2244,7 @@ export interface components {
             tags?: string[];
             assigneeIds?: (string | null)[];
             priorities?: (components["schemas"]["TicketPriorityInput"] | null)[];
+            subjectQuery?: string;
             /** Format: date */
             actionDateBefore?: string;
             /** Format: date */
@@ -2442,6 +2444,7 @@ export interface components {
             tags?: string[];
             assigneeIds?: (string | null)[];
             priorities?: (components["schemas"]["TicketPriority"] | null)[];
+            subjectQuery?: string;
             /** Format: date */
             actionDateBefore?: string;
             /** Format: date */
