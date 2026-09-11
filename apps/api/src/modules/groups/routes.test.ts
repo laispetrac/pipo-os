@@ -712,6 +712,63 @@ describe('groups routes', () => {
   })
 
   // ---------------------------------------------------------------------------
+  describe('two writes arriving together', () => {
+    const post = (payload: Record<string, unknown>) =>
+      app.inject({
+        method: 'POST',
+        url: '/api/groups',
+        payload,
+        cookies: { [SESSION_COOKIE_NAME]: sessionCookie },
+      })
+
+    const codesOf = (responses: Array<{ statusCode: number }>): number[] =>
+      responses.map((r) => r.statusCode).sort((a, b) => a - b)
+
+    it('lets only one of two simultaneous roots through', async () => {
+      const responses = await Promise.all([post({ name: 'Raiz A' }), post({ name: 'Raiz B' })])
+
+      expect(codesOf(responses)).toEqual([201, 422])
+    })
+
+    it('refuses the move that would close a cycle, even simultaneously', async () => {
+      const geben = await createGroup('Gestão de Benefícios')
+      const podA = await createGroup('POD A', geben)
+      const podB = await createGroup('POD B', geben)
+
+      const move = (id: string, parentId: string) =>
+        app.inject({
+          method: 'PATCH',
+          url: `/api/groups/${id}`,
+          payload: { parentId },
+          cookies: { [SESSION_COOKIE_NAME]: sessionCookie },
+        })
+
+      const responses = await Promise.all([move(podA, podB), move(podB, podA)])
+
+      expect(codesOf(responses)).toEqual([200, 422])
+    })
+
+    it('never answers 500 when a parent is deleted while a child is created', async () => {
+      const geben = await createGroup('Gestão de Benefícios')
+      const pod = await createGroup('POD 3', geben)
+
+      const responses = await Promise.all([
+        post({ name: 'Subtime', parentId: pod }),
+        app.inject({
+          method: 'DELETE',
+          url: `/api/groups/${pod}`,
+          cookies: { [SESSION_COOKIE_NAME]: sessionCookie },
+        }),
+      ])
+
+      // Either order is correct; what must not happen is the FK reaching the client.
+      expect([[201, 409].toString(), [204, 422].toString()]).toContain(
+        codesOf(responses).toString(),
+      )
+    })
+  })
+
+  // ---------------------------------------------------------------------------
   describe('DELETE /api/groups/:id', () => {
     it('returns 401 without session cookie', async () => {
       const response = await app.inject({

@@ -23,6 +23,10 @@ export interface GroupRelations {
 
 const PG_FK_VIOLATION = '23503'
 
+/** Every writer of the hierarchy takes this same key, or the read that
+ *  validates and the write that follows can interleave. */
+const HIERARCHY_LOCK_KEY = 8050
+
 /** Five tables point at ticket_groups and all of them block the delete, so the
  *  constraint name is the only thing that says which link refused. */
 const BLOCKING_LINKS: Record<string, string> = {
@@ -61,6 +65,7 @@ export interface GroupsRepositoryPort {
   findById(id: string): Promise<Group | undefined>
   findMany(query: ListGroupsQuery): Promise<{ data: Group[]; total: number }>
   findNodes(): Promise<GroupNode[]>
+  withHierarchyLock<T>(fn: (repository: GroupsRepositoryPort) => Promise<T>): Promise<T>
   findRelations(groupIds: readonly string[]): Promise<GroupRelations>
   update(id: string, data: UpdateGroupBody, updatedBy: string): Promise<Group | undefined>
   delete(id: string): Promise<boolean>
@@ -118,6 +123,13 @@ export class GroupsRepository implements GroupsRepositoryPort {
       .executeTakeFirstOrThrow()
 
     return { data: [], total: Number(count) }
+  }
+
+  withHierarchyLock<T>(fn: (repository: GroupsRepositoryPort) => Promise<T>): Promise<T> {
+    return this.db.transaction().execute(async (trx) => {
+      await sql`select pg_advisory_xact_lock(${HIERARCHY_LOCK_KEY})`.execute(trx)
+      return fn(new GroupsRepository(trx))
+    })
   }
 
   async findNodes(): Promise<GroupNode[]> {
