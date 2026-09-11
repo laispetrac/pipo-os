@@ -17,12 +17,17 @@ export const groupSchema = z
   })
   .meta({ id: 'Group' })
 
+/** admin is the coordination of the pod, member the analyst. Same pair the
+ *  CHECK of migration 0024 admits. */
+export const memberRoleSchema = z.enum(['admin', 'member']).meta({ id: 'GroupMemberRole' })
+
 /** Response only, so no `trimmedInput()` here: trimming on the way out would
  *  hide a bad row instead of rejecting it on the way in. */
 export const groupMemberSchema = z
   .object({
     groupId: z.uuid(),
     userId: z.string().min(1),
+    role: memberRoleSchema,
     active: z.boolean(),
     createdAt: z.iso.datetime(),
   })
@@ -62,15 +67,20 @@ export const updateGroupBodySchema = z
 export const addMemberBodySchema = z
   .object({
     userId: trimmedInput().max(255),
+    role: memberRoleSchema.optional(),
   })
   .strict()
   .meta({ id: 'AddGroupMemberBody' })
 
 export const updateMemberBodySchema = z
   .object({
-    active: z.boolean(),
+    active: z.boolean().optional(),
+    role: memberRoleSchema.optional(),
   })
   .strict()
+  .refine((d) => d.active !== undefined || d.role !== undefined, {
+    message: 'At least one field is required',
+  })
   .meta({ id: 'UpdateGroupMemberBody' })
 
 export const listGroupsQuerySchema = z.object({
@@ -89,6 +99,7 @@ export const groupListSchema = z
   .meta({ id: 'GroupList' })
 
 export type Group = z.infer<typeof groupSchema>
+export type MemberRole = z.infer<typeof memberRoleSchema>
 export type GroupMember = z.infer<typeof groupMemberSchema>
 export type GroupParams = z.infer<typeof groupParamsSchema>
 export type MemberParams = z.infer<typeof memberParamsSchema>

@@ -52,7 +52,7 @@ export class GroupsService {
   }
 
   addMember(groupId: string, body: AddMemberBody): Promise<GroupMember> {
-    return this.membersRepository.add(groupId, body.userId)
+    return this.membersRepository.add(groupId, body)
   }
 
   async removeMember(groupId: string, userId: string): Promise<void> {

@@ -4,10 +4,12 @@ import type { TicketGroupMembers, TicketGroups } from '../../infrastructure/db-t
 import { ConflictError, NotFoundError } from '../../shared/errors.js'
 import type { GroupNode } from './hierarchy.js'
 import type {
+  AddMemberBody,
   CreateGroupBody,
   Group,
   GroupMember,
   ListGroupsQuery,
+  MemberRole,
   UpdateGroupBody,
   UpdateMemberBody,
 } from './schemas.js'
@@ -30,6 +32,8 @@ function toMember(row: Selectable<TicketGroupMembers>): GroupMember {
   return {
     groupId: row.group_id,
     userId: row.user_id,
+    // The column is text; the CHECK of migration 0024 is what narrows it.
+    role: row.role as MemberRole,
     active: row.active,
     createdAt: row.created_at.toISOString(),
   }
@@ -136,7 +140,7 @@ export class GroupsRepository implements GroupsRepositoryPort {
 }
 
 export interface GroupMembersRepositoryPort {
-  add(groupId: string, userId: string): Promise<GroupMember>
+  add(groupId: string, data: AddMemberBody): Promise<GroupMember>
   remove(groupId: string, userId: string): Promise<boolean>
   update(groupId: string, userId: string, data: UpdateMemberBody): Promise<GroupMember | undefined>
 }
@@ -144,11 +148,12 @@ export interface GroupMembersRepositoryPort {
 export class GroupMembersRepository implements GroupMembersRepositoryPort {
   constructor(private readonly db: Kysely<Database>) {}
 
-  async add(groupId: string, userId: string): Promise<GroupMember> {
+  async add(groupId: string, data: AddMemberBody): Promise<GroupMember> {
+    const userId = data.userId
     try {
       const row = await this.db
         .insertInto('ticket_group_members')
-        .values({ group_id: groupId, user_id: userId })
+        .values({ group_id: groupId, user_id: userId, ...(data.role && { role: data.role }) })
         .onConflict((oc) => oc.columns(['group_id', 'user_id']).doNothing())
         .returningAll()
         .executeTakeFirst()
@@ -183,7 +188,10 @@ export class GroupMembersRepository implements GroupMembersRepositoryPort {
   ): Promise<GroupMember | undefined> {
     const row = await this.db
       .updateTable('ticket_group_members')
-      .set({ active: data.active })
+      .set({
+        ...(data.active !== undefined && { active: data.active }),
+        ...(data.role !== undefined && { role: data.role }),
+      })
       .where('group_id', '=', groupId)
       .where('user_id', '=', userId)
       .returningAll()

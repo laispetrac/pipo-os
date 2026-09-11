@@ -699,6 +699,47 @@ describe('groups routes', () => {
       expect(body.active).toBe(true)
     })
 
+    it('gives a new member the role of member, which is the analyst of the pod', async () => {
+      const groupId = await createGroup('POD 3')
+
+      const response = await app.inject({
+        method: 'POST',
+        url: `/api/groups/${groupId}/members`,
+        payload: { userId: USER_ID_1 },
+        cookies: { [SESSION_COOKIE_NAME]: sessionCookie },
+      })
+
+      expect(response.statusCode).toBe(201)
+      expect(response.json().role).toBe('member')
+    })
+
+    it('adds a member as admin, which is the coordination of the pod', async () => {
+      const groupId = await createGroup('POD 3')
+
+      const response = await app.inject({
+        method: 'POST',
+        url: `/api/groups/${groupId}/members`,
+        payload: { userId: USER_ID_1, role: 'admin' },
+        cookies: { [SESSION_COOKIE_NAME]: sessionCookie },
+      })
+
+      expect(response.statusCode).toBe(201)
+      expect(response.json().role).toBe('admin')
+    })
+
+    it('returns 400 for a role outside admin and member', async () => {
+      const groupId = await createGroup('POD 3')
+
+      const response = await app.inject({
+        method: 'POST',
+        url: `/api/groups/${groupId}/members`,
+        payload: { userId: USER_ID_1, role: 'coordenacao' },
+        cookies: { [SESSION_COOKIE_NAME]: sessionCookie },
+      })
+
+      expect(response.statusCode).toBe(400)
+    })
+
     it('returns 409 when adding duplicate member', async () => {
       const created = await app.inject({
         method: 'POST',
@@ -1008,6 +1049,47 @@ describe('groups routes', () => {
       })
 
       expect(response.statusCode).toBe(404)
+    })
+
+    it('promotes a member to admin without touching the active flag', async () => {
+      const groupId = await createGroup('POD 3')
+      await app.inject({
+        method: 'POST',
+        url: `/api/groups/${groupId}/members`,
+        payload: { userId: USER_ID_1 },
+        cookies: { [SESSION_COOKIE_NAME]: sessionCookie },
+      })
+
+      const response = await app.inject({
+        method: 'PATCH',
+        url: `/api/groups/${groupId}/members/${USER_ID_1}`,
+        payload: { role: 'admin' },
+        cookies: { [SESSION_COOKIE_NAME]: sessionCookie },
+      })
+
+      expect(response.statusCode).toBe(200)
+      const body = response.json()
+      expect(body.role).toBe('admin')
+      expect(body.active).toBe(true)
+    })
+
+    it('returns 400 for an empty body, which would be an update that updates nothing', async () => {
+      const groupId = await createGroup('POD 3')
+      await app.inject({
+        method: 'POST',
+        url: `/api/groups/${groupId}/members`,
+        payload: { userId: USER_ID_1 },
+        cookies: { [SESSION_COOKIE_NAME]: sessionCookie },
+      })
+
+      const response = await app.inject({
+        method: 'PATCH',
+        url: `/api/groups/${groupId}/members/${USER_ID_1}`,
+        payload: {},
+        cookies: { [SESSION_COOKIE_NAME]: sessionCookie },
+      })
+
+      expect(response.statusCode).toBe(400)
     })
   })
 
