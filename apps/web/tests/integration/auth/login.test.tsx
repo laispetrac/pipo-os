@@ -127,9 +127,9 @@ describe('auth/login', () => {
     })
   })
 
-  // The API renamed this domain once and the web kept the old string, so a local
-  // login passed and every ticket endpoint answered 403. The literal is the canary.
-  it('asks for the policy the ticket routes require', async () => {
+  // The API renamed this domain once and the web kept the old string: 403 on
+  // every endpoint after a login that passed. The literals are the canary.
+  it('asks for the policies the Pipodesk routes require', async () => {
     let sent: unknown
     setupApi([
       { method: 'GET', path: '/api/auth/me', reply: () => jsonResponse({}, 401) },
@@ -150,7 +150,12 @@ describe('auth/login', () => {
     await user.click(await screen.findByRole('button', { name: devConstants.button }))
 
     await waitFor(() => {
-      expect(sent).toEqual({ policies: ['admin/allow/administrate/pipodesk/ticket'] })
+      expect(sent).toEqual({
+        policies: [
+          'admin/allow/administrate/pipodesk/ticket',
+          'admin/allow/administrate/pipodesk/structure',
+        ],
+      })
     })
   })
 

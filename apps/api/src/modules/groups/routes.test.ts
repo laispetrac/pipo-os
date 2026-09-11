@@ -26,7 +26,7 @@ describe('groups routes', () => {
     const loginResponse = await app.inject({
       method: 'POST',
       url: '/api/auth/dev-login',
-      payload: { policies: [] },
+      payload: { policies: ['admin/allow/administrate/pipodesk/structure'] },
     })
     sessionCookie = cookieValue(loginResponse, SESSION_COOKIE_NAME)!
   })
@@ -786,6 +786,80 @@ describe('groups routes', () => {
       })
 
       expect(response.statusCode).toBe(404)
+    })
+  })
+
+  describe('the structure policy', () => {
+    let withoutPolicy: string
+    let withTicketPolicy: string
+    let withWholeProduct: string
+
+    beforeAll(async () => {
+      const anonymous = await app.inject({
+        method: 'POST',
+        url: '/api/auth/dev-login',
+        payload: { policies: [] },
+      })
+      withoutPolicy = cookieValue(anonymous, SESSION_COOKIE_NAME)!
+
+      const ticketOnly = await app.inject({
+        method: 'POST',
+        url: '/api/auth/dev-login',
+        payload: { policies: ['admin/allow/administrate/pipodesk/ticket'] },
+      })
+      withTicketPolicy = cookieValue(ticketOnly, SESSION_COOKIE_NAME)!
+
+      const wholeProduct = await app.inject({
+        method: 'POST',
+        url: '/api/auth/dev-login',
+        payload: { policies: ['admin/allow/administrate/pipodesk/*'] },
+      })
+      withWholeProduct = cookieValue(wholeProduct, SESSION_COOKIE_NAME)!
+    })
+
+    const routes: Array<[string, string]> = [
+      ['GET', '/api/groups'],
+      ['POST', '/api/groups'],
+      ['GET', '/api/groups/:id'],
+      ['PATCH', '/api/groups/:id'],
+      ['DELETE', '/api/groups/:id'],
+      ['POST', '/api/groups/:id/members'],
+      ['PATCH', '/api/groups/:id/members/:memberId'],
+      ['DELETE', '/api/groups/:id/members/:memberId'],
+    ]
+
+    // Ids that do not exist are enough: the policy closes before the lookup.
+    it.each(routes)('answers 403 on %s %s for a session with no policy', async (method, url) => {
+      const response = await app.inject({
+        method: method as 'GET',
+        url: url.replace(':id', NONEXISTENT_ID).replace(':memberId', USER_ID_1),
+        cookies: { [SESSION_COOKIE_NAME]: withoutPolicy },
+        payload: method === 'GET' || method === 'DELETE' ? undefined : { name: 'Grupo' },
+      })
+
+      expect(response.statusCode).toBe(403)
+      expect(response.json().error).toBe('ForbiddenError')
+    })
+
+    // The wildcard only ever matches on the session side (see policy.test.ts).
+    it('opens the route for a session holding the whole product', async () => {
+      const response = await app.inject({
+        method: 'GET',
+        url: '/api/groups',
+        cookies: { [SESSION_COOKIE_NAME]: withWholeProduct },
+      })
+
+      expect(response.statusCode).toBe(200)
+    })
+
+    it('answers 403 for a session holding only the ticket policy', async () => {
+      const response = await app.inject({
+        method: 'GET',
+        url: '/api/groups',
+        cookies: { [SESSION_COOKIE_NAME]: withTicketPolicy },
+      })
+
+      expect(response.statusCode).toBe(403)
     })
   })
 })
