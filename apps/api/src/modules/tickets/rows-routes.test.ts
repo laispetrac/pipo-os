@@ -270,10 +270,12 @@ describe('GET /api/tickets/rows', () => {
     expect((await get('?subjectQuery=dental-insurance')).body.total).toBe(0)
   })
 
-  it('leaves out the ticket whose subject has no word at all', async () => {
+  it('falls back to the id when the movement has no word to build a subject from', async () => {
     await seed([{ title: null }])
+    const [{ id }] = (await get()).body.data as { id: string }[]
 
     expect((await get('?subjectQuery=marta')).body.data).toEqual([])
+    expect((await get(`?subjectQuery=${id.slice(0, 8)}`)).body.total).toBe(1)
   })
 
   it('keeps the separator the subject is built with', async () => {
