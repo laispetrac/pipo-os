@@ -1,4 +1,5 @@
 import { NotFoundError } from '../../shared/errors.js'
+import { assertParentIsValid } from './hierarchy.js'
 import type { GroupMembersRepositoryPort, GroupsRepositoryPort } from './repository.js'
 import type {
   AddMemberBody,
@@ -17,7 +18,8 @@ export class GroupsService {
     private readonly membersRepository: GroupMembersRepositoryPort,
   ) {}
 
-  create(data: CreateGroupBody, createdBy: string): Promise<Group> {
+  async create(data: CreateGroupBody, createdBy: string): Promise<Group> {
+    assertParentIsValid(await this.repository.findNodes(), data.parentId ?? null)
     return this.repository.create(data, createdBy)
   }
 
@@ -33,6 +35,12 @@ export class GroupsService {
   }
 
   async update(id: string, data: UpdateGroupBody, updatedBy: string): Promise<Group> {
+    if (data.parentId !== undefined) {
+      const nodes = await this.repository.findNodes()
+      if (!nodes.some((node) => node.id === id)) throw new NotFoundError(`Group ${id} not found`)
+      assertParentIsValid(nodes, data.parentId, id)
+    }
+
     const group = await this.repository.update(id, data, updatedBy)
     if (!group) throw new NotFoundError(`Group ${id} not found`)
     return group

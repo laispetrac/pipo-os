@@ -205,18 +205,8 @@ describe('groups routes', () => {
     })
 
     it('returns all created groups', async () => {
-      await app.inject({
-        method: 'POST',
-        url: '/api/groups',
-        payload: { name: 'Alpha' },
-        cookies: { [SESSION_COOKIE_NAME]: sessionCookie },
-      })
-      await app.inject({
-        method: 'POST',
-        url: '/api/groups',
-        payload: { name: 'Beta' },
-        cookies: { [SESSION_COOKIE_NAME]: sessionCookie },
-      })
+      const alpha = await createGroup('Alpha')
+      await createGroup('Beta', alpha)
 
       const response = await app.inject({
         method: 'GET',
@@ -231,18 +221,8 @@ describe('groups routes', () => {
     })
 
     it('filters groups by name (case-insensitive)', async () => {
-      await app.inject({
-        method: 'POST',
-        url: '/api/groups',
-        payload: { name: 'Operações Dental' },
-        cookies: { [SESSION_COOKIE_NAME]: sessionCookie },
-      })
-      await app.inject({
-        method: 'POST',
-        url: '/api/groups',
-        payload: { name: 'Suporte Médico' },
-        cookies: { [SESSION_COOKIE_NAME]: sessionCookie },
-      })
+      const dental = await createGroup('Operações Dental')
+      await createGroup('Suporte Médico', dental)
 
       const response = await app.inject({
         method: 'GET',
@@ -257,14 +237,9 @@ describe('groups routes', () => {
     })
 
     it('paginates results', async () => {
-      for (let i = 1; i <= 3; i++) {
-        await app.inject({
-          method: 'POST',
-          url: '/api/groups',
-          payload: { name: `Grupo ${i}` },
-          cookies: { [SESSION_COOKIE_NAME]: sessionCookie },
-        })
-      }
+      const raiz = await createGroup('Grupo 1')
+      await createGroup('Grupo 2', raiz)
+      await createGroup('Grupo 3', raiz)
 
       const page1 = await app.inject({
         method: 'GET',
@@ -452,21 +427,6 @@ describe('groups routes', () => {
       expect(body.name).toBe('Subtime')
     })
 
-    it('detaches a group from its parent when parentId is null', async () => {
-      const geben = await createGroup('Gestão de Benefícios')
-      const pod = await createGroup('POD 3', geben)
-
-      const response = await app.inject({
-        method: 'PATCH',
-        url: `/api/groups/${pod}`,
-        payload: { parentId: null },
-        cookies: { [SESSION_COOKIE_NAME]: sessionCookie },
-      })
-
-      expect(response.statusCode).toBe(200)
-      expect(response.json().parentId).toBeNull()
-    })
-
     it('returns 400 for an empty body, which would be an update that updates nothing', async () => {
       const id = await createGroup('Gestão de Benefícios')
 
@@ -495,6 +455,143 @@ describe('groups routes', () => {
       const body = response.json()
       expect(body.name).toBe('POD 5')
       expect(body.parentId).toBe(geben)
+    })
+  })
+
+  // ---------------------------------------------------------------------------
+  describe('the shape of the hierarchy', () => {
+    const fieldsOf = (response: { json: () => { details?: Array<{ field: string }> } }): string[] =>
+      (response.json().details ?? []).map((detail) => detail.field)
+
+    it('refuses a second root, because the tree has one GEBEN', async () => {
+      await createGroup('Gestão de Benefícios')
+
+      const response = await app.inject({
+        method: 'POST',
+        url: '/api/groups',
+        payload: { name: 'Outra raiz' },
+        cookies: { [SESSION_COOKIE_NAME]: sessionCookie },
+      })
+
+      expect(response.statusCode).toBe(422)
+      expect(fieldsOf(response)).toEqual(['parentId'])
+    })
+
+    it('refuses a parent that does not exist', async () => {
+      const response = await app.inject({
+        method: 'POST',
+        url: '/api/groups',
+        payload: { name: 'POD 3', parentId: NONEXISTENT_ID },
+        cookies: { [SESSION_COOKIE_NAME]: sessionCookie },
+      })
+
+      expect(response.statusCode).toBe(422)
+      expect(fieldsOf(response)).toEqual(['parentId'])
+    })
+
+    it('refuses a group that is its own parent', async () => {
+      const geben = await createGroup('Gestão de Benefícios')
+
+      const response = await app.inject({
+        method: 'PATCH',
+        url: `/api/groups/${geben}`,
+        payload: { parentId: geben },
+        cookies: { [SESSION_COOKIE_NAME]: sessionCookie },
+      })
+
+      expect(response.statusCode).toBe(422)
+      expect(fieldsOf(response)).toEqual(['parentId'])
+    })
+
+    it('refuses a parent that is a descendant, which would close a cycle', async () => {
+      const geben = await createGroup('Gestão de Benefícios')
+      const pod = await createGroup('POD 3', geben)
+
+      const response = await app.inject({
+        method: 'PATCH',
+        url: `/api/groups/${geben}`,
+        payload: { parentId: pod },
+        cookies: { [SESSION_COOKIE_NAME]: sessionCookie },
+      })
+
+      expect(response.statusCode).toBe(422)
+      expect(fieldsOf(response)).toEqual(['parentId'])
+    })
+
+    it('accepts a subtime, which is the third and last level', async () => {
+      const geben = await createGroup('Gestão de Benefícios')
+      const pod = await createGroup('POD 3', geben)
+
+      const response = await app.inject({
+        method: 'POST',
+        url: '/api/groups',
+        payload: { name: 'Subtime', parentId: pod },
+        cookies: { [SESSION_COOKIE_NAME]: sessionCookie },
+      })
+
+      expect(response.statusCode).toBe(201)
+    })
+
+    it('refuses a fourth level', async () => {
+      const geben = await createGroup('Gestão de Benefícios')
+      const pod = await createGroup('POD 3', geben)
+      const subtime = await createGroup('Subtime', pod)
+
+      const response = await app.inject({
+        method: 'POST',
+        url: '/api/groups',
+        payload: { name: 'Fundo do poço', parentId: subtime },
+        cookies: { [SESSION_COOKIE_NAME]: sessionCookie },
+      })
+
+      expect(response.statusCode).toBe(422)
+      expect(fieldsOf(response)).toEqual(['parentId'])
+    })
+
+    it('refuses a move that pushes the children of the moved group past the limit', async () => {
+      const geben = await createGroup('Gestão de Benefícios')
+      const pod3 = await createGroup('POD 3', geben)
+      const pod5 = await createGroup('POD 5', geben)
+      await createGroup('Subtime', pod3)
+
+      const response = await app.inject({
+        method: 'PATCH',
+        url: `/api/groups/${pod3}`,
+        payload: { parentId: pod5 },
+        cookies: { [SESSION_COOKIE_NAME]: sessionCookie },
+      })
+
+      expect(response.statusCode).toBe(422)
+      expect(fieldsOf(response)).toEqual(['parentId'])
+    })
+
+    it('refuses to detach a pod while the root is another group', async () => {
+      const geben = await createGroup('Gestão de Benefícios')
+      const pod = await createGroup('POD 3', geben)
+
+      const response = await app.inject({
+        method: 'PATCH',
+        url: `/api/groups/${pod}`,
+        payload: { parentId: null },
+        cookies: { [SESSION_COOKIE_NAME]: sessionCookie },
+      })
+
+      expect(response.statusCode).toBe(422)
+      expect(fieldsOf(response)).toEqual(['parentId'])
+    })
+
+    it('accepts detaching the group that already is the root', async () => {
+      const geben = await createGroup('Gestão de Benefícios')
+
+      const response = await app.inject({
+        method: 'PATCH',
+        url: `/api/groups/${geben}`,
+        payload: { parentId: null },
+        cookies: { [SESSION_COOKIE_NAME]: sessionCookie },
+      })
+
+      expect(response.statusCode).toBe(200)
+      expect(response.json().parentId).toBeNull()
     })
   })
 

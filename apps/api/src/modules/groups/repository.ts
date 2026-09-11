@@ -2,6 +2,7 @@ import { sql, type Kysely, type Selectable } from 'kysely'
 import type { Database } from '../../infrastructure/db.js'
 import type { TicketGroupMembers, TicketGroups } from '../../infrastructure/db-types.js'
 import { ConflictError, NotFoundError } from '../../shared/errors.js'
+import type { GroupNode } from './hierarchy.js'
 import type {
   CreateGroupBody,
   Group,
@@ -38,6 +39,7 @@ export interface GroupsRepositoryPort {
   create(data: CreateGroupBody, createdBy: string): Promise<Group>
   findById(id: string): Promise<Group | undefined>
   findMany(query: ListGroupsQuery): Promise<{ data: Group[]; total: number }>
+  findNodes(): Promise<GroupNode[]>
   update(id: string, data: UpdateGroupBody, updatedBy: string): Promise<Group | undefined>
   delete(id: string): Promise<boolean>
 }
@@ -94,6 +96,14 @@ export class GroupsRepository implements GroupsRepositoryPort {
       .executeTakeFirstOrThrow()
 
     return { data: [], total: Number(count) }
+  }
+
+  /** The whole tree, which the hierarchy rules walk in memory: three levels and
+   *  dozens of rows make a recursive query a cost with no payer. */
+  async findNodes(): Promise<GroupNode[]> {
+    const rows = await this.db.selectFrom('ticket_groups').select(['id', 'parent_id']).execute()
+
+    return rows.map((row) => ({ id: row.id, parentId: row.parent_id }))
   }
 
   async update(id: string, data: UpdateGroupBody, updatedBy: string): Promise<Group | undefined> {
