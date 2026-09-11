@@ -194,6 +194,29 @@ describe('tickets routes', () => {
       expect(response.statusCode).toBe(400)
     })
 
+    it('stores how the movement came in', async () => {
+      const response = await app.inject({
+        method: 'POST',
+        url: '/api/tickets',
+        payload: { ...validTicketBody, origin: 'automation-failure' },
+        cookies: { [SESSION_COOKIE_NAME]: sessionCookie },
+      })
+
+      expect(response.statusCode).toBe(201)
+      expect(response.json().origin).toBe('automation-failure')
+    })
+
+    it('reads an omitted origin as the normal flow', async () => {
+      const response = await app.inject({
+        method: 'POST',
+        url: '/api/tickets',
+        payload: validTicketBody,
+        cookies: { [SESSION_COOKIE_NAME]: sessionCookie },
+      })
+
+      expect(response.json().origin).toBe('auto-routing')
+    })
+
     it('returns 409 when enrollment already has an open ticket', async () => {
       await app.inject({
         method: 'POST',

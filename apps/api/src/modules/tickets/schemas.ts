@@ -66,6 +66,7 @@ export const ticketSchema = z
     companySize: z.string().min(1).nullable(),
     relationship: relationshipSchema.nullable(),
     sourceSystem: z.string(),
+    origin: z.string().min(1).nullable(),
     parentTicketId: z.uuid().nullable(),
     closedAt: z.iso.datetime({ offset: true }).nullable(),
     createdAt: z.iso.datetime({ offset: true }),
@@ -94,6 +95,9 @@ export const createTicketBodySchema = z
     // With an offset, always: a date alone would have to guess a timezone, and
     // the guess moves the day the queue shows.
     actionDate: z.iso.datetime({ offset: true }).optional(),
+    // How the ticket came in, not which system created it — that is
+    // sourceSystem. Absent means the normal flow.
+    origin: z.string().min(1).default('auto-routing'),
     // Strict on the way in and not on the way out: a caller typo must fail
     // loudly, a hand-edited row must not 500 the whole read.
     requester: ticketPersonSchema.strict().optional(),

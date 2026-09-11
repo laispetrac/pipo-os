@@ -2188,6 +2188,8 @@ export interface components {
             title?: string;
             /** Format: date-time */
             actionDate?: string;
+            /** @default auto-routing */
+            origin: string;
             requester?: {
                 /** Format: email */
                 email: string;
@@ -2344,6 +2346,7 @@ export interface components {
             companySize: string | null;
             relationship: components["schemas"]["Relationship"] | null;
             sourceSystem: string;
+            origin: string | null;
             parentTicketId: string | null;
             closedAt: string | null;
             /** Format: date-time */
