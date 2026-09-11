@@ -1,7 +1,7 @@
 import { sql, type Kysely, type Selectable } from 'kysely'
 import type { Database } from '../../infrastructure/db.js'
 import type { Tickets } from '../../infrastructure/db-types.js'
-import { ConflictError } from '../../shared/errors.js'
+import { ConflictError, ValidationFailedError } from '../../shared/errors.js'
 import { movementFieldsOf, relationshipOf, snapshotString } from './enrollment-snapshot.js'
 import { actionDateWindowCondition, ticketFilterConditions } from './filter-resolver.js'
 import type { TicketRowPayload, TicketRowsQuery } from './rows-schema.js'
@@ -20,6 +20,13 @@ export type ChangeStatusResult =
   { kind: 'not-found' } | { kind: 'already-closed' } | { kind: 'ok'; ticket: Ticket }
 
 const OPEN_ENROLLMENT_CONSTRAINT = 'uq_tickets_open_enrollment'
+
+/** A uuid the caller invented is a field they got wrong, not a broken state —
+ *  hence ValidationFailedError, and not the 404 a missing path id gets. */
+const FK_FIELDS: Record<string, string> = {
+  tickets_group_id_fkey: 'groupId',
+  tickets_parent_ticket_id_fkey: 'parentTicketId',
+}
 
 /** `.min(1)` on the response would turn one hand-edited row into a 500 for the
  *  whole page, so a blank column reads as the null it means. */
@@ -264,6 +271,7 @@ export class TicketsRepository implements TicketsRepositoryPort {
           status: data.status ?? 'broker-processing',
           queue_id: data.queueId,
           assignee_id: data.assigneeId,
+          group_id: data.groupId,
           tags: data.tags ?? [],
           force_completion: data.forceCompletion ?? false,
           parent_ticket_id: data.parentTicketId,
@@ -281,6 +289,14 @@ export class TicketsRepository implements TicketsRepositoryPort {
         err.constraint === OPEN_ENROLLMENT_CONSTRAINT
       ) {
         throw new ConflictError(`Enrollment ${data.enrollmentId} already has an open ticket`)
+      }
+      if (err instanceof Error && 'code' in err && err.code === '23503' && 'constraint' in err) {
+        const field = FK_FIELDS[err.constraint as string]
+        if (field) {
+          throw new ValidationFailedError(`${field} does not exist`, [
+            { field, message: `${field} does not exist`, code: 'not-found' },
+          ])
+        }
       }
       throw err
     }

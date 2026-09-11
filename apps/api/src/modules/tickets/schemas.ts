@@ -108,6 +108,8 @@ export const createTicketBodySchema = z
     contractType: z.string().min(1).optional(),
     companySize: z.string().min(1).optional(),
     status: ticketStatusSchema.optional(),
+    // Accepted, never chosen: routing by portfolio is PD-052.
+    groupId: z.uuid().optional(),
     queueId: z.uuid().optional(),
     assigneeId: z.string().min(1).optional(),
     tags: z.array(tagSchema).optional(),

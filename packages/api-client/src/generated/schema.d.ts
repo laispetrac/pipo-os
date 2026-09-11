@@ -1736,6 +1736,15 @@ export interface paths {
                         "application/json": components["schemas"]["ErrorResponse"];
                     };
                 };
+                /** @description Default Response */
+                422: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ErrorResponse"];
+                    };
+                };
             };
         };
         delete?: never;
@@ -2212,6 +2221,8 @@ export interface components {
             contractType?: string;
             companySize?: string;
             status?: components["schemas"]["TicketStatusInput"];
+            /** Format: uuid */
+            groupId?: string;
             /** Format: uuid */
             queueId?: string;
             assigneeId?: string;

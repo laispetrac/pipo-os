@@ -217,6 +217,40 @@ describe('tickets routes', () => {
       expect(response.json().origin).toBe('auto-routing')
     })
 
+    it('accepts the pod the caller routed the ticket to', async () => {
+      const group = await app.db
+        .insertInto('ticket_groups')
+        .values({ name: 'POD 3', created_by: DEV_LOGIN_USER_ID })
+        .returning('id')
+        .executeTakeFirstOrThrow()
+
+      const response = await app.inject({
+        method: 'POST',
+        url: '/api/tickets',
+        payload: { ...validTicketBody, groupId: group.id },
+        cookies: { [SESSION_COOKIE_NAME]: sessionCookie },
+      })
+
+      expect(response.statusCode).toBe(201)
+      expect(response.json().groupId).toBe(group.id)
+
+      await app.db.deleteFrom('tickets').execute()
+      await app.db.deleteFrom('ticket_groups').where('id', '=', group.id).execute()
+    })
+
+    it.each(['groupId', 'parentTicketId'])('names %s when it points at nothing', async (field) => {
+      const response = await app.inject({
+        method: 'POST',
+        url: '/api/tickets',
+        payload: { ...validTicketBody, [field]: NONEXISTENT_ID },
+        cookies: { [SESSION_COOKIE_NAME]: sessionCookie },
+      })
+
+      expect(response.statusCode).toBe(422)
+      expect(response.json().error).toBe('ValidationFailedError')
+      expect(response.json().details[0].field).toBe(field)
+    })
+
     it('returns 409 when enrollment already has an open ticket', async () => {
       await app.inject({
         method: 'POST',
