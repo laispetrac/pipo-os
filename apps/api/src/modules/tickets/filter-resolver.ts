@@ -34,21 +34,18 @@ function inOrNull(eb: Eb, column: 'assignee_id' | 'priority', values: (string | 
   return eb.or(parts)
 }
 
-/** The pt-BR letters `translate` folds, in pairs. The twin on the web strips
- *  any diacritic via NFD; a letter outside this list diverges. */
+/** The pt-BR letters `translate` folds, in pairs. A letter outside this list
+ *  keeps its accent here and loses it on the web, which diverges. */
 const ACCENTED = 'ÁÀÂÃÄÇÉÈÊËÍÌÎÏÑÓÒÔÕÖÚÙÛÜÝáàâãäçéèêëíìîïñóòôõöúùûüý'
 const PLAIN = 'AAAAACEEEEIIIINOOOOOUUUUYaaaaaceeeeiiiinooooouuuuy'
 
-/** `lower` runs after `translate`, so it only sees ASCII whatever the collation. */
 const foldedSubject = sql`lower(translate(title, ${ACCENTED}, ${PLAIN}))`
 
 /** Twin of `normalizeText` in web/src/lib/pipodesk/filter.ts: change one,
- *  change both. */
-const foldQuery = (text: string): string =>
-  text
-    .normalize('NFD')
-    .replace(/\p{Diacritic}/gu, '')
-    .toLowerCase()
+ *  change both. Combining marks only — `\p{Diacritic}` also takes standalone
+ *  ones like `·`, the separator the subject is built with, which `translate`
+ *  leaves in the column. */
+const foldQuery = (text: string): string => text.normalize('NFD').replace(/[̀-ͯ]/g, '').toLowerCase()
 
 /** The columns that hold the EI's word, each with the vocabulary that reads it. */
 const VOCABULARY_OF = {
@@ -109,10 +106,12 @@ export const FIELD_RESOLVERS: Record<keyof TicketFilter, Resolver> = {
   priorities: (eb, { priorities }) =>
     priorities?.length ? inOrNull(eb, 'priority', priorities) : null,
   // `LIKE` here would need `%` and `_` escaped; `strpos` is `String.includes`.
-  subjectQuery: (_eb, { subjectQuery }) =>
-    subjectQuery === undefined
-      ? null
-      : sql<SqlBool>`strpos(${foldedSubject}, ${foldQuery(subjectQuery)}) > 0`,
+  // A query that folds to nothing drops the criterion, as on the web:
+  // `strpos(x, '')` is 1, which would widen the filter instead of narrowing it.
+  subjectQuery: (_eb, { subjectQuery }) => {
+    const needle = subjectQuery === undefined ? '' : foldQuery(subjectQuery)
+    return needle === '' ? null : sql<SqlBool>`strpos(${foldedSubject}, ${needle}) > 0`
+  },
   actionDateBefore: (_eb, { actionDateBefore }) =>
     actionDateBefore === undefined
       ? null

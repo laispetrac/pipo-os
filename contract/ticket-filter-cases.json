@@ -516,6 +516,13 @@
         "subjectQuery": "reembolso"
       },
       "expected": []
+    },
+    {
+      "name": "subjectQuery keeps the separator the subject is built with",
+      "filter": {
+        "subjectQuery": "odonto · beatriz"
+      },
+      "expected": ["acorda-no-limite"]
     }
   ]
 }

@@ -238,6 +238,36 @@ describe('GET /api/tickets/rows', () => {
     expect((await get('?subjectQuery=marta')).body.data).toEqual([])
   })
 
+  it('keeps the separator the subject is built with', async () => {
+    await seed([
+      { title: 'SulAmérica · Odonto · Beatriz Lima' },
+      { title: 'SulAmérica · Saúde · Beatriz Lima' },
+    ])
+
+    expect(titles((await get('?subjectQuery=odonto%20%C2%B7%20beatriz')).body)).toEqual([
+      'SulAmérica · Odonto · Beatriz Lima',
+    ])
+  })
+
+  it('drops a query that folds to nothing, instead of taking every ticket with a subject', async () => {
+    await seed([{ title: 'Inclusão de Marta' }])
+    await app.db
+      .insertInto('tickets')
+      .values({
+        enrollment_id: randomUUID(),
+        enrollment_type: 'inclusion',
+        company_id: COMPANY,
+        source_system: 'enrollment-integrations',
+        status: 'broker-processing',
+        tags: [],
+        title: null,
+      })
+      .execute()
+
+    // `%CC%81` is a lone combining acute: non-empty for the schema, empty once folded.
+    expect((await get('?subjectQuery=%CC%81')).body.total).toBe(2)
+  })
+
   it('takes a percent sign as text, not as a wildcard', async () => {
     await seed([{ title: 'Reajuste de 10% na fatura' }, { title: 'Inclusão de Marta' }])
 
