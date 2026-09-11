@@ -34,6 +34,22 @@ function inOrNull(eb: Eb, column: 'assignee_id' | 'priority', values: (string | 
   return eb.or(parts)
 }
 
+/** The pt-BR letters `translate` folds, in pairs. The twin on the web strips
+ *  any diacritic via NFD; a letter outside this list diverges. */
+const ACCENTED = 'ÁÀÂÃÄÇÉÈÊËÍÌÎÏÑÓÒÔÕÖÚÙÛÜÝáàâãäçéèêëíìîïñóòôõöúùûüý'
+const PLAIN = 'AAAAACEEEEIIIINOOOOOUUUUYaaaaaceeeeiiiinooooouuuuy'
+
+/** `lower` runs after `translate`, so it only sees ASCII whatever the collation. */
+const foldedSubject = sql`lower(translate(title, ${ACCENTED}, ${PLAIN}))`
+
+/** Twin of `normalizeText` in web/src/lib/pipodesk/filter.ts: change one,
+ *  change both. */
+const foldQuery = (text: string): string =>
+  text
+    .normalize('NFD')
+    .replace(/\p{Diacritic}/gu, '')
+    .toLowerCase()
+
 /** The columns that hold the EI's word, each with the vocabulary that reads it. */
 const VOCABULARY_OF = {
   product: 'product',
@@ -92,6 +108,11 @@ export const FIELD_RESOLVERS: Record<keyof TicketFilter, Resolver> = {
       : null,
   priorities: (eb, { priorities }) =>
     priorities?.length ? inOrNull(eb, 'priority', priorities) : null,
+  // `LIKE` here would need `%` and `_` escaped; `strpos` is `String.includes`.
+  subjectQuery: (_eb, { subjectQuery }) =>
+    subjectQuery === undefined
+      ? null
+      : sql<SqlBool>`strpos(${foldedSubject}, ${foldQuery(subjectQuery)}) > 0`,
   actionDateBefore: (_eb, { actionDateBefore }) =>
     actionDateBefore === undefined
       ? null

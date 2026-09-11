@@ -393,6 +393,10 @@
               ]
             }
           },
+          "subjectQuery": {
+            "type": "string",
+            "minLength": 1
+          },
           "actionDateBefore": {
             "type": "string",
             "format": "date",
@@ -1410,6 +1414,10 @@
                 }
               ]
             }
+          },
+          "subjectQuery": {
+            "type": "string",
+            "minLength": 1
           },
           "actionDateBefore": {
             "type": "string",
@@ -3761,6 +3769,15 @@
             },
             "in": "query",
             "name": "priorities",
+            "required": false
+          },
+          {
+            "schema": {
+              "type": "string",
+              "minLength": 1
+            },
+            "in": "query",
+            "name": "subjectQuery",
             "required": false
           },
           {

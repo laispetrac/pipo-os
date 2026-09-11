@@ -47,6 +47,14 @@ export function assertNever(value: never): never {
  *  API by the boundary tickets in contract/ticket-filter-cases.json. */
 export const SLEEP_DAYS = 2
 
+/** Accent- and case-insensitive: `Conceição` must match `conceicao`. Twin of
+ *  `foldQuery` in api/src/modules/tickets/filter-resolver.ts. */
+export const normalizeText = (text: string): string =>
+  text
+    .normalize('NFD')
+    .replace(/\p{Diacritic}/gu, '')
+    .toLowerCase()
+
 const addDays = (isoDate: string, days: number): string =>
   new Date(Date.parse(`${isoDate}T00:00:00Z`) + days * 86_400_000).toISOString().slice(0, 10)
 
@@ -140,6 +148,12 @@ export function matchesFilter(ticket: TicketRow, filter: TicketFilter, viewerId:
   if (missesList(filter.relationships, ticket.relationship)) return false
   if (missesList(filter.origins, ticket.sourceSystem)) return false
   if (missesList(filter.groupIds, ticket.groupId)) return false
+  if (
+    filter.subjectQuery &&
+    !normalizeText(ticket.subject).includes(normalizeText(filter.subjectQuery))
+  ) {
+    return false
+  }
   // The two search fields carry a query RESULT, so an empty list matches
   // nothing — otherwise a miss would return the whole queue.
   if (filter.ticketIds !== undefined && !filter.ticketIds.includes(ticket.id)) return false

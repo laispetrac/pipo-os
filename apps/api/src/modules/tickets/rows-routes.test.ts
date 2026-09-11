@@ -218,6 +218,27 @@ describe('GET /api/tickets/rows', () => {
     expect(titles(body)).toEqual(['urgente-da-ana'])
   })
 
+  it('searches the subject ignoring accent and case', async () => {
+    await seed([
+      { title: 'Inclusão de José Conceição' },
+      { title: 'EXCLUSAO DE JOSE RIBEIRO' },
+      { title: 'Mudança de plano de Marta Alves' },
+    ])
+
+    expect(titles((await get('?subjectQuery=jose')).body)).toEqual([
+      'EXCLUSAO DE JOSE RIBEIRO',
+      'Inclusão de José Conceição',
+    ])
+  })
+
+  it('takes a percent sign as text, not as a wildcard', async () => {
+    await seed([{ title: 'Reajuste de 10% na fatura' }, { title: 'Inclusão de Marta' }])
+
+    expect(titles((await get('?subjectQuery=10%25%20na')).body)).toEqual([
+      'Reajuste de 10% na fatura',
+    ])
+  })
+
   it('reads @none as the null the panel offers', async () => {
     await seed([
       { title: 'livre', assigneeId: null },

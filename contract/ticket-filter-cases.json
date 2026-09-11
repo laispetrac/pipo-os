@@ -480,6 +480,42 @@
         "products": ["health-insurance"]
       },
       "expected": []
+    },
+    {
+      "name": "subjectQuery finds an accented subject typed without accents",
+      "filter": {
+        "subjectQuery": "jose"
+      },
+      "expected": ["livre-urgente"]
+    },
+    {
+      "name": "subjectQuery ignores case, accent included",
+      "filter": {
+        "subjectQuery": "INCLUSAO"
+      },
+      "expected": ["do-bruno", "livre-urgente"]
+    },
+    {
+      "name": "subjectQuery matches any part of the subject",
+      "filter": {
+        "subjectQuery": "odonto"
+      },
+      "expected": ["acorda-no-limite", "dorme-um-dia-alem", "vira-o-dia-so-em-utc"]
+    },
+    {
+      "name": "subjectQuery narrows on top of the other fields",
+      "filter": {
+        "subjectQuery": "inclusao",
+        "groupIds": ["00000000-0000-4000-8000-0000000000c3"]
+      },
+      "expected": ["do-bruno", "livre-urgente"]
+    },
+    {
+      "name": "a subject nobody wrote selects nothing",
+      "filter": {
+        "subjectQuery": "reembolso"
+      },
+      "expected": []
     }
   ]
 }

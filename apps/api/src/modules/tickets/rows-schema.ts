@@ -31,6 +31,7 @@ export const ticketRowsQuerySchema = z.object({
   tags: list(text).optional(),
   assigneeIds: list(text.nullable()).optional(),
   priorities: list(ticketPrioritySchema.nullable()).optional(),
+  subjectQuery: text.optional(),
   actionDateBefore: z.iso.date().optional(),
   urgentBy: z.iso.date().optional(),
   createdSince: z.iso.date().optional(),
