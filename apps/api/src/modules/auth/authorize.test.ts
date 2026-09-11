@@ -229,7 +229,7 @@ describe('the policy each route requires', () => {
   // With the flag on, buildApp registers dev-login, which EXPECTED does not list.
   const flag = process.env.DEV_LOGIN_ENABLED
   const registered: RouteOptions[] = []
-  let inventoried: FastifyInstance
+  let inventoried: FastifyInstance | undefined
 
   beforeAll(async () => {
     delete process.env.DEV_LOGIN_ENABLED
@@ -247,7 +247,7 @@ describe('the policy each route requires', () => {
       process.env.DEV_LOGIN_ENABLED = flag
     }
     // Otherwise the pool dbPlugin opened stays behind.
-    await inventoried.close().catch(() => {})
+    await inventoried?.close().catch(() => {})
   })
 
   const apiRoutes = () =>
