@@ -142,7 +142,7 @@ export const LIST_QUERY_FIELD_PII = {
   enrollmentType: 'closed vocabulary',
   sourceSystem: 'closed vocabulary',
   companyId: 'internal uuid',
-  tags: 'shape enforced by tagSchema — no space, no accent, so no person',
+  tags: 'a label picked from the queue, never typed free — ACE-196',
   // Matches `name` and `tax_id` inside the snapshot, so it is typed as either.
   search: true,
   page: 'number',
