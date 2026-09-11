@@ -3,8 +3,7 @@ import type { FastifyInstance } from 'fastify'
 import { z } from 'zod'
 import { requireUserId } from '../auth/authenticate.js'
 import { errorResponseSchema } from '../../shared/schemas.js'
-import { STRUCTURE_POLICY } from '../groups/policy.js'
-import { TICKET_POLICY } from '../tickets/policy.js'
+import { STRUCTURE_POLICY, TICKET_POLICY } from '../auth/policy.js'
 import { ticketListSchema } from '../tickets/schemas.js'
 import {
   addQueueGroupBodySchema,

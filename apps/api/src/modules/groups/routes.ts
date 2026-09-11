@@ -3,7 +3,7 @@ import type { FastifyInstance } from 'fastify'
 import { z } from 'zod'
 import { requireUserId } from '../auth/authenticate.js'
 import { errorResponseSchema } from '../../shared/schemas.js'
-import { STRUCTURE_POLICY } from './policy.js'
+import { STRUCTURE_POLICY } from '../auth/policy.js'
 import {
   addMemberBodySchema,
   createGroupBodySchema,

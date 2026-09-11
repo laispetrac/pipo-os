@@ -9,6 +9,14 @@ export interface PolicyRequirement {
   specific?: string
 }
 
+/** The door to every ticket route, wherever it lives — the queue module serves
+ *  them too. Not domain `ticket`: that is the ticket-service's admin role. */
+export const TICKET_POLICY: PolicyRequirement = { domain: 'pipodesk', specific: 'ticket' }
+
+/** Pods, their members and the saved queues — one door for both modules, so
+ *  neither imports the other. `pipodesk/*` covers it and the tickets. */
+export const STRUCTURE_POLICY: PolicyRequirement = { domain: 'pipodesk', specific: 'structure' }
+
 export function policyString(requirement: PolicyRequirement): string {
   const {
     context = 'admin',

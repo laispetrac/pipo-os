@@ -2,7 +2,7 @@ import type { ZodTypeProvider } from '@fastify/type-provider-zod'
 import type { FastifyInstance } from 'fastify'
 import { requireActor } from '../auth/authenticate.js'
 import { errorResponseSchema } from '../../shared/schemas.js'
-import { TICKET_POLICY } from '../tickets/policy.js'
+import { TICKET_POLICY } from '../auth/policy.js'
 import { ticketParamsSchema } from '../tickets/schemas.js'
 import {
   commentListSchema,
