@@ -22,8 +22,6 @@ export type ChangeStatusResult =
 
 const OPEN_ENROLLMENT_CONSTRAINT = 'uq_tickets_open_enrollment'
 
-/** A uuid the caller invented is a field they got wrong, not a broken state —
- *  hence ValidationFailedError, and not the 404 a missing path id gets. */
 const FK_FIELDS: Record<string, string> = {
   tickets_group_id_fkey: 'groupId',
   tickets_parent_ticket_id_fkey: 'parentTicketId',

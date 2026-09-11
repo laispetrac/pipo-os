@@ -89,7 +89,6 @@ describe('a ticket opened by a service', () => {
     expect(response.json().enrollmentId).toBe(ENROLLMENT_ID)
   })
 
-  // The body with the shape the Go client will send, field by field.
   it('carries the subject, the HR contacts, the schedule and how it came in', async () => {
     const payload = {
       enrollmentId: ENROLLMENT_ID,
@@ -121,7 +120,6 @@ describe('a ticket opened by a service', () => {
     expect(ticket.status).toBe('broker-processing')
   })
 
-  // A second call for the same enrollment answers with the ticket that exists.
   it('is told which ticket is open when it tries twice', async () => {
     const created = await openTicket()
 

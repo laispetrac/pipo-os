@@ -27,8 +27,6 @@ export const ticketPrioritySchema = z
   .enum(['urgent', 'high', 'medium', 'low'])
   .meta({ id: 'TicketPriority' })
 
-/** The HR side of the ticket. E-mail is the identity: it is what the EI
- *  resolves and what tells two contacts apart. */
 export const ticketPersonSchema = z
   .object({
     email: z.email(),
@@ -83,8 +81,6 @@ export const ticketParamsSchema = z.object({
  *  the `tags` entry in `ROW_FIELD_PII` a fact instead of a convention. */
 const tagSchema = z.string().regex(/^[a-z0-9_:-]+$/)
 
-// Status is not a field of creation: the ticket is born in the first state and
-// moves only through PATCH /:id/status, which audits it (DSP-19).
 export const createTicketBodySchema = z
   .object({
     enrollmentId: z.uuid(),
@@ -92,8 +88,6 @@ export const createTicketBodySchema = z
     companyId: z.uuid(),
     sourceSystem: z.string(),
     enrollmentSnapshot: z.record(z.string(), z.unknown()),
-    // Stored as sent. The cap is a guard, not formatting: the subject reaches
-    // the queue projection, and the EI already cuts it at 150 runes.
     title: z.string().min(1).max(500).optional(),
     // With an offset, always: a date alone would have to guess a timezone, and
     // the guess moves the day the queue shows.
@@ -178,8 +172,6 @@ export const LIST_QUERY_FIELD_PII = {
   pageSize: 'number',
 } satisfies Record<keyof ListTicketsQuery, true | string>
 
-/** Only this route carries an id in the error body; the shared ErrorResponse
- *  stays the same for everyone else. */
 export const openTicketConflictSchema = errorResponseSchema
   .extend({ ticketId: z.uuid().optional() })
   .meta({ id: 'OpenTicketConflict' })

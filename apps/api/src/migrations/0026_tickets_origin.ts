@@ -1,8 +1,7 @@
 import { sql, type Kysely } from 'kysely'
 
 export async function up(db: Kysely<unknown>): Promise<void> {
-  // How the ticket came in: auto-routing, automation-failure, broker,
-  // back-office. No CHECK, by the same rule as 0025.
+  // auto-routing | automation-failure | broker | back-office, free text.
   await sql`ALTER TABLE tickets ADD COLUMN origin text`.execute(db)
 }
 
