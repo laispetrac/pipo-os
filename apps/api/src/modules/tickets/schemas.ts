@@ -77,6 +77,9 @@ export const createTicketBodySchema = z
     companyId: z.uuid(),
     sourceSystem: z.string(),
     enrollmentSnapshot: z.record(z.string(), z.unknown()),
+    // Stored as sent. The cap is a guard, not formatting: the subject reaches
+    // the queue projection, and the EI already cuts it at 150 runes.
+    title: z.string().min(1).max(500).optional(),
     carrierId: z.string().min(1).optional(),
     carrierName: z.string().min(1).optional(),
     product: z.string().min(1).optional(),

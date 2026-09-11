@@ -2185,6 +2185,7 @@ export interface components {
             enrollmentSnapshot: {
                 [key: string]: unknown;
             };
+            title?: string;
             carrierId?: string;
             carrierName?: string;
             product?: string;

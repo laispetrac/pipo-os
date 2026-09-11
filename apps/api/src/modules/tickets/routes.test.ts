@@ -81,6 +81,39 @@ describe('tickets routes', () => {
       expect(body.forceCompletion).toBe(false)
     })
 
+    it('stores the subject the caller sends, untouched', async () => {
+      const title = 'Bradesco | ACME LTDA | 🩺 Saúde | Inclusão de titular - MARIA SILVA'
+
+      const response = await app.inject({
+        method: 'POST',
+        url: '/api/tickets',
+        payload: { ...validTicketBody, title },
+        cookies: { [SESSION_COOKIE_NAME]: sessionCookie },
+      })
+
+      expect(response.statusCode).toBe(201)
+      expect(response.json().title).toBe(title)
+
+      const read = await app.inject({
+        method: 'GET',
+        url: `/api/tickets/${response.json().id}`,
+        cookies: { [SESSION_COOKIE_NAME]: sessionCookie },
+      })
+
+      expect(read.json().title).toBe(title)
+    })
+
+    it('rejects a blank title', async () => {
+      const response = await app.inject({
+        method: 'POST',
+        url: '/api/tickets',
+        payload: { ...validTicketBody, title: '' },
+        cookies: { [SESSION_COOKIE_NAME]: sessionCookie },
+      })
+
+      expect(response.statusCode).toBe(400)
+    })
+
     it('returns 409 when enrollment already has an open ticket', async () => {
       await app.inject({
         method: 'POST',
