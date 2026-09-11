@@ -9,6 +9,7 @@ export const groupSchema = z
   .object({
     id: z.uuid(),
     name: z.string(),
+    parentId: z.uuid().nullable(),
     createdBy: z.string(),
     updatedBy: z.string().min(1).nullable(),
     createdAt: z.iso.datetime(),
@@ -42,15 +43,20 @@ export const memberParamsSchema = z.object({
 export const createGroupBodySchema = z
   .object({
     name: trimmedInput().max(255),
+    parentId: z.uuid().nullable().optional(),
   })
   .strict()
   .meta({ id: 'CreateGroupBody' })
 
 export const updateGroupBodySchema = z
   .object({
-    name: trimmedInput().max(255),
+    name: trimmedInput().max(255).optional(),
+    parentId: z.uuid().nullable().optional(),
   })
   .strict()
+  .refine((d) => d.name !== undefined || d.parentId !== undefined, {
+    message: 'At least one field is required',
+  })
   .meta({ id: 'UpdateGroupBody' })
 
 export const addMemberBodySchema = z

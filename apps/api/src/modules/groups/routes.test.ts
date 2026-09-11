@@ -46,6 +46,17 @@ describe('groups routes', () => {
     await app.db.deleteFrom('ticket_groups').execute()
   })
 
+  const createGroup = async (name: string, parentId?: string | null): Promise<string> => {
+    const response = await app.inject({
+      method: 'POST',
+      url: '/api/groups',
+      payload: { name, ...(parentId !== undefined && { parentId }) },
+      cookies: { [SESSION_COOKIE_NAME]: sessionCookie },
+    })
+    expect(response.statusCode).toBe(201)
+    return response.json().id as string
+  }
+
   // ---------------------------------------------------------------------------
   describe('POST /api/groups', () => {
     it('returns 401 without session cookie', async () => {
@@ -127,6 +138,43 @@ describe('groups routes', () => {
         method: 'POST',
         url: '/api/groups',
         payload: { name: 'Grupo', campoInexistente: 'valor' },
+        cookies: { [SESSION_COOKIE_NAME]: sessionCookie },
+      })
+
+      expect(response.statusCode).toBe(400)
+    })
+
+    it('creates a group without a parent and reports parentId as null', async () => {
+      const response = await app.inject({
+        method: 'POST',
+        url: '/api/groups',
+        payload: { name: 'Gestão de Benefícios' },
+        cookies: { [SESSION_COOKIE_NAME]: sessionCookie },
+      })
+
+      expect(response.statusCode).toBe(201)
+      expect(response.json().parentId).toBeNull()
+    })
+
+    it('nests a group under its parent', async () => {
+      const geben = await createGroup('Gestão de Benefícios')
+
+      const response = await app.inject({
+        method: 'POST',
+        url: '/api/groups',
+        payload: { name: 'POD 3', parentId: geben },
+        cookies: { [SESSION_COOKIE_NAME]: sessionCookie },
+      })
+
+      expect(response.statusCode).toBe(201)
+      expect(response.json().parentId).toBe(geben)
+    })
+
+    it('returns 400 when parentId is not a uuid', async () => {
+      const response = await app.inject({
+        method: 'POST',
+        url: '/api/groups',
+        payload: { name: 'POD 3', parentId: 'geben' },
         cookies: { [SESSION_COOKIE_NAME]: sessionCookie },
       })
 
@@ -295,6 +343,20 @@ describe('groups routes', () => {
       expect(response.json().name).toBe('Suporte')
     })
 
+    it('reports the parent of a nested group', async () => {
+      const geben = await createGroup('Gestão de Benefícios')
+      const pod = await createGroup('POD 3', geben)
+
+      const response = await app.inject({
+        method: 'GET',
+        url: `/api/groups/${pod}`,
+        cookies: { [SESSION_COOKIE_NAME]: sessionCookie },
+      })
+
+      expect(response.statusCode).toBe(200)
+      expect(response.json().parentId).toBe(geben)
+    })
+
     it('returns 404 for non-existent group', async () => {
       const response = await app.inject({
         method: 'GET',
@@ -370,6 +432,69 @@ describe('groups routes', () => {
       })
 
       expect(response.statusCode).toBe(404)
+    })
+
+    it('moves a group to another parent without touching its name', async () => {
+      const geben = await createGroup('Gestão de Benefícios')
+      const pod3 = await createGroup('POD 3', geben)
+      const subtime = await createGroup('Subtime', geben)
+
+      const response = await app.inject({
+        method: 'PATCH',
+        url: `/api/groups/${subtime}`,
+        payload: { parentId: pod3 },
+        cookies: { [SESSION_COOKIE_NAME]: sessionCookie },
+      })
+
+      expect(response.statusCode).toBe(200)
+      const body = response.json()
+      expect(body.parentId).toBe(pod3)
+      expect(body.name).toBe('Subtime')
+    })
+
+    it('detaches a group from its parent when parentId is null', async () => {
+      const geben = await createGroup('Gestão de Benefícios')
+      const pod = await createGroup('POD 3', geben)
+
+      const response = await app.inject({
+        method: 'PATCH',
+        url: `/api/groups/${pod}`,
+        payload: { parentId: null },
+        cookies: { [SESSION_COOKIE_NAME]: sessionCookie },
+      })
+
+      expect(response.statusCode).toBe(200)
+      expect(response.json().parentId).toBeNull()
+    })
+
+    it('returns 400 for an empty body, which would be an update that updates nothing', async () => {
+      const id = await createGroup('Gestão de Benefícios')
+
+      const response = await app.inject({
+        method: 'PATCH',
+        url: `/api/groups/${id}`,
+        payload: {},
+        cookies: { [SESSION_COOKIE_NAME]: sessionCookie },
+      })
+
+      expect(response.statusCode).toBe(400)
+    })
+
+    it('keeps the parent when the update only changes the name', async () => {
+      const geben = await createGroup('Gestão de Benefícios')
+      const pod = await createGroup('POD 3', geben)
+
+      const response = await app.inject({
+        method: 'PATCH',
+        url: `/api/groups/${pod}`,
+        payload: { name: 'POD 5' },
+        cookies: { [SESSION_COOKIE_NAME]: sessionCookie },
+      })
+
+      expect(response.statusCode).toBe(200)
+      const body = response.json()
+      expect(body.name).toBe('POD 5')
+      expect(body.parentId).toBe(geben)
     })
   })
 

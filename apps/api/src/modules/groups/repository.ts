@@ -17,6 +17,7 @@ function toGroup(row: Selectable<TicketGroups>): Group {
   return {
     id: row.id,
     name: row.name,
+    parentId: row.parent_id,
     createdBy: row.created_by,
     updatedBy: row.updated_by,
     createdAt: row.created_at.toISOString(),
@@ -47,7 +48,7 @@ export class GroupsRepository implements GroupsRepositoryPort {
   async create(data: CreateGroupBody, createdBy: string): Promise<Group> {
     const row = await this.db
       .insertInto('ticket_groups')
-      .values({ name: data.name, created_by: createdBy })
+      .values({ name: data.name, parent_id: data.parentId ?? null, created_by: createdBy })
       .returningAll()
       .executeTakeFirstOrThrow()
 
@@ -98,7 +99,11 @@ export class GroupsRepository implements GroupsRepositoryPort {
   async update(id: string, data: UpdateGroupBody, updatedBy: string): Promise<Group | undefined> {
     const row = await this.db
       .updateTable('ticket_groups')
-      .set({ name: data.name, updated_by: updatedBy })
+      .set({
+        ...(data.name !== undefined && { name: data.name }),
+        ...(data.parentId !== undefined && { parent_id: data.parentId }),
+        updated_by: updatedBy,
+      })
       .where('id', '=', id)
       .returningAll()
       .executeTakeFirst()
