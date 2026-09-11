@@ -430,6 +430,7 @@ export function QueueSidebar({
             anchor={accountTrigger}
             label={constants.account(viewerName)}
             align="left"
+            side="top"
           >
             <div className={styles.account}>
               <Text variant="bodySmall">{viewerEmail}</Text>

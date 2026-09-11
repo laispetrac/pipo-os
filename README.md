@@ -76,21 +76,23 @@ Isso sobe `apps/api` e `apps/web` simultaneamente via `pnpm -r --parallel dev`.
 
 ## Variáveis de ambiente
 
-| Variável                 | Padrão                                                | Descrição                                                                                                                   |
-| ------------------------ | ----------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------- |
-| `PORT`                   | `3001`                                                | Porta HTTP da API                                                                                                           |
-| `DATABASE_URL`           | `postgresql://pipo_os:pipo_os@localhost:5432/pipo_os` | Connection string do Postgres                                                                                               |
-| `CORS_ORIGIN`            | `http://localhost:5173`                               | Origens permitidas, separadas por vírgula                                                                                   |
-| `LOG_LEVEL`              | `info` em produção, `debug` nos demais ambientes      | Nível mínimo de log do pino                                                                                                 |
-| `SENTRY_DSN`             | _(vazio, Sentry desabilitado)_                        | DSN do projeto Sentry da api. Sempre desabilitado em dev/test                                                               |
-| `WEB_APP_SENTRY_DSN`     | _(vazio, Sentry desabilitado)_                        | DSN do projeto Sentry do web, injetado em build-time pelo Vite                                                              |
-| `COOKIE_SECRET`          | valor de dev fixo fora de produção                    | Secret de assinatura HMAC dos cookies de sessão (`@fastify/cookie`). Obrigatório em produção — a API falha ao subir sem ele |
-| `AUTH_SERVICE_URL`       | `http://localhost:9090`                               | URL base do auth-service (backend de identidade da Pipo)                                                                    |
-| `GOOGLE_OAUTH_CLIENT_ID` | _(vazio)_                                             | Client ID OAuth do Google reaproveitado do client "Backoffice" já registrado no GCP (o mesmo usado pelo `tools`)            |
-| `APP_BASE_URL`           | `http://localhost:5173`                               | Origem pública da aplicação, usada para montar o `redirect_uri` do fluxo Google e os redirects de erro                      |
-| `ALLOWED_EMAIL_DOMAINS`  | `piposaude.com.br,pipo.ai`                            | Domínios de e-mail aceitos no login Google, separados por vírgula                                                           |
-| `DEV_LOGIN_ENABLED`      | _(desligado)_                                         | Habilita `POST /api/auth/dev-login`. Só `true` liga; a API **falha no boot** se chegar em ambiente deployado                |
-| `DEV_LOGIN_EMAIL`        | `dev@piposaude.com.br`                                | Identidade usada pelo login local; precisa pertencer a `ALLOWED_EMAIL_DOMAINS`                                              |
+| Variável                    | Padrão                                                | Descrição                                                                                                                   |
+| --------------------------- | ----------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------- |
+| `PORT`                      | `3001`                                                | Porta HTTP da API                                                                                                           |
+| `DATABASE_URL`              | `postgresql://pipo_os:pipo_os@localhost:5432/pipo_os` | Connection string do Postgres                                                                                               |
+| `CORS_ORIGIN`               | `http://localhost:5173`                               | Origens permitidas, separadas por vírgula                                                                                   |
+| `LOG_LEVEL`                 | `info` em produção, `debug` nos demais ambientes      | Nível mínimo de log do pino                                                                                                 |
+| `SENTRY_DSN`                | _(vazio, Sentry desabilitado)_                        | DSN do projeto Sentry da api. Sempre desabilitado em dev/test                                                               |
+| `WEB_APP_SENTRY_DSN`        | _(vazio, Sentry desabilitado)_                        | DSN do projeto Sentry do web, injetado em build-time pelo Vite                                                              |
+| `COOKIE_SECRET`             | valor de dev fixo fora de produção                    | Secret de assinatura HMAC dos cookies de sessão (`@fastify/cookie`). Obrigatório em produção — a API falha ao subir sem ele |
+| `AUTH_SERVICE_URL`          | `http://localhost:9090`                               | URL base do auth-service (backend de identidade da Pipo)                                                                    |
+| `AUTH_SERVICE_INTERNAL_URL` | `http://auth-service.platform:4000`                   | URL do listener **interno** do auth-service, o único que responde `/api/verify-token`. Usado só na autenticação de serviço  |
+| `SERVICE_ALLOWED_ACCOUNTS`  | _(vazio, nenhum serviço entra)_                       | Service accounts que podem chamar a API como serviço, no formato `<namespace>/<nome>` e separadas por vírgula               |
+| `GOOGLE_OAUTH_CLIENT_ID`    | _(vazio)_                                             | Client ID OAuth do Google reaproveitado do client "Backoffice" já registrado no GCP (o mesmo usado pelo `tools`)            |
+| `APP_BASE_URL`              | `http://localhost:5173`                               | Origem pública da aplicação, usada para montar o `redirect_uri` do fluxo Google e os redirects de erro                      |
+| `ALLOWED_EMAIL_DOMAINS`     | `piposaude.com.br,pipo.ai`                            | Domínios de e-mail aceitos no login Google, separados por vírgula                                                           |
+| `DEV_LOGIN_ENABLED`         | _(desligado)_                                         | Habilita `POST /api/auth/dev-login`. Só `true` liga; a API **falha no boot** se chegar em ambiente deployado                |
+| `DEV_LOGIN_EMAIL`           | `dev@piposaude.com.br`                                | Identidade usada pelo login local; precisa pertencer a `ALLOWED_EMAIL_DOMAINS`                                              |
 
 ## Observabilidade
 
@@ -137,6 +139,46 @@ O JWT emitido pelo auth-service (ES256, assinado via AWS KMS) não pode ser vali
 A API confia no cookie assinado (HMAC via `COOKIE_SECRET`) para garantir que o token não foi adulterado pelo cliente, e apenas decodifica o payload para ler `email`/`policies`/`exp`.
 
 **Pré-requisito de infraestrutura**: a redirect URI `{APP_BASE_URL}/api/auth/google/callback` de cada ambiente (local, stag, prod) precisa estar registrada no client OAuth "Backoffice" do Google Cloud Console — o mesmo client usado pelo `tools`.
+
+#### Autenticação de serviço (EI → Pipodesk)
+
+O login acima serve para gente. O `enrollment-integrations` é um worker num pod: não tem navegador, não faz login e não tem cookie — e precisa abrir e acompanhar chamado.
+
+Ele entra por outra porta, a mesma que todo serviço da Pipo usa:
+
+1. O Kubernetes monta um token dentro de cada pod. O serviço lê esse arquivo e manda `Authorization: Bearer <token>`.
+2. A API não valida esse token sozinha: manda para o `POST /api/verify-token` do listener interno do auth-service, junto da policy que a rota exige.
+3. O auth-service resolve as claims do service account na identidade `<nome>.serviceaccount@piposaude.com.br`, confere as policies dela e devolve o `identity-id`.
+
+**Não existe `client_id`/`client_secret` de serviço.** Quem vem do Cognito, do Keycloak ou de outro IdP espera um par de credenciais trocado por token no `/oauth2/token`. Aqui não há segredo estático para guardar, distribuir ou rotacionar: a prova de identidade é o token que o Kubernetes já emite para o pod, assinado pelo OIDC issuer do cluster (o provider do EKS) e renovado por ele. O auth-service verifica essa assinatura e traduz as claims na identidade da Pipo.
+
+Isso não faz do token um dado inócuo: ele é uma credencial bearer, vale enquanto o `exp` valer e quem o tiver entra como o serviço. Não pode aparecer em log, em mensagem de erro nem em ticket — o `Authorization` já está na redaction do pino (`@pipo-os/observability`), e a API nunca escreve o token no corpo de uma resposta. O que limita o estrago é o prazo curto que o Kubernetes dá e a renovação automática, não a ausência de segredo.
+
+Duas consequências de desenho que valem saber:
+
+- **A autorização não viaja dentro do token.** As policies vivem na identidade e são consultadas a cada `verify-token`, então um `ppcli user remove-policy` vale já no request seguinte, sem esperar TTL. Em troca, cada request custa uma ida ao auth-service, e auth-service fora do ar vira `503` — por isso o guard de `serviceAllowed` recusa antes de tocar a rede.
+- **Não há cache.** O interceptor Clojure da casa também não tem; cachear sem número de latência real seria otimizar por suposição.
+- **O salto até o `verify-token` é HTTP dentro do cluster.** O listener interno do auth-service só fala HTTP na porta 4000, e é assim que todo BFF e serviço da casa o chama — a confidencialidade desse salto hoje é a rede do cluster, não TLS. Cifrar exige TLS no listener ou mTLS na malha, que é mudança no `platform/auth-service` e não aqui; enquanto isso, a API pelo menos recusa redirect nessa chamada, para o corpo com o token não ser reenviado a outro destino.
+
+`client_id`/`client_secret` na Pipo aparece só em integração de **saída** com terceiro (a API do Bradesco, no `automated-enrollment-service`). Um chamador que não seja um pod — n8n, parceiro externo — não tem service account e portanto não tem esta porta.
+
+O que a API cobra, em ordem, antes de deixar entrar:
+
+| Guarda                                                       | Recusa                                                                                                                                                                                                                                 |
+| ------------------------------------------------------------ | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| A rota declara `serviceAllowed: true` e a `policy` que exige | `403` — rota nova nasce fechada para serviço, e a recusa acontece antes de qualquer chamada de rede. `serviceAllowed` sem `policy` derruba o boot, porque mandaria o `verify-token` conferir identidade sem exigir autorização nenhuma |
+| O token traz nome de service account                         | `401`                                                                                                                                                                                                                                  |
+| O `<namespace>/<nome>` está em `SERVICE_ALLOWED_ACCOUNTS`    | `403` — o namespace entra na comparação porque o auth-service resolve a identidade só pelo nome, e um homônimo em outro namespace passaria                                                                                             |
+| O auth-service reconhece a identidade e a policy             | `401` (credencial) ou `403` (identidade ou policy)                                                                                                                                                                                     |
+| O auth-service responde                                      | `503`, nunca um 500 mudo                                                                                                                                                                                                               |
+
+As rotas abertas a serviço são as quatro que abrir e acompanhar um chamado exige — criar, ler por id, procurar pelo `enrollmentId` (`GET /api/tickets?enrollmentId=…`, que é como o EI fica idempotente) e ler comentários — mais escrever comentário. A lista inteira é asserção em `apps/api/src/modules/auth/service-routes.test.ts`: abrir uma quinta é uma linha visível no diff.
+
+Quem escreve como serviço fica registrado como `svc:<nome>` na coluna de autor, ao lado do `sub` de uma pessoa. Mudar status não está aberto a serviço: quem muda status é gente, e o caminho de volta para o EI é o webhook.
+
+**Pré-requisito de infraestrutura**: a identidade `<nome>.serviceaccount@piposaude.com.br` precisa existir no auth-service de cada ambiente com a policy que as rotas de chamado exigem (ver [Autorização](#autorização)), concedida por `ppcli user add-policy`. Ligar `SERVICE_ALLOWED_ACCOUNTS` sem isso dá `403` no `verify-token`.
+
+O `<nome>` da identidade no auth-service é o do ServiceAccount do pod, sem namespace — e no EI ele **não** é `enrollment-integrations`. Quem processa movimentação é o `--handler=enrollment`, que roda no namespace `cronjobs` com o service account `enrollment-integrations-worker`; o `enrollment-integrations` do `default` carrega só o `--handler=server`. A identidade, portanto, é `enrollment-integrations-worker.serviceaccount@piposaude.com.br`, e a entrada correspondente em `SERVICE_ALLOWED_ACCOUNTS` é `cronjobs/enrollment-integrations-worker` — com o namespace, que o auth-service descarta e a allowlist daqui não.
 
 #### Autenticação em desenvolvimento
 

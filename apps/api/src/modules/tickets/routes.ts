@@ -1,6 +1,6 @@
 import type { ZodTypeProvider } from '@fastify/type-provider-zod'
 import type { FastifyInstance } from 'fastify'
-import { requirePrincipal, requireUserId } from '../auth/authenticate.js'
+import { requireUser, requireUserId } from '../auth/authenticate.js'
 import { businessToday } from '../../shared/business-date.js'
 import { errorResponseSchema } from '../../shared/schemas.js'
 import { TICKET_POLICY } from './policy.js'
@@ -22,7 +22,9 @@ export function registerTicketRoutes(app: FastifyInstance, service: TicketsServi
   server.get(
     '/api/tickets',
     {
-      config: { policy: TICKET_POLICY },
+      // The EI looks a ticket up by enrollmentId to stay idempotent, and route
+      // config cannot demand a query param — so this opens the bare list too.
+      config: { policy: TICKET_POLICY, serviceAllowed: true },
       schema: {
         querystring: listTicketsQuerySchema,
         response: {
@@ -57,7 +59,7 @@ export function registerTicketRoutes(app: FastifyInstance, service: TicketsServi
       },
     },
     async (request) => {
-      const { email } = requirePrincipal(request)
+      const { email } = requireUser(request)
       // TODO: no portfolio filter yet, and this one answers up to 5000 rows at
       // once, with beneficiary name and tax id (ACE-147)
       return service.rows(request.query, email, businessToday())
@@ -67,7 +69,7 @@ export function registerTicketRoutes(app: FastifyInstance, service: TicketsServi
   server.get(
     '/api/tickets/:id',
     {
-      config: { policy: TICKET_POLICY },
+      config: { policy: TICKET_POLICY, serviceAllowed: true },
       schema: {
         params: ticketParamsSchema,
         response: {
@@ -87,7 +89,7 @@ export function registerTicketRoutes(app: FastifyInstance, service: TicketsServi
   server.post(
     '/api/tickets',
     {
-      config: { policy: TICKET_POLICY },
+      config: { policy: TICKET_POLICY, serviceAllowed: true },
       schema: {
         body: createTicketBodySchema,
         response: {

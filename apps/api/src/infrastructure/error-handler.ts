@@ -91,6 +91,12 @@ export default fp(
       }
 
       if (error instanceof DomainError) {
+        // Ours by construction, so the message is safe to publish — but a 5xx
+        // means an upstream broke, and its detail rides in `cause`, which only
+        // the log ever sees.
+        if (error.statusCode >= 500) {
+          request.log.error({ err: error }, 'upstream failure')
+        }
         reply.status(error.statusCode).send({
           error: error.name,
           message: error.message,

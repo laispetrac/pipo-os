@@ -1603,6 +1603,7 @@ export interface paths {
             parameters: {
                 query?: {
                     status?: components["schemas"]["TicketStatusInput"];
+                    enrollmentId?: string;
                     queueId?: string;
                     assigneeId?: string;
                     enrollmentType?: string;

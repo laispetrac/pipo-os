@@ -21,6 +21,13 @@ export function policyString(requirement: PolicyRequirement): string {
   return [context, effect, action, domain, specific].join('/')
 }
 
+/** A route's `policy` config as a list, whichever shape it was declared in. */
+export function requiredPolicies(
+  declared: PolicyRequirement | PolicyRequirement[],
+): PolicyRequirement[] {
+  return Array.isArray(declared) ? declared : [declared]
+}
+
 const effectOf = (policy: string): string | undefined => policy.split('/')[1]
 
 /** The effect swapped for `allow`, to compare a deny against a requirement. */

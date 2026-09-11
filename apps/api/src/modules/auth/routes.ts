@@ -3,7 +3,7 @@ import type { ZodTypeProvider } from '@fastify/type-provider-zod'
 import type { FastifyInstance } from 'fastify'
 import { z } from 'zod'
 import { errorResponseSchema } from '../../shared/schemas.js'
-import { requirePrincipal } from './authenticate.js'
+import { requireUser } from './authenticate.js'
 import type { AuthConfig } from './config.js'
 import { googleCallbackQuerySchema, googleLoginQuerySchema, meResponseSchema } from './schemas.js'
 import { AuthService, IdentityNotFoundError } from './service.js'
@@ -139,7 +139,7 @@ export function registerAuthRoutes(
       schema: { response: { 200: meResponseSchema, 401: errorResponseSchema } },
     },
     async (request) => {
-      const principal = requirePrincipal(request)
+      const principal = requireUser(request)
       return { email: principal.email, policies: principal.policies }
     },
   )

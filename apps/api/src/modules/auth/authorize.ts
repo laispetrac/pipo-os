@@ -1,6 +1,6 @@
 import fp from 'fastify-plugin'
 import { ForbiddenError } from '../../shared/errors.js'
-import { isAuthorized, policyString, type PolicyRequirement } from './policy.js'
+import { isAuthorized, policyString, requiredPolicies, type PolicyRequirement } from './policy.js'
 
 declare module 'fastify' {
   interface FastifyContextConfig {
@@ -8,10 +8,6 @@ declare module 'fastify' {
     // vector the Clojure services declare.
     policy?: PolicyRequirement | PolicyRequirement[]
   }
-}
-
-function required(config: PolicyRequirement | PolicyRequirement[]): PolicyRequirement[] {
-  return Array.isArray(config) ? config : [config]
 }
 
 export default fp(
@@ -48,7 +44,7 @@ export default fp(
         )
       }
 
-      const wanted = required(declared)
+      const wanted = requiredPolicies(declared)
       const policies = request.principal?.policies ?? []
 
       if (!isAuthorized(policies, wanted)) {

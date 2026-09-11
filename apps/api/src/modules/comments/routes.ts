@@ -1,6 +1,6 @@
 import type { ZodTypeProvider } from '@fastify/type-provider-zod'
 import type { FastifyInstance } from 'fastify'
-import { requireUserId } from '../auth/authenticate.js'
+import { requireActor } from '../auth/authenticate.js'
 import { errorResponseSchema } from '../../shared/schemas.js'
 import { TICKET_POLICY } from '../tickets/policy.js'
 import { ticketParamsSchema } from '../tickets/schemas.js'
@@ -19,7 +19,7 @@ export function registerCommentRoutes(app: FastifyInstance, service: CommentsSer
   server.get(
     '/api/tickets/:id/comments',
     {
-      config: { policy: TICKET_POLICY },
+      config: { policy: TICKET_POLICY, serviceAllowed: true },
       schema: {
         params: ticketParamsSchema,
         response: {
@@ -62,7 +62,7 @@ export function registerCommentRoutes(app: FastifyInstance, service: CommentsSer
   server.post(
     '/api/tickets/:id/comments',
     {
-      config: { policy: TICKET_POLICY },
+      config: { policy: TICKET_POLICY, serviceAllowed: true },
       // A quarter of the global limit, over 5x the 50k characters the schema
       // accepts as raw UTF-8, so a multibyte body still reaches the field check.
       bodyLimit: 262_144,
@@ -81,7 +81,7 @@ export function registerCommentRoutes(app: FastifyInstance, service: CommentsSer
       },
     },
     async (request, reply) => {
-      const authorId = requireUserId(request)
+      const authorId = requireActor(request)
       const comment = await service.add(request.params.id, request.body, authorId)
       reply.status(201)
       return comment

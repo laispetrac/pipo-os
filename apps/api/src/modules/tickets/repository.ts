@@ -124,6 +124,9 @@ export class TicketsRepository implements TicketsRepositoryPort {
       .selectFrom('tickets')
       .$if(query.status !== undefined, (q) => q.where('status', '=', query.status!))
       .$if(query.queueId !== undefined, (q) => q.where('queue_id', '=', query.queueId!))
+      .$if(query.enrollmentId !== undefined, (q) =>
+        q.where('enrollment_id', '=', query.enrollmentId!),
+      )
       .$if(query.assigneeId !== undefined, (q) => q.where('assignee_id', '=', query.assigneeId!))
       .$if(query.companyId !== undefined, (q) => q.where('company_id', '=', query.companyId!))
       .$if(query.enrollmentType !== undefined, (q) =>

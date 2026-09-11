@@ -66,6 +66,16 @@ export class ForbiddenError extends DomainError {
   }
 }
 
+export class ServiceUnavailableError extends DomainError {
+  readonly statusCode = 503
+
+  constructor(message: string, options?: { cause: unknown }) {
+    super(message)
+    this.name = 'ServiceUnavailableError'
+    this.cause = options?.cause
+  }
+}
+
 /** The state machine refused: a closed ticket, a status that cannot follow the
  *  current one. Field-level refusals are ValidationFailedError instead. */
 export class UnprocessableEntityError extends DomainError {
