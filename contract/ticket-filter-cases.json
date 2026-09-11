@@ -8,6 +8,7 @@
   "tickets": [
     {
       "id": "livre-urgente",
+      "title": "Inclusão de José Conceição",
       "status": "broker-processing",
       "companyId": "00000000-0000-4000-8000-0000000000a1",
       "enrollmentType": "inclusion",
@@ -34,6 +35,7 @@
     },
     {
       "id": "da-ana-atrasado",
+      "title": "Exclusão de Marta Ribeiro",
       "status": "missing-documents",
       "companyId": "00000000-0000-4000-8000-0000000000a1",
       "enrollmentType": "exclusion",
@@ -60,6 +62,7 @@
     },
     {
       "id": "da-ana-sem-prioridade",
+      "title": "Petlove · Pet · Pedro Alves",
       "status": "carrier-processing",
       "companyId": "00000000-0000-4000-8000-0000000000b2",
       "enrollmentType": "inclusion",
@@ -86,6 +89,7 @@
     },
     {
       "id": "do-bruno",
+      "title": "Inclusão de dependente de Carla Nunes",
       "status": "incorrect-data",
       "companyId": "00000000-0000-4000-8000-0000000000b2",
       "enrollmentType": "plan_change",
@@ -112,6 +116,7 @@
     },
     {
       "id": "fechado",
+      "title": "Wellhub · Academia · Ana Paula Dias",
       "status": "completed",
       "companyId": "00000000-0000-4000-8000-0000000000a1",
       "enrollmentType": "inclusion",
@@ -138,6 +143,7 @@
     },
     {
       "id": "acorda-no-limite",
+      "title": "SulAmérica · Odonto · Beatriz Lima",
       "status": "carrier-processing",
       "companyId": "00000000-0000-4000-8000-0000000000b2",
       "enrollmentType": "exclusion",
@@ -164,6 +170,7 @@
     },
     {
       "id": "dorme-um-dia-alem",
+      "title": "SulAmérica · Odonto · Rafael Souza",
       "status": "carrier-processing",
       "companyId": "00000000-0000-4000-8000-0000000000b2",
       "enrollmentType": "exclusion",
@@ -190,6 +197,7 @@
     },
     {
       "id": "vira-o-dia-so-em-utc",
+      "title": "SulAmérica · Odonto · Helena Prado",
       "status": "carrier-processing",
       "companyId": "00000000-0000-4000-8000-0000000000b2",
       "enrollmentType": "exclusion",

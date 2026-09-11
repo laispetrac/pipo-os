@@ -13,6 +13,7 @@ const CASES_PATH = fileURLToPath(
 
 type FixtureTicket = {
   id: string
+  title: string
   status: string
   companyId: string
   enrollmentType: string
@@ -47,7 +48,7 @@ const toRow = (seed: FixtureTicket): TicketRow => ({
   status: seed.status as TicketRow['status'],
   display: 'broker-processing',
   reason: null,
-  subject: seed.id,
+  subject: seed.title,
   beneficiaryName: null,
   taxId: null,
   companyName: null,

@@ -18,6 +18,7 @@ const CASES_PATH = fileURLToPath(
 
 type FixtureTicket = {
   id: string
+  title: string
   status: string
   companyId: string
   enrollmentType: string
@@ -45,6 +46,13 @@ type CaseFile = {
 
 const fixture = JSON.parse(readFileSync(CASES_PATH, 'utf8')) as CaseFile
 
+/** `title` is the subject `subjectQuery` searches, so the case id rides on
+ *  `enrollment_id` instead of on it. */
+const enrollmentIdByCase = new Map(fixture.tickets.map((seed) => [seed.id, randomUUID()] as const))
+const caseIdByEnrollment = new Map(
+  [...enrollmentIdByCase].map(([caseId, enrollmentId]) => [enrollmentId as string, caseId]),
+)
+
 describe('the shared filter corpus, resolved in SQL', () => {
   let app: FastifyInstance
 
@@ -62,7 +70,7 @@ describe('the shared filter corpus, resolved in SQL', () => {
       .insertInto('tickets')
       .values(
         fixture.tickets.map((seed) => ({
-          enrollment_id: randomUUID(),
+          enrollment_id: enrollmentIdByCase.get(seed.id)!,
           enrollment_type: seed.enrollmentType,
           company_id: seed.companyId,
           source_system: seed.sourceSystem,
@@ -79,7 +87,7 @@ describe('the shared filter corpus, resolved in SQL', () => {
           product: seed.stored.product,
           contract_type: seed.stored.contractType,
           company_size: seed.stored.companySize,
-          title: seed.id,
+          title: seed.title,
         })),
       )
       .execute()
@@ -96,7 +104,7 @@ describe('the shared filter corpus, resolved in SQL', () => {
     async (_name, testCase) => {
       const rows = await app.db
         .selectFrom('tickets')
-        .select('title')
+        .select('enrollment_id')
         .where((eb) => {
           const parts = ticketFilterConditions(eb, testCase.filter, fixture.viewerId)
           const window = testCase.window
@@ -105,7 +113,7 @@ describe('the shared filter corpus, resolved in SQL', () => {
           return eb.and(window ? [...parts, window] : parts)
         })
         .execute()
-      const selected = rows.map((row) => row.title!).sort()
+      const selected = rows.map((row) => caseIdByEnrollment.get(row.enrollment_id)!).sort()
 
       expect(selected).toEqual([...testCase.expected].sort())
     },
