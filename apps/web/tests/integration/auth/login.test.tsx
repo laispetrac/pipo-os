@@ -248,6 +248,26 @@ describe('auth/login', () => {
     expect(useSessionStore.getState().status).toBe('unauthenticated')
   })
 
+  it('opens the account panel upwards, since its trigger sits at the bottom of the screen', async () => {
+    setupApi([
+      {
+        method: 'GET',
+        path: '/api/auth/me',
+        reply: () => jsonResponse({ email: 'pikachu@piposaude.com.br', policies: [] }),
+      },
+      { method: 'GET', path: '/api/tickets', reply: () => jsonResponse([]) },
+    ])
+
+    await routerRender('/')
+    const user = userEvent.setup()
+
+    await user.click(await screen.findByRole('button', { name: /conta de/i }))
+
+    // jsdom has no layout: the side the primitive hangs the panel from is what
+    // the test can hold, and the wrong side is what hid it on screen.
+    expect(screen.getByRole('dialog', { name: /conta de/i })).toHaveAttribute('data-side', 'top')
+  })
+
   it('keeps the queue reachable once authenticated', async () => {
     setupApi([
       {
