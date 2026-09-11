@@ -159,9 +159,6 @@
             "type": "string",
             "minLength": 1
           },
-          "status": {
-            "$ref": "#/components/schemas/TicketStatusInput"
-          },
           "groupId": {
             "type": "string",
             "format": "uuid",

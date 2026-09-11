@@ -251,6 +251,19 @@ describe('tickets routes', () => {
       expect(response.json().details[0].field).toBe(field)
     })
 
+    it('ignores a status in the body: the ticket is born in the first state', async () => {
+      const response = await app.inject({
+        method: 'POST',
+        url: '/api/tickets',
+        payload: { ...validTicketBody, status: 'completed' },
+        cookies: { [SESSION_COOKIE_NAME]: sessionCookie },
+      })
+
+      expect(response.statusCode).toBe(201)
+      expect(response.json().status).toBe('broker-processing')
+      expect(response.json().closedAt).toBeNull()
+    })
+
     it('returns 409 when enrollment already has an open ticket', async () => {
       await app.inject({
         method: 'POST',

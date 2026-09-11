@@ -2220,7 +2220,6 @@ export interface components {
             product?: string;
             contractType?: string;
             companySize?: string;
-            status?: components["schemas"]["TicketStatusInput"];
             /** Format: uuid */
             groupId?: string;
             /** Format: uuid */

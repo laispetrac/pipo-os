@@ -268,7 +268,7 @@ export class TicketsRepository implements TicketsRepositoryPort {
           contract_type: data.contractType ?? derived.contractType,
           company_size: data.companySize ?? derived.companySize,
           relationship: relationshipOf(data.enrollmentSnapshot),
-          status: data.status ?? 'broker-processing',
+          status: 'broker-processing',
           queue_id: data.queueId,
           assignee_id: data.assigneeId,
           group_id: data.groupId,

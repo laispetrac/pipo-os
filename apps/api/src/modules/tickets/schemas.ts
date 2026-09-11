@@ -82,6 +82,8 @@ export const ticketParamsSchema = z.object({
  *  the `tags` entry in `ROW_FIELD_PII` a fact instead of a convention. */
 const tagSchema = z.string().regex(/^[a-z0-9_:-]+$/)
 
+// Status is not a field of creation: the ticket is born in the first state and
+// moves only through PATCH /:id/status, which audits it (DSP-19).
 export const createTicketBodySchema = z
   .object({
     enrollmentId: z.uuid(),
@@ -107,7 +109,6 @@ export const createTicketBodySchema = z
     product: z.string().min(1).optional(),
     contractType: z.string().min(1).optional(),
     companySize: z.string().min(1).optional(),
-    status: ticketStatusSchema.optional(),
     // Accepted, never chosen: routing by portfolio is PD-052.
     groupId: z.uuid().optional(),
     queueId: z.uuid().optional(),
