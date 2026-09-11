@@ -7,12 +7,19 @@ import type {
   AddMemberBody,
   CreateGroupBody,
   Group,
+  GroupDetailMember,
   GroupMember,
   ListGroupsQuery,
   MemberRole,
   UpdateGroupBody,
   UpdateMemberBody,
 } from './schemas.js'
+
+/** What a page of groups reads with, keyed by group id. */
+export interface GroupRelations {
+  companyIds: Map<string, string[]>
+  members: Map<string, GroupDetailMember[]>
+}
 
 const PG_FK_VIOLATION = '23503'
 
@@ -44,6 +51,7 @@ export interface GroupsRepositoryPort {
   findById(id: string): Promise<Group | undefined>
   findMany(query: ListGroupsQuery): Promise<{ data: Group[]; total: number }>
   findNodes(): Promise<GroupNode[]>
+  findRelations(groupIds: readonly string[]): Promise<GroupRelations>
   update(id: string, data: UpdateGroupBody, updatedBy: string): Promise<Group | undefined>
   delete(id: string): Promise<boolean>
 }
@@ -108,6 +116,56 @@ export class GroupsRepository implements GroupsRepositoryPort {
     const rows = await this.db.selectFrom('ticket_groups').select(['id', 'parent_id']).execute()
 
     return rows.map((row) => ({ id: row.id, parentId: row.parent_id }))
+  }
+
+  /** Two queries for a whole page, never one per group: the portfolio, and the
+   *  members already joined with the slice each of them follows. */
+  async findRelations(groupIds: readonly string[]): Promise<GroupRelations> {
+    const companyIds = new Map<string, string[]>()
+    const members = new Map<string, GroupDetailMember[]>()
+    if (groupIds.length === 0) return { companyIds, members }
+
+    const carried = await this.db
+      .selectFrom('ticket_group_companies')
+      .select(['group_id', 'company_id'])
+      .where('group_id', 'in', groupIds)
+      .orderBy('company_id')
+      .execute()
+
+    for (const row of carried) {
+      const list = companyIds.get(row.group_id) ?? []
+      list.push(row.company_id)
+      companyIds.set(row.group_id, list)
+    }
+
+    const rows = await this.db
+      .selectFrom('ticket_group_members as m')
+      .leftJoin('ticket_group_member_companies as mc', (join) =>
+        join.onRef('mc.group_id', '=', 'm.group_id').onRef('mc.user_id', '=', 'm.user_id'),
+      )
+      .select(['m.group_id', 'm.user_id', 'm.role', 'm.active', 'mc.company_id'])
+      .where('m.group_id', 'in', groupIds)
+      .orderBy('m.user_id')
+      .orderBy('mc.company_id')
+      .execute()
+
+    for (const row of rows) {
+      const list = members.get(row.group_id) ?? []
+      let member = list.at(-1)
+      if (member?.userId !== row.user_id) {
+        member = {
+          userId: row.user_id,
+          role: row.role as MemberRole,
+          active: row.active,
+          companyIds: [],
+        }
+        list.push(member)
+        members.set(row.group_id, list)
+      }
+      if (row.company_id !== null) member.companyIds.push(row.company_id)
+    }
+
+    return { companyIds, members }
   }
 
   async update(id: string, data: UpdateGroupBody, updatedBy: string): Promise<Group | undefined> {

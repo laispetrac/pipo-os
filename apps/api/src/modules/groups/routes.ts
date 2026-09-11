@@ -7,6 +7,7 @@ import { STRUCTURE_POLICY } from '../auth/policy.js'
 import {
   addMemberBodySchema,
   createGroupBodySchema,
+  groupDetailSchema,
   groupListSchema,
   groupMemberSchema,
   groupParamsSchema,
@@ -72,7 +73,7 @@ export function registerGroupRoutes(app: FastifyInstance, service: GroupsService
       schema: {
         params: groupParamsSchema,
         response: {
-          200: groupSchema,
+          200: groupDetailSchema,
           400: errorResponseSchema,
           401: errorResponseSchema,
           403: errorResponseSchema,

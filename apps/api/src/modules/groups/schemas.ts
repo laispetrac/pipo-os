@@ -33,6 +33,24 @@ export const groupMemberSchema = z
   })
   .meta({ id: 'GroupMember' })
 
+/** The member as the group reads it: no groupId, which the group already is,
+ *  and with the slice of the portfolio that follows the person. */
+export const groupDetailMemberSchema = z
+  .object({
+    userId: z.string().min(1),
+    role: memberRoleSchema,
+    active: z.boolean(),
+    companyIds: z.array(z.uuid()),
+  })
+  .meta({ id: 'GroupDetailMember' })
+
+export const groupDetailSchema = groupSchema
+  .extend({
+    companyIds: z.array(z.uuid()),
+    members: z.array(groupDetailMemberSchema),
+  })
+  .meta({ id: 'GroupDetail' })
+
 export const groupParamsSchema = z.object({
   id: z.uuid(),
 })
@@ -91,7 +109,7 @@ export const listGroupsQuerySchema = z.object({
 
 export const groupListSchema = z
   .object({
-    data: z.array(groupSchema),
+    data: z.array(groupDetailSchema),
     total: z.number().int(),
     page: z.number().int(),
     pageSize: z.number().int(),
@@ -99,6 +117,8 @@ export const groupListSchema = z
   .meta({ id: 'GroupList' })
 
 export type Group = z.infer<typeof groupSchema>
+export type GroupDetail = z.infer<typeof groupDetailSchema>
+export type GroupDetailMember = z.infer<typeof groupDetailMemberSchema>
 export type MemberRole = z.infer<typeof memberRoleSchema>
 export type GroupMember = z.infer<typeof groupMemberSchema>
 export type GroupParams = z.infer<typeof groupParamsSchema>

@@ -13,6 +13,8 @@ function cookieValue(
 const DEV_LOGIN_USER_ID = 'dev@piposaude.com.br'
 const USER_ID_1 = '00000000-0000-4000-8000-000000000001'
 const NONEXISTENT_ID = '00000000-0000-4000-8000-000000000099'
+const COMPANY_A = '00000000-0000-4000-8000-00000000000a'
+const COMPANY_B = '00000000-0000-4000-8000-00000000000b'
 
 describe('groups routes', () => {
   let app: FastifyInstance
@@ -455,6 +457,118 @@ describe('groups routes', () => {
       const body = response.json()
       expect(body.name).toBe('POD 5')
       expect(body.parentId).toBe(geben)
+    })
+  })
+
+  // ---------------------------------------------------------------------------
+  describe('the portfolio and the people a group reads with', () => {
+    const addMember = async (groupId: string, userId: string, role?: string): Promise<void> => {
+      const response = await app.inject({
+        method: 'POST',
+        url: `/api/groups/${groupId}/members`,
+        payload: { userId, ...(role !== undefined && { role }) },
+        cookies: { [SESSION_COOKIE_NAME]: sessionCookie },
+      })
+      expect(response.statusCode).toBe(201)
+    }
+
+    /* The portfolio has no write route yet — it is PD-051 —, so the rows go in
+       through the database. */
+    const carry = (groupId: string, companyId: string): Promise<unknown> =>
+      app.db
+        .insertInto('ticket_group_companies')
+        .values({ group_id: groupId, company_id: companyId })
+        .execute()
+
+    const assign = (groupId: string, userId: string, companyId: string): Promise<unknown> =>
+      app.db
+        .insertInto('ticket_group_member_companies')
+        .values({ group_id: groupId, user_id: userId, company_id: companyId })
+        .execute()
+
+    it('reads one group with its portfolio and its people', async () => {
+      const geben = await createGroup('Gestão de Benefícios')
+      const pod = await createGroup('POD 3', geben)
+      await addMember(pod, 'larissa@pipo.health', 'admin')
+      await addMember(pod, 'ana@pipo.health')
+      await carry(pod, COMPANY_A)
+      await carry(pod, COMPANY_B)
+      await assign(pod, 'ana@pipo.health', COMPANY_A)
+
+      const response = await app.inject({
+        method: 'GET',
+        url: `/api/groups/${pod}`,
+        cookies: { [SESSION_COOKIE_NAME]: sessionCookie },
+      })
+
+      expect(response.statusCode).toBe(200)
+      const body = response.json()
+      expect(body.companyIds).toEqual([COMPANY_A, COMPANY_B])
+      expect(body.members).toEqual([
+        { userId: 'ana@pipo.health', role: 'member', active: true, companyIds: [COMPANY_A] },
+        { userId: 'larissa@pipo.health', role: 'admin', active: true, companyIds: [] },
+      ])
+    })
+
+    it('reads an empty portfolio and no people as empty lists, not as absent fields', async () => {
+      const geben = await createGroup('Gestão de Benefícios')
+
+      const response = await app.inject({
+        method: 'GET',
+        url: `/api/groups/${geben}`,
+        cookies: { [SESSION_COOKIE_NAME]: sessionCookie },
+      })
+
+      expect(response.statusCode).toBe(200)
+      const body = response.json()
+      expect(body.companyIds).toEqual([])
+      expect(body.members).toEqual([])
+    })
+
+    it('gives the whole sidebar in one listing, each group with its own people', async () => {
+      const geben = await createGroup('Gestão de Benefícios')
+      const pod3 = await createGroup('POD 3', geben)
+      const pod5 = await createGroup('POD 5', geben)
+      await addMember(pod3, 'ana@pipo.health')
+      await addMember(pod5, 'bruno@pipo.health')
+      await carry(pod3, COMPANY_A)
+
+      const response = await app.inject({
+        method: 'GET',
+        url: '/api/groups?pageSize=100',
+        cookies: { [SESSION_COOKIE_NAME]: sessionCookie },
+      })
+
+      expect(response.statusCode).toBe(200)
+      const byId = new Map<string, { companyIds: string[]; members: Array<{ userId: string }> }>(
+        response.json().data.map((group: { id: string }) => [group.id, group]),
+      )
+      expect(byId.get(geben)!.members).toEqual([])
+      expect(byId.get(pod3)!.members.map((m) => m.userId)).toEqual(['ana@pipo.health'])
+      expect(byId.get(pod5)!.members.map((m) => m.userId)).toEqual(['bruno@pipo.health'])
+      expect(byId.get(pod3)!.companyIds).toEqual([COMPANY_A])
+      expect(byId.get(pod5)!.companyIds).toEqual([])
+    })
+
+    it('leaves an inactive member in the list, flagged, instead of hiding them', async () => {
+      const pod = await createGroup('POD 3')
+      await addMember(pod, 'ana@pipo.health')
+      await app.inject({
+        method: 'PATCH',
+        url: `/api/groups/${pod}/members/ana@pipo.health`,
+        payload: { active: false },
+        cookies: { [SESSION_COOKIE_NAME]: sessionCookie },
+      })
+
+      const response = await app.inject({
+        method: 'GET',
+        url: `/api/groups/${pod}`,
+        cookies: { [SESSION_COOKIE_NAME]: sessionCookie },
+      })
+
+      expect(response.json().members).toEqual([
+        { userId: 'ana@pipo.health', role: 'member', active: false, companyIds: [] },
+      ])
     })
   })
 

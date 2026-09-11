@@ -5,6 +5,7 @@ import type {
   AddMemberBody,
   CreateGroupBody,
   Group,
+  GroupDetail,
   GroupList,
   GroupMember,
   ListGroupsQuery,
@@ -23,15 +24,33 @@ export class GroupsService {
     return this.repository.create(data, createdBy)
   }
 
-  async get(id: string): Promise<Group> {
+  async get(id: string): Promise<GroupDetail> {
     const group = await this.repository.findById(id)
     if (!group) throw new NotFoundError(`Group ${id} not found`)
-    return group
+    const [detail] = await this.withRelations([group])
+    return detail
   }
 
   async list(query: ListGroupsQuery): Promise<GroupList> {
     const { data, total } = await this.repository.findMany(query)
-    return { data, total, page: query.page, pageSize: query.pageSize }
+    return {
+      data: await this.withRelations(data),
+      total,
+      page: query.page,
+      pageSize: query.pageSize,
+    }
+  }
+
+  private async withRelations(groups: readonly Group[]): Promise<GroupDetail[]> {
+    const { companyIds, members } = await this.repository.findRelations(
+      groups.map((group) => group.id),
+    )
+
+    return groups.map((group) => ({
+      ...group,
+      companyIds: companyIds.get(group.id) ?? [],
+      members: members.get(group.id) ?? [],
+    }))
   }
 
   async update(id: string, data: UpdateGroupBody, updatedBy: string): Promise<Group> {
