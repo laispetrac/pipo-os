@@ -197,7 +197,7 @@ ppcli user add-policy --email pessoa@piposaude.com.br --policy "admin/allow/admi
 
 `GET /api/auth/me` devolve as policies da sessão, que é a forma mais rápida de conferir depois de conceder.
 
-**Por que uma policy só para grupos e filas.** Pod, membro de pod e fila salva são a mesma superfície de administração — quem redesenha a hierarquia mexe nas duas —, então separar em `group` e `structure` custaria duas concessões por pessoa para distinguir papéis que a V0 não tem. A leitura da estrutura exige a mesma policy da escrita pelo mesmo motivo: a árvore de pods diz quem atende o quê, e isso não é público dentro da Pipo. O filtro por papel de membro (`canEditStructure`, no PD-050) é uma segunda camada, sobre esta.
+**Por que uma policy só para grupos e filas.** Pod, membro de pod e fila salva são a mesma superfície de administração — quem redesenha a hierarquia mexe nas duas —, então separar em `group` e `queue` custaria duas concessões por pessoa para distinguir papéis que a V0 não tem. A leitura da estrutura exige a mesma policy da escrita pelo mesmo motivo: a árvore de pods diz quem atende o quê, e isso não é público dentro da Pipo. O filtro por papel de membro (`canEditStructure`, no PD-050) é uma segunda camada, sobre esta.
 
 **A policy é fronteira, a carteira é filtro.** Ter a policy de chamado diz que a identidade opera chamados — não _quais_. Restringir por empresa (a carteira do analista) é filtro de dados e ainda não existe: as rotas de listagem carregam o `TODO` correspondente e o trabalho está no ACE-147, que depende do módulo de usuários.
 
