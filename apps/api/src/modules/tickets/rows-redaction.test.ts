@@ -2,7 +2,8 @@ import { Writable } from 'node:stream'
 import { createLoggerOptions } from '@pipo-os/observability/logger'
 import Fastify from 'fastify'
 import { describe, expect, it } from 'vitest'
-import { ROW_FIELD_PII } from './rows-schema.js'
+import { PII_QUERY_PARAMS } from '@pipo-os/observability/redact'
+import { QUERY_FIELD_PII, ROW_FIELD_PII } from './rows-schema.js'
 import { createTicketBodySchema, updateTicketBodySchema } from './schemas.js'
 
 /** Both sides derive from the classification in `rows-schema.ts`. */
@@ -92,5 +93,19 @@ describe('tags', () => {
 
     expect(created.success).toBe(false)
     expect(updated.success).toBe(false)
+  })
+})
+
+/** The query string is logged whole, so a parameter a person types has to be
+ *  named in the redaction list as well as classified here. */
+describe('the query string', () => {
+  it('redacts every parameter classified as typed by a person', () => {
+    const typed = Object.keys(QUERY_FIELD_PII).filter(
+      (field) => QUERY_FIELD_PII[field as keyof typeof QUERY_FIELD_PII] === true,
+    )
+
+    expect(typed.length).toBeGreaterThan(0)
+    // Contains, not equals: the list is the whole API's, this route is one of them.
+    expect(PII_QUERY_PARAMS).toEqual(expect.arrayContaining(typed))
   })
 })

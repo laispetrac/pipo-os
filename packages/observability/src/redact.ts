@@ -19,6 +19,10 @@ const PII_FIELD_ROOTS = [
   'beneficiaryName',
 ] as const
 
+/** Query parameters whose value is typed by a person, so it carries whoever
+ *  they are searching for. `req.url` is logged whole, and pino cannot reach in. */
+export const PII_QUERY_PARAMS: readonly string[] = ['subjectQuery']
+
 /** Redacted whole — free-form jsonb with no closed shape (PD-001). */
 const PII_OBJECT_ROOTS = ['enrollmentSnapshot', 'requester', 'collaborators'] as const
 

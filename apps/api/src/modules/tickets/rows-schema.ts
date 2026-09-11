@@ -40,6 +40,33 @@ export const ticketRowsQuerySchema = z.object({
   limit: z.coerce.number().int().min(1).max(5000).default(5000),
 })
 
+export type TicketRowsQuery = z.infer<typeof ticketRowsQuerySchema>
+
+/** Every query parameter, classified: `true` is text a person types, so it
+ *  carries whoever they are searching for and must leave `req.url`. */
+export const QUERY_FIELD_PII = {
+  statuses: 'closed vocabulary',
+  companyIds: 'internal uuid',
+  carrierIds: 'carrier, not a person',
+  products: 'closed vocabulary',
+  types: 'closed vocabulary',
+  companySizes: 'closed vocabulary',
+  contractTypes: 'closed vocabulary',
+  relationships: 'closed vocabulary',
+  origins: 'closed vocabulary',
+  groupIds: 'internal uuid',
+  tags: 'shape enforced by tagSchema — no space, no accent, so no person',
+  assigneeIds: 'Pipo user id, not the beneficiary — ACE-196',
+  priorities: 'closed vocabulary',
+  subjectQuery: true,
+  actionDateBefore: 'date',
+  urgentBy: 'date',
+  createdSince: 'date',
+  archived: 'boolean',
+  window: 'closed vocabulary',
+  limit: 'number',
+} satisfies Record<keyof TicketRowsQuery, true | string>
+
 /** No `enrollment_snapshot` — leaving it out is the point of the endpoint.
  *  The three fields dug out of it say word or null, never `''`, like the five
  *  movement columns: a blank is not a name. */
@@ -111,5 +138,4 @@ export const ticketRowsSchema = z
   })
   .meta({ id: 'TicketRows' })
 
-export type TicketRowsQuery = z.infer<typeof ticketRowsQuerySchema>
 export type TicketRowPayload = z.infer<typeof ticketRowSchema>

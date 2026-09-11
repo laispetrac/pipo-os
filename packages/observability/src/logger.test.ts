@@ -1,7 +1,7 @@
 import { Writable } from 'node:stream'
 import pino from 'pino'
 import { describe, expect, it } from 'vitest'
-import { createLoggerOptions } from './logger.js'
+import { createLoggerOptions, redactUrl } from './logger.js'
 import { kebabOf, snakeOf } from './redact.js'
 
 function captureLogs() {
@@ -218,5 +218,28 @@ describe('grafias', () => {
   it('leaves a single-word root untouched', () => {
     expect(kebabOf('cpf')).toBe('cpf')
     expect(snakeOf('cpf')).toBe('cpf')
+  })
+})
+
+describe('redactUrl', () => {
+  it('redacts the search term, which is the name of whoever is being looked for', () => {
+    const { stream, lines } = captureLogs()
+    const logger = pino(createLoggerOptions({ nodeEnv: 'test' }), stream)
+
+    logger.info(
+      { req: { method: 'GET', url: '/api/tickets/rows?statuses=completed&subjectQuery=Maria' } },
+      'request received',
+    )
+
+    const entry = lastEntry(lines)
+    expect(entry.req.url).toContain('statuses=completed')
+    expect(entry.req.url).not.toContain('Maria')
+  })
+
+  it('leaves a url with nothing to redact exactly as it came', () => {
+    expect(redactUrl('/api/tickets/rows?tags=vip&window=all')).toBe(
+      '/api/tickets/rows?tags=vip&window=all',
+    )
+    expect(redactUrl('/api/tickets/rows')).toBe('/api/tickets/rows')
   })
 })

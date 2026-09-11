@@ -1,6 +1,6 @@
 import { createRequire } from 'node:module'
 import pino, { type LoggerOptions } from 'pino'
-import { PII_REDACT_PATHS } from './redact.js'
+import { PII_QUERY_PARAMS, PII_REDACT_PATHS } from './redact.js'
 
 const require = createRequire(import.meta.url)
 
@@ -16,10 +16,24 @@ interface ReplyLike {
   statusCode: number
 }
 
+/** Rewritten only when a redacted parameter is actually there, so every other
+ *  line keeps the caller's own spelling instead of URLSearchParams'. */
+export function redactUrl(url: string): string {
+  const cut = url.indexOf('?')
+  if (cut === -1) return url
+
+  const params = new URLSearchParams(url.slice(cut + 1))
+  const present = PII_QUERY_PARAMS.filter((name) => params.has(name))
+  if (present.length === 0) return url
+
+  for (const name of present) params.set(name, '[REDACTED]')
+  return `${url.slice(0, cut)}?${params.toString()}`
+}
+
 function requestSerializer(request: RequestLike) {
   return {
     method: request.method,
-    url: request.url,
+    url: redactUrl(request.url),
     hostname: request.hostname,
     ip: request.ip,
     headers: request.headers,
