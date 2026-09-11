@@ -793,6 +793,7 @@ describe('queues routes', () => {
 
   describe('the structure policy', () => {
     let withoutPolicy: string
+    let withWholeProduct: string
 
     beforeAll(async () => {
       const anonymous = await app.inject({
@@ -801,6 +802,13 @@ describe('queues routes', () => {
         payload: { email: DEV_LOGIN_USER_ID, policies: [] },
       })
       withoutPolicy = cookieValue(anonymous, SESSION_COOKIE_NAME)!
+
+      const wholeProduct = await app.inject({
+        method: 'POST',
+        url: '/api/auth/dev-login',
+        payload: { email: DEV_LOGIN_USER_ID, policies: ['admin/allow/administrate/pipodesk/*'] },
+      })
+      withWholeProduct = cookieValue(wholeProduct, SESSION_COOKIE_NAME)!
     })
 
     const routes: Array<[string, string]> = [
@@ -823,6 +831,28 @@ describe('queues routes', () => {
 
       expect(response.statusCode).toBe(403)
       expect(response.json().error).toBe('ForbiddenError')
+    })
+
+    // The wildcard only ever matches on the session side (see policy.test.ts).
+    it('opens the route for a session holding the whole product', async () => {
+      const response = await app.inject({
+        method: 'GET',
+        url: '/api/queues',
+        cookies: { [SESSION_COOKIE_NAME]: withWholeProduct },
+      })
+
+      expect(response.statusCode).toBe(200)
+    })
+
+    // 404, not 403: the wildcard covers both families, so the route reaches the lookup.
+    it('opens the tickets of a queue for a session holding the whole product', async () => {
+      const response = await app.inject({
+        method: 'GET',
+        url: `/api/queues/${NONEXISTENT_ID}/tickets`,
+        cookies: { [SESSION_COOKIE_NAME]: withWholeProduct },
+      })
+
+      expect(response.statusCode).toBe(404)
     })
 
     it('answers 403 on the tickets of a queue for the structure policy alone', async () => {
