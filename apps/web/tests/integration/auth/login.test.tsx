@@ -7,6 +7,7 @@ import { useSessionStore } from '@/stores/session'
 import loginConstants from '@/constants/pages/auth/login'
 import devConstants from '@/constants/pages/auth/login/dev'
 import sidebarConstants from '@/constants/pipodesk/sidebar'
+import popoverStyles from '@/components/pipodesk/primitives/Popover.module.css'
 
 const jsonResponse = (body: unknown, status = 200) =>
   new Response(JSON.stringify(body), {
@@ -246,6 +247,26 @@ describe('auth/login', () => {
       expect.objectContaining({ method: 'POST', url: expect.stringContaining('/api/auth/logout') }),
     )
     expect(useSessionStore.getState().status).toBe('unauthenticated')
+  })
+
+  it('opens the account panel upwards, since its trigger sits at the bottom of the screen', async () => {
+    setupApi([
+      {
+        method: 'GET',
+        path: '/api/auth/me',
+        reply: () => jsonResponse({ email: 'pikachu@piposaude.com.br', policies: [] }),
+      },
+      { method: 'GET', path: '/api/tickets', reply: () => jsonResponse([]) },
+    ])
+
+    await routerRender('/')
+    const user = userEvent.setup()
+
+    await user.click(await screen.findByRole('button', { name: /conta de/i }))
+
+    // jsdom has no layout, so the side the primitive positions the panel on is
+    // what the test can hold — and the wrong side is what hid the panel.
+    expect(screen.getByRole('dialog', { name: /conta de/i })).toHaveClass(popoverStyles.top)
   })
 
   it('keeps the queue reachable once authenticated', async () => {
