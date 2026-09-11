@@ -2197,8 +2197,7 @@ export interface components {
             title?: string;
             /** Format: date-time */
             actionDate?: string;
-            /** @default auto-routing */
-            origin: string;
+            origin?: string;
             requester?: {
                 /** Format: email */
                 email: string;

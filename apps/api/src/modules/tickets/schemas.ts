@@ -93,8 +93,8 @@ export const createTicketBodySchema = z
     // the guess moves the day the queue shows.
     actionDate: z.iso.datetime({ offset: true }).optional(),
     // How the ticket came in, not which system created it — that is
-    // sourceSystem. Absent means the normal flow.
-    origin: z.string().min(1).default('auto-routing'),
+    // sourceSystem. Absent stays null: a default would label a failure normal.
+    origin: z.string().min(1).optional(),
     // Strict on the way in and not on the way out: a caller typo must fail
     // loudly, a hand-edited row must not 500 the whole read.
     requester: ticketPersonSchema.strict().optional(),

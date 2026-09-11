@@ -206,7 +206,7 @@ describe('tickets routes', () => {
       expect(response.json().origin).toBe('automation-failure')
     })
 
-    it('reads an omitted origin as the normal flow', async () => {
+    it('leaves the origin null when the caller does not say how it came in', async () => {
       const response = await app.inject({
         method: 'POST',
         url: '/api/tickets',
@@ -214,7 +214,7 @@ describe('tickets routes', () => {
         cookies: { [SESSION_COOKIE_NAME]: sessionCookie },
       })
 
-      expect(response.json().origin).toBe('auto-routing')
+      expect(response.json().origin).toBeNull()
     })
 
     it('accepts the pod the caller routed the ticket to', async () => {
