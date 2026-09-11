@@ -36,12 +36,14 @@ describe('queues routes', () => {
     const loginResponse = await app.inject({
       method: 'POST',
       url: '/api/auth/dev-login',
-      payload: { email: DEV_LOGIN_USER_ID, policies: [] },
+      payload: {
+        email: DEV_LOGIN_USER_ID,
+        policies: ['admin/allow/administrate/pipodesk/structure'],
+      },
     })
     sessionCookie = cookieValue(loginResponse, SESSION_COOKIE_NAME)!
 
-    // The queue structure asks for no policy; listing the tickets of a queue
-    // does, because what comes back is ticket data.
+    // Only the ticket door; the structure one is on sessionCookie.
     const ticketLogin = await app.inject({
       method: 'POST',
       url: '/api/auth/dev-login',
@@ -786,6 +788,92 @@ describe('queues routes', () => {
         payload: { groupId: GROUP_ID },
       })
       expect(relink.statusCode).toBe(201)
+    })
+  })
+
+  describe('the structure policy', () => {
+    let withoutPolicy: string
+    let withWholeProduct: string
+
+    beforeAll(async () => {
+      const anonymous = await app.inject({
+        method: 'POST',
+        url: '/api/auth/dev-login',
+        payload: { email: DEV_LOGIN_USER_ID, policies: [] },
+      })
+      withoutPolicy = cookieValue(anonymous, SESSION_COOKIE_NAME)!
+
+      const wholeProduct = await app.inject({
+        method: 'POST',
+        url: '/api/auth/dev-login',
+        payload: { email: DEV_LOGIN_USER_ID, policies: ['admin/allow/administrate/pipodesk/*'] },
+      })
+      withWholeProduct = cookieValue(wholeProduct, SESSION_COOKIE_NAME)!
+    })
+
+    const routes: Array<[string, string]> = [
+      ['GET', '/api/queues'],
+      ['POST', '/api/queues'],
+      ['GET', '/api/queues/:id'],
+      ['PATCH', '/api/queues/:id'],
+      ['DELETE', '/api/queues/:id'],
+      ['POST', '/api/queues/:id/groups'],
+      ['DELETE', '/api/queues/:id/groups/:groupId'],
+    ]
+
+    it.each(routes)('answers 403 on %s %s for a session with no policy', async (method, url) => {
+      const response = await app.inject({
+        method: method as 'GET',
+        url: url.replace(':id', NONEXISTENT_ID).replace(':groupId', GROUP_ID),
+        cookies: { [SESSION_COOKIE_NAME]: withoutPolicy },
+        payload: method === 'GET' || method === 'DELETE' ? undefined : { name: 'Fila' },
+      })
+
+      expect(response.statusCode).toBe(403)
+      expect(response.json().error).toBe('ForbiddenError')
+    })
+
+    // The wildcard only ever matches on the session side (see policy.test.ts).
+    it('opens the route for a session holding the whole product', async () => {
+      const response = await app.inject({
+        method: 'GET',
+        url: '/api/queues',
+        cookies: { [SESSION_COOKIE_NAME]: withWholeProduct },
+      })
+
+      expect(response.statusCode).toBe(200)
+    })
+
+    // 404, not 403: the wildcard covers both families, so the route reaches the lookup.
+    it('opens the tickets of a queue for a session holding the whole product', async () => {
+      const response = await app.inject({
+        method: 'GET',
+        url: `/api/queues/${NONEXISTENT_ID}/tickets`,
+        cookies: { [SESSION_COOKIE_NAME]: withWholeProduct },
+      })
+
+      expect(response.statusCode).toBe(404)
+    })
+
+    it('answers 403 on the tickets of a queue for the structure policy alone', async () => {
+      const response = await app.inject({
+        method: 'GET',
+        url: `/api/queues/${NONEXISTENT_ID}/tickets`,
+        cookies: { [SESSION_COOKIE_NAME]: sessionCookie },
+      })
+
+      expect(response.statusCode).toBe(403)
+      expect(response.json().error).toBe('ForbiddenError')
+    })
+
+    it('answers 403 for a session holding only the ticket policy', async () => {
+      const response = await app.inject({
+        method: 'GET',
+        url: '/api/queues',
+        cookies: { [SESSION_COOKIE_NAME]: ticketSessionCookie },
+      })
+
+      expect(response.statusCode).toBe(403)
     })
   })
 })

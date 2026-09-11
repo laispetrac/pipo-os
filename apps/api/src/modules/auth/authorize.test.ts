@@ -220,86 +220,107 @@ describe('the policy hook', () => {
 })
 
 // The inventory of which routes stand behind a policy. A route added without
-// deciding its side lands here as null and turns this red, the same way
-// public-routes.test.ts guards the authentication side. The nulls on queue and
-// group structure are ACE-208, not an omission.
+// deciding its side lands here as null and turns this red. The nulls left are
+// the session's own routes, which ask for a session and not a permission.
 describe('the policy each route requires', () => {
   const TICKET = { domain: 'pipodesk', specific: 'ticket' }
+  const STRUCTURE = { domain: 'pipodesk', specific: 'structure' }
 
   // With the flag on, buildApp registers dev-login, which EXPECTED does not list.
   const flag = process.env.DEV_LOGIN_ENABLED
-  beforeAll(() => {
+  const registered: RouteOptions[] = []
+  let inventoried: FastifyInstance | undefined
+
+  beforeAll(async () => {
     delete process.env.DEV_LOGIN_ENABLED
+    inventoried = buildApp()
+    inventoried.addHook('onRoute', (route) => {
+      registered.push(route)
+    })
+    // The final config value is only there after ready(): a route stamped by a
+    // scope of its own, like the docs, has nothing on it before that.
+    await inventoried.ready()
   })
-  afterAll(() => {
+
+  afterAll(async () => {
     if (flag !== undefined) {
       process.env.DEV_LOGIN_ENABLED = flag
     }
+    // Otherwise the pool dbPlugin opened stays behind.
+    await inventoried?.close().catch(() => {})
   })
 
+  const apiRoutes = () =>
+    registered
+      .flatMap((route) => {
+        const methods = Array.isArray(route.method) ? route.method : [route.method]
+        return methods.map((method) => ({
+          method,
+          url: route.url,
+          config: route.config,
+          schema: route.schema,
+        }))
+      })
+      .filter(
+        ({ method, url }) => url.startsWith('/api') && method !== 'HEAD' && method !== 'OPTIONS',
+      )
+
   const EXPECTED: Array<[string, PolicyRequirement | null]> = [
-    ['DELETE /api/groups/:id', null],
-    ['DELETE /api/groups/:id/members/:memberId', null],
-    ['DELETE /api/queues/:id', null],
-    ['DELETE /api/queues/:id/groups/:groupId', null],
+    ['DELETE /api/groups/:id', STRUCTURE],
+    ['DELETE /api/groups/:id/members/:memberId', STRUCTURE],
+    ['DELETE /api/queues/:id', STRUCTURE],
+    ['DELETE /api/queues/:id/groups/:groupId', STRUCTURE],
     ['GET /api/auth/google', null],
     ['GET /api/auth/google/callback', null],
     ['GET /api/auth/me', null],
-    ['GET /api/groups', null],
-    ['GET /api/groups/:id', null],
-    ['GET /api/queues', null],
-    ['GET /api/queues/:id', null],
+    ['GET /api/groups', STRUCTURE],
+    ['GET /api/groups/:id', STRUCTURE],
+    ['GET /api/queues', STRUCTURE],
+    ['GET /api/queues/:id', STRUCTURE],
     ['GET /api/queues/:id/tickets', TICKET],
     ['GET /api/tickets', TICKET],
     ['GET /api/tickets/:id', TICKET],
     ['GET /api/tickets/:id/comments', TICKET],
     ['GET /api/tickets/:id/timeline', TICKET],
     ['GET /api/tickets/rows', TICKET],
-    ['PATCH /api/groups/:id', null],
-    ['PATCH /api/groups/:id/members/:memberId', null],
-    ['PATCH /api/queues/:id', null],
+    ['PATCH /api/groups/:id', STRUCTURE],
+    ['PATCH /api/groups/:id/members/:memberId', STRUCTURE],
+    ['PATCH /api/queues/:id', STRUCTURE],
     ['PATCH /api/tickets/:id', TICKET],
     ['PATCH /api/tickets/:id/status', TICKET],
     ['POST /api/auth/logout', null],
-    ['POST /api/groups', null],
-    ['POST /api/groups/:id/members', null],
-    ['POST /api/queues', null],
-    ['POST /api/queues/:id/groups', null],
+    ['POST /api/groups', STRUCTURE],
+    ['POST /api/groups/:id/members', STRUCTURE],
+    ['POST /api/queues', STRUCTURE],
+    ['POST /api/queues/:id/groups', STRUCTURE],
     ['POST /api/tickets', TICKET],
     ['POST /api/tickets/:id/claim', TICKET],
     ['POST /api/tickets/:id/comments', TICKET],
   ]
 
-  it('is exactly the routes whose side is already stated', async () => {
-    const routes: RouteOptions[] = []
-    const inventoried = buildApp()
-    inventoried.addHook('onRoute', (route) => {
-      routes.push(route)
-    })
+  it('is exactly the routes whose side is already stated', () => {
+    const inventory = apiRoutes()
+      .map(({ method, url, config }): [string, PolicyRequirement | null] => [
+        `${method} ${url}`,
+        config?.policy === undefined ? null : (config.policy as PolicyRequirement),
+      ])
+      .sort(([a], [b]) => a.localeCompare(b))
 
-    // The final config value is only there after ready(): a route stamped by a
-    // scope of its own, like the docs, has nothing on it before that.
-    try {
-      await inventoried.ready()
+    expect(inventory).toEqual(EXPECTED)
+  })
 
-      const inventory = routes
-        .flatMap((route) => {
-          const methods = Array.isArray(route.method) ? route.method : [route.method]
-          return methods.map((method) => ({ method, url: route.url, config: route.config }))
-        })
-        .filter(
-          ({ method, url }) => url.startsWith('/api') && method !== 'HEAD' && method !== 'OPTIONS',
-        )
-        .map(({ method, url, config }): [string, PolicyRequirement | null] => [
-          `${method} ${url}`,
-          config?.policy === undefined ? null : (config.policy as PolicyRequirement),
-        ])
-        .sort(([a], [b]) => a.localeCompare(b))
+  // The hook answers 403 either way; a route missing it ships a contract, and a
+  // generated client, that do not know the route can refuse.
+  it('declares the 403 on every route it closes', () => {
+    const missing = apiRoutes()
+      .filter(({ config }) => config?.policy !== undefined)
+      .filter(
+        ({ schema }) =>
+          (schema?.response as Record<string, unknown> | undefined)?.['403'] === undefined,
+      )
+      .map(({ method, url }) => `${method} ${url}`)
+      .sort()
 
-      expect(inventory).toEqual(EXPECTED)
-    } finally {
-      // A failed assertion would otherwise leave the pool dbPlugin opened.
-      await inventoried.close().catch(() => {})
-    }
+    expect(missing).toEqual([])
   })
 })

@@ -3,7 +3,7 @@ import type { FastifyInstance } from 'fastify'
 import { requireUser, requireUserId } from '../auth/authenticate.js'
 import { businessToday } from '../../shared/business-date.js'
 import { errorResponseSchema } from '../../shared/schemas.js'
-import { TICKET_POLICY } from './policy.js'
+import { TICKET_POLICY } from '../auth/policy.js'
 import { ticketRowsQuerySchema, ticketRowsSchema } from './rows-schema.js'
 import {
   createTicketBodySchema,

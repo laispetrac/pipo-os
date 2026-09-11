@@ -3,6 +3,7 @@ import type { FastifyInstance } from 'fastify'
 import { z } from 'zod'
 import { requireUserId } from '../auth/authenticate.js'
 import { errorResponseSchema } from '../../shared/schemas.js'
+import { STRUCTURE_POLICY } from '../auth/policy.js'
 import {
   addMemberBodySchema,
   createGroupBodySchema,
@@ -23,12 +24,14 @@ export function registerGroupRoutes(app: FastifyInstance, service: GroupsService
   server.post(
     '/api/groups',
     {
+      config: { policy: STRUCTURE_POLICY },
       schema: {
         body: createGroupBodySchema,
         response: {
           201: groupSchema,
           400: errorResponseSchema,
           401: errorResponseSchema,
+          403: errorResponseSchema,
           413: errorResponseSchema,
           415: errorResponseSchema,
         },
@@ -45,9 +48,15 @@ export function registerGroupRoutes(app: FastifyInstance, service: GroupsService
   server.get(
     '/api/groups',
     {
+      config: { policy: STRUCTURE_POLICY },
       schema: {
         querystring: listGroupsQuerySchema,
-        response: { 200: groupListSchema, 400: errorResponseSchema, 401: errorResponseSchema },
+        response: {
+          200: groupListSchema,
+          400: errorResponseSchema,
+          401: errorResponseSchema,
+          403: errorResponseSchema,
+        },
       },
     },
     async (request) => {
@@ -58,12 +67,14 @@ export function registerGroupRoutes(app: FastifyInstance, service: GroupsService
   server.get(
     '/api/groups/:id',
     {
+      config: { policy: STRUCTURE_POLICY },
       schema: {
         params: groupParamsSchema,
         response: {
           200: groupSchema,
           400: errorResponseSchema,
           401: errorResponseSchema,
+          403: errorResponseSchema,
           404: errorResponseSchema,
         },
       },
@@ -76,6 +87,7 @@ export function registerGroupRoutes(app: FastifyInstance, service: GroupsService
   server.patch(
     '/api/groups/:id',
     {
+      config: { policy: STRUCTURE_POLICY },
       schema: {
         params: groupParamsSchema,
         body: updateGroupBodySchema,
@@ -83,6 +95,7 @@ export function registerGroupRoutes(app: FastifyInstance, service: GroupsService
           200: groupSchema,
           400: errorResponseSchema,
           401: errorResponseSchema,
+          403: errorResponseSchema,
           404: errorResponseSchema,
           413: errorResponseSchema,
           415: errorResponseSchema,
@@ -98,12 +111,14 @@ export function registerGroupRoutes(app: FastifyInstance, service: GroupsService
   server.delete(
     '/api/groups/:id',
     {
+      config: { policy: STRUCTURE_POLICY },
       schema: {
         params: groupParamsSchema,
         response: {
           204: z.null(),
           400: errorResponseSchema,
           401: errorResponseSchema,
+          403: errorResponseSchema,
           404: errorResponseSchema,
           409: errorResponseSchema,
         },
@@ -119,6 +134,7 @@ export function registerGroupRoutes(app: FastifyInstance, service: GroupsService
   server.post(
     '/api/groups/:id/members',
     {
+      config: { policy: STRUCTURE_POLICY },
       schema: {
         params: groupParamsSchema,
         body: addMemberBodySchema,
@@ -126,6 +142,7 @@ export function registerGroupRoutes(app: FastifyInstance, service: GroupsService
           201: groupMemberSchema,
           400: errorResponseSchema,
           401: errorResponseSchema,
+          403: errorResponseSchema,
           404: errorResponseSchema,
           409: errorResponseSchema,
           413: errorResponseSchema,
@@ -143,12 +160,14 @@ export function registerGroupRoutes(app: FastifyInstance, service: GroupsService
   server.delete(
     '/api/groups/:id/members/:memberId',
     {
+      config: { policy: STRUCTURE_POLICY },
       schema: {
         params: memberParamsSchema,
         response: {
           204: z.null(),
           400: errorResponseSchema,
           401: errorResponseSchema,
+          403: errorResponseSchema,
           404: errorResponseSchema,
         },
       },
@@ -163,6 +182,7 @@ export function registerGroupRoutes(app: FastifyInstance, service: GroupsService
   server.patch(
     '/api/groups/:id/members/:memberId',
     {
+      config: { policy: STRUCTURE_POLICY },
       schema: {
         params: memberParamsSchema,
         body: updateMemberBodySchema,
@@ -170,6 +190,7 @@ export function registerGroupRoutes(app: FastifyInstance, service: GroupsService
           200: groupMemberSchema,
           400: errorResponseSchema,
           401: errorResponseSchema,
+          403: errorResponseSchema,
           404: errorResponseSchema,
           413: errorResponseSchema,
           415: errorResponseSchema,
