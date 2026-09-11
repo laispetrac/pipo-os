@@ -219,12 +219,11 @@ export interface GroupMembersRepositoryPort {
 export class GroupMembersRepository implements GroupMembersRepositoryPort {
   constructor(private readonly db: Kysely<Database>) {}
 
-  async add(groupId: string, data: AddMemberBody): Promise<GroupMember> {
-    const userId = data.userId
+  async add(groupId: string, { userId, role }: AddMemberBody): Promise<GroupMember> {
     try {
       const row = await this.db
         .insertInto('ticket_group_members')
-        .values({ group_id: groupId, user_id: userId, ...(data.role && { role: data.role }) })
+        .values({ group_id: groupId, user_id: userId, ...(role !== undefined && { role }) })
         .onConflict((oc) => oc.columns(['group_id', 'user_id']).doNothing())
         .returningAll()
         .executeTakeFirst()
