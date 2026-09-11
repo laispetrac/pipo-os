@@ -19,6 +19,14 @@ const PII_FIELD_ROOTS = [
   'beneficiaryName',
 ] as const
 
+/** What every redaction writes in place of the value, here so the query string
+ *  and pino's own censor cannot drift into two spellings. */
+export const REDACTED = '[REDACTED]'
+
+/** Query parameters whose value is typed by a person, so it carries whoever
+ *  they are searching for. `req.url` is logged whole, and pino cannot reach in. */
+export const PII_QUERY_PARAMS: readonly string[] = ['subjectQuery', 'search']
+
 /** Redacted whole — free-form jsonb with no closed shape (PD-001). */
 const PII_OBJECT_ROOTS = ['enrollmentSnapshot', 'requester', 'collaborators'] as const
 

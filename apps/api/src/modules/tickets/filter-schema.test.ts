@@ -49,6 +49,14 @@ describe('ticketFilterSchema', () => {
     expect(ticketFilterSchema.parse(filter)).toEqual(filter)
   })
 
+  it('accepts subjectQuery, the free text the queue searches the subject with', () => {
+    expect(ticketFilterSchema.parse({ subjectQuery: 'josé' })).toEqual({ subjectQuery: 'josé' })
+  })
+
+  it('rejects an empty subjectQuery — a blank search constrains nothing', () => {
+    expect(ticketFilterSchema.safeParse({ subjectQuery: '' }).success).toBe(false)
+  })
+
   it('rejects an unknown field, so a typo does not become a silently ignored filter', () => {
     const result = ticketFilterSchema.safeParse({ status: 'broker-processing' })
 

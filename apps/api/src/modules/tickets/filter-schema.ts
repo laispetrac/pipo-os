@@ -33,6 +33,8 @@ export const ticketFilterSchema = z
     assigneeIds: z.array(assigneeFilterValueSchema).min(1).optional(),
     /** `null` = no priority, which the queue shows as "Sem prioridade". */
     priorities: z.array(ticketPrioritySchema.nullable()).min(1).optional(),
+    /** Free text over the ticket's subject, accent- and case-insensitive. */
+    subjectQuery: nonEmptyText.optional(),
     actionDateBefore: dateCut.optional(),
     urgentBy: dateCut.optional(),
     createdSince: dateCut.optional(),

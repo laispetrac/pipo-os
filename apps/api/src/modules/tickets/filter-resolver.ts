@@ -1,8 +1,9 @@
 import { sql, type Expression, type ExpressionBuilder, type RawBuilder, type SqlBool } from 'kysely'
 import type { Database } from '../../infrastructure/db.js'
 import { startOfBusinessDay } from '../../shared/business-date.js'
+import { snapshotString } from './enrollment-snapshot.js'
 import type { TicketFilter } from './filter-schema.js'
-import { toStored, type VocabularyName } from './vocabulary.js'
+import { INSURANCE_SUFFIX, toStored, type VocabularyName } from './vocabulary.js'
 
 /** Twin of SLEEP_DAYS in web/src/lib/pipodesk/filter.ts. The two boundary
  *  tickets in contract/ticket-filter-cases.json fail whichever side moves alone. */
@@ -33,6 +34,32 @@ function inOrNull(eb: Eb, column: 'assignee_id' | 'priority', values: (string | 
   if (values.length !== present.length) parts.push(eb(column, 'is', null))
   return eb.or(parts)
 }
+
+/** The subject the queue shows, as `buildSubject` builds it in
+ *  web/src/lib/pipodesk/ticket-row.ts. Change one, change both. */
+const SUBJECT = sql`coalesce(
+  nullif(btrim(title), ''),
+  nullif(
+    concat_ws(
+      ' · ',
+      carrier_name,
+      regexp_replace(product, ${INSURANCE_SUFFIX}, ''),
+      ${snapshotString(['primary', 'profile'], ['preferred-name', 'name'])}
+    ),
+    ''
+  ),
+  id::text
+)`
+
+/** Twin of `normalizeText` in web/src/lib/pipodesk/filter.ts: decompose, drop
+ *  the combining marks, lower. Change one, change both. */
+const FOLDED_SUBJECT = sql`lower(regexp_replace(normalize(${SUBJECT}, NFD), '[\\u0300-\\u036f]', '', 'g'))`
+
+const foldQuery = (text: string): string =>
+  text
+    .normalize('NFD')
+    .replace(/[\u0300-\u036f]/g, '')
+    .toLowerCase()
 
 /** The columns that hold the EI's word, each with the vocabulary that reads it. */
 const VOCABULARY_OF = {
@@ -92,6 +119,11 @@ export const FIELD_RESOLVERS: Record<keyof TicketFilter, Resolver> = {
       : null,
   priorities: (eb, { priorities }) =>
     priorities?.length ? inOrNull(eb, 'priority', priorities) : null,
+  subjectQuery: (_eb, { subjectQuery }) => {
+    const needle = foldQuery(subjectQuery ?? '')
+    // `strpos(x, '')` is 1, so an empty needle would widen the filter, not cut it.
+    return needle === '' ? null : sql<SqlBool>`strpos(${FOLDED_SUBJECT}, ${needle}) > 0`
+  },
   actionDateBefore: (_eb, { actionDateBefore }) =>
     actionDateBefore === undefined
       ? null

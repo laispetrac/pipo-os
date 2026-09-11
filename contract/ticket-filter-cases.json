@@ -1,5 +1,5 @@
 {
-  "readme": "Shared corpus proving the product invariant of PD-043: a saved TicketFilter selects the same set in apps/web (matchesFilter, over rows the API already translated) and in apps/api (ticketFilterConditions, over columns holding the EI's own words). Both suites read this file and assert the same expected ids, so a divergence fails a test instead of surfacing as a node that announces one number and lists another. `stored` is what the column holds, `client` is what the row carries after the API translates; a case's filter is always written in the client's words, which is what a saved view contains. A case may also carry a window (awake | sleeping | all), applied with today: the two tickets due on 09-02 and 09-03 sit on either side of the SLEEP_DAYS cut, so a side that moves the constant alone fails here. A day is a São Paulo calendar day, the operation's, whatever instant the column holds: the ticket due at 01:30Z on 09-03 is still 09-02 in São Paulo, so it is awake.",
+  "readme": "Shared corpus proving the product invariant of PD-043: a saved TicketFilter selects the same set in apps/web (matchesFilter, over rows the API already translated) and in apps/api (ticketFilterConditions, over columns holding the EI's own words). Both suites read this file and assert the same expected ids, so a divergence fails a test instead of surfacing as a node that announces one number and lists another. `stored` is what the column holds, `client` is what the row carries after the API translates; a case's filter is always written in the client's words, which is what a saved view contains. A case may also carry a window (awake | sleeping | all), applied with today: the two tickets due on 09-02 and 09-03 sit on either side of the SLEEP_DAYS cut, so a side that moves the constant alone fails here. A day is a São Paulo calendar day, the operation's, whatever instant the column holds: the ticket due at 01:30Z on 09-03 is still 09-02 in São Paulo, so it is awake. A ticket's subject is not a field of this file: each side builds it from `title`, `carrierName`, `client.product` and `beneficiaryName`, the web through `buildSubject` and the API through the `SUBJECT` expression, so a `subjectQuery` case proves the two constructions agree and not merely that both read the same column. A ticket with no `title` takes the derived subject; one with all four missing takes its own id.",
   "viewerId": "ana@pipo.health",
   "today": "2026-08-31",
   "companyA": "00000000-0000-4000-8000-0000000000a1",
@@ -8,6 +8,9 @@
   "tickets": [
     {
       "id": "livre-urgente",
+      "title": null,
+      "carrierName": "Unimed",
+      "beneficiaryName": "José Conceição",
       "status": "broker-processing",
       "companyId": "00000000-0000-4000-8000-0000000000a1",
       "enrollmentType": "inclusion",
@@ -34,6 +37,9 @@
     },
     {
       "id": "da-ana-atrasado",
+      "title": null,
+      "carrierName": "Amil",
+      "beneficiaryName": "Marta Ribeiro",
       "status": "missing-documents",
       "companyId": "00000000-0000-4000-8000-0000000000a1",
       "enrollmentType": "exclusion",
@@ -60,6 +66,9 @@
     },
     {
       "id": "da-ana-sem-prioridade",
+      "title": null,
+      "carrierName": "Petlove",
+      "beneficiaryName": "Pedro Alves",
       "status": "carrier-processing",
       "companyId": "00000000-0000-4000-8000-0000000000b2",
       "enrollmentType": "inclusion",
@@ -86,6 +95,9 @@
     },
     {
       "id": "do-bruno",
+      "title": null,
+      "carrierName": "Amil",
+      "beneficiaryName": "Carla Nunes",
       "status": "incorrect-data",
       "companyId": "00000000-0000-4000-8000-0000000000b2",
       "enrollmentType": "plan_change",
@@ -112,6 +124,9 @@
     },
     {
       "id": "fechado",
+      "title": null,
+      "carrierName": "Wellhub",
+      "beneficiaryName": "Ana Paula Dias",
       "status": "completed",
       "companyId": "00000000-0000-4000-8000-0000000000a1",
       "enrollmentType": "inclusion",
@@ -138,6 +153,9 @@
     },
     {
       "id": "acorda-no-limite",
+      "title": null,
+      "carrierName": "SulAmérica",
+      "beneficiaryName": "Beatriz Lima",
       "status": "carrier-processing",
       "companyId": "00000000-0000-4000-8000-0000000000b2",
       "enrollmentType": "exclusion",
@@ -164,6 +182,9 @@
     },
     {
       "id": "dorme-um-dia-alem",
+      "title": "Exclusão de Rafael Souza — reenvio",
+      "carrierName": "SulAmérica",
+      "beneficiaryName": "Rafael Souza",
       "status": "carrier-processing",
       "companyId": "00000000-0000-4000-8000-0000000000b2",
       "enrollmentType": "exclusion",
@@ -190,6 +211,9 @@
     },
     {
       "id": "vira-o-dia-so-em-utc",
+      "title": null,
+      "carrierName": null,
+      "beneficiaryName": "Helena Prado",
       "status": "carrier-processing",
       "companyId": "00000000-0000-4000-8000-0000000000b2",
       "enrollmentType": "exclusion",
@@ -470,6 +494,63 @@
       "name": "the EI's canonical product name is not a client word either",
       "filter": {
         "products": ["health-insurance"]
+      },
+      "expected": []
+    },
+    {
+      "name": "subjectQuery finds an accented subject typed without accents",
+      "filter": {
+        "subjectQuery": "jose"
+      },
+      "expected": ["livre-urgente"]
+    },
+    {
+      "name": "subjectQuery ignores case",
+      "filter": {
+        "subjectQuery": "AMIL"
+      },
+      "expected": ["da-ana-atrasado", "do-bruno"]
+    },
+    {
+      "name": "subjectQuery reads the product as the screen shows it, not as the column stores it",
+      "filter": {
+        "subjectQuery": "dental"
+      },
+      "expected": ["acorda-no-limite", "vira-o-dia-so-em-utc"]
+    },
+    {
+      "name": "the stored word behind that product selects nothing, because nobody sees it",
+      "filter": {
+        "subjectQuery": "dental-insurance"
+      },
+      "expected": []
+    },
+    {
+      "name": "a written title takes the place of the subject built from the movement",
+      "filter": {
+        "subjectQuery": "reenvio"
+      },
+      "expected": ["dorme-um-dia-alem"]
+    },
+    {
+      "name": "subjectQuery skips a part the movement does not have",
+      "filter": {
+        "subjectQuery": "dental · helena"
+      },
+      "expected": ["vira-o-dia-so-em-utc"]
+    },
+    {
+      "name": "subjectQuery narrows on top of the other fields",
+      "filter": {
+        "subjectQuery": "amil",
+        "groupIds": ["00000000-0000-4000-8000-0000000000c3"]
+      },
+      "expected": ["da-ana-atrasado", "do-bruno"]
+    },
+    {
+      "name": "a subject nobody wrote selects nothing",
+      "filter": {
+        "subjectQuery": "reembolso"
       },
       "expected": []
     }

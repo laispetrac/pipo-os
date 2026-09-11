@@ -6,6 +6,7 @@
  */
 
 import { COMPANY_STRUCTURE_COPY } from '@/constants/pipodesk/domain'
+import { normalizeText as normalize } from './filter'
 import { toQueueNode } from './queue-node'
 import type { QueueNode } from './queue-view'
 import { SEARCH_NODE_PREFIX, type TreeNode, type TreeSection } from './tree'
@@ -44,9 +45,6 @@ export interface SearchGroup {
 }
 
 export const MAX_PER_CATEGORY = 5
-
-/** Accent- and case-insensitive: `Conceição` must match `conceicao`. */
-const normalize = (text: string): string => text.normalize('NFD').replace(/[̀-ͯ]/g, '').toLowerCase()
 
 /** Synthetic search node. Crosses the window (`all`) on purpose: yesterday's
  *  closed ticket is exactly what one looks up by number. */

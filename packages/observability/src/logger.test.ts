@@ -1,7 +1,7 @@
 import { Writable } from 'node:stream'
 import pino from 'pino'
 import { describe, expect, it } from 'vitest'
-import { createLoggerOptions } from './logger.js'
+import { createLoggerOptions, redactUrl } from './logger.js'
 import { kebabOf, snakeOf } from './redact.js'
 
 function captureLogs() {
@@ -218,5 +218,47 @@ describe('grafias', () => {
   it('leaves a single-word root untouched', () => {
     expect(kebabOf('cpf')).toBe('cpf')
     expect(snakeOf('cpf')).toBe('cpf')
+  })
+})
+
+describe('redactUrl', () => {
+  it('redacts the search term, which is the name of whoever is being looked for', () => {
+    const { stream, lines } = captureLogs()
+    const logger = pino(createLoggerOptions({ nodeEnv: 'test' }), stream)
+
+    logger.info(
+      { req: { method: 'GET', url: '/api/tickets/rows?statuses=completed&subjectQuery=Maria' } },
+      'request received',
+    )
+
+    const entry = lastEntry(lines)
+    expect(entry.req.url).toContain('statuses=completed')
+    expect(entry.req.url).not.toContain('Maria')
+  })
+
+  it('redacts the search of the older route too, which matches name and tax id', () => {
+    expect(redactUrl('/api/tickets?search=Maria%20Silva')).not.toContain('Maria')
+    expect(redactUrl('/api/tickets?search=12345678901')).not.toContain('12345678901')
+  })
+
+  it('writes the censor unescaped, so a redacted line stays greppable', () => {
+    expect(redactUrl('/api/tickets/rows?subjectQuery=Maria')).toBe(
+      '/api/tickets/rows?subjectQuery=[REDACTED]',
+    )
+  })
+
+  /* `URLSearchParams.set` writes over the first occurrence in place, so the
+     redacted line stays greppable by position for whoever is debugging. */
+  it('keeps the parameters in the order they arrived', () => {
+    expect(redactUrl('/api/tickets/rows?subjectQuery=Maria&tags=vip&window=all')).toBe(
+      '/api/tickets/rows?subjectQuery=[REDACTED]&tags=vip&window=all',
+    )
+  })
+
+  it('leaves a url with nothing to redact exactly as it came', () => {
+    expect(redactUrl('/api/tickets/rows?tags=vip&window=all')).toBe(
+      '/api/tickets/rows?tags=vip&window=all',
+    )
+    expect(redactUrl('/api/tickets/rows')).toBe('/api/tickets/rows')
   })
 })

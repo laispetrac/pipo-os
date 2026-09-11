@@ -130,6 +130,25 @@ export const listTicketsQuerySchema = z.object({
   pageSize: z.coerce.number().int().min(1).max(100).default(20),
 })
 
+export type ListTicketsQuery = z.infer<typeof listTicketsQuerySchema>
+
+/** Every query parameter of `GET /tickets`, classified as in `QUERY_FIELD_PII`:
+ *  `true` is text a person types, so it must leave `req.url`. */
+export const LIST_QUERY_FIELD_PII = {
+  status: 'closed vocabulary',
+  enrollmentId: 'internal uuid',
+  queueId: 'internal uuid',
+  assigneeId: 'Pipo user id, not the beneficiary — ACE-196',
+  enrollmentType: 'closed vocabulary',
+  sourceSystem: 'closed vocabulary',
+  companyId: 'internal uuid',
+  tags: 'a label picked from the queue, never typed free — ACE-196',
+  // Matches `name` and `tax_id` inside the snapshot, so it is typed as either.
+  search: true,
+  page: 'number',
+  pageSize: 'number',
+} satisfies Record<keyof ListTicketsQuery, true | string>
+
 export const ticketListSchema = z
   .object({
     data: z.array(ticketSchema),
@@ -145,5 +164,4 @@ export type TicketParams = z.infer<typeof ticketParamsSchema>
 export type CreateTicketBody = z.infer<typeof createTicketBodySchema>
 export type UpdateTicketBody = z.infer<typeof updateTicketBodySchema>
 export type UpdateTicketStatusBody = z.infer<typeof updateTicketStatusBodySchema>
-export type ListTicketsQuery = z.infer<typeof listTicketsQuerySchema>
 export type TicketList = z.infer<typeof ticketListSchema>

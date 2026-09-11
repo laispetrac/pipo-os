@@ -25,12 +25,16 @@ const fromTable = (table: Record<string, string>): Vocabulary => ({
   },
 })
 
+/** Anchored at the end, so the SQL side applies the same rule with
+ *  `regexp_replace` instead of restating it. Pinned by a test. */
+export const INSURANCE_SUFFIX = '-insurance$'
+
 /** The EI names the same benefit twice, the short form of its Go payload
  *  (`health`) and the canonical Clojure one (`health-insurance`), and either
  *  may be stored. */
 const insuranceSuffix: Vocabulary = {
   clientWords: null,
-  toClient: (stored) => stored.replace(/-insurance$/, ''),
+  toClient: (stored) => stored.replace(new RegExp(INSURANCE_SUFFIX), ''),
   // The client never sees the suffix, so a value carrying it is not a client word.
   toStored: (clientValue) =>
     clientValue.endsWith('-insurance') ? [] : [clientValue, `${clientValue}-insurance`],
