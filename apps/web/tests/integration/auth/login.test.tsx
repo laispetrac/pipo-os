@@ -7,7 +7,6 @@ import { useSessionStore } from '@/stores/session'
 import loginConstants from '@/constants/pages/auth/login'
 import devConstants from '@/constants/pages/auth/login/dev'
 import sidebarConstants from '@/constants/pipodesk/sidebar'
-import popoverStyles from '@/components/pipodesk/primitives/Popover.module.css'
 
 const jsonResponse = (body: unknown, status = 200) =>
   new Response(JSON.stringify(body), {
@@ -264,9 +263,9 @@ describe('auth/login', () => {
 
     await user.click(await screen.findByRole('button', { name: /conta de/i }))
 
-    // jsdom has no layout, so the side the primitive positions the panel on is
-    // what the test can hold — and the wrong side is what hid the panel.
-    expect(screen.getByRole('dialog', { name: /conta de/i })).toHaveClass(popoverStyles.top)
+    // jsdom has no layout: the side the primitive hangs the panel from is what
+    // the test can hold, and the wrong side is what hid it on screen.
+    expect(screen.getByRole('dialog', { name: /conta de/i })).toHaveAttribute('data-side', 'top')
   })
 
   it('keeps the queue reachable once authenticated', async () => {

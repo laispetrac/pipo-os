@@ -4,6 +4,9 @@ import styles from './Popover.module.css'
 /** Which edge of the trigger the panel shares: `left` grows rightwards. */
 export type PopoverAlign = 'left' | 'right'
 
+/** Which side of the trigger the panel hangs from. */
+export type PopoverSide = 'top' | 'bottom'
+
 export interface PopoverProps {
   open: boolean
   onClose: () => void
@@ -11,8 +14,9 @@ export interface PopoverProps {
   label: string
   /** Alignment relative to the trigger. */
   align?: PopoverAlign
-  /** Which side to open on. `top` is for the batch bar, pinned to the bottom. */
-  side?: 'top' | 'bottom'
+  /** Which side to open on. `top` is for panels whose trigger sits at the
+   *  bottom of the screen — the batch bar and the sidebar footer. */
+  side?: PopoverSide
   /** The trigger. Pointer events on it belong to it: without this, closing
    *  here let its click reopen the panel and the button never closed. */
   anchor?: RefObject<HTMLElement | null>
@@ -81,9 +85,10 @@ export function Popover({
       ref={panel}
       role="dialog"
       aria-label={label}
-      // The side is a CSS class jsdom cannot see; this is how a caller proves
-      // it asked for the right one.
+      // Placement is a CSS class jsdom cannot see; these are how a caller
+      // proves it asked for the right one.
       data-align={align}
+      data-side={side}
       className={[
         styles.panel,
         align === 'right' ? styles.right : styles.left,

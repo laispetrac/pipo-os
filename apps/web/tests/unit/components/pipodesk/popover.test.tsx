@@ -1,12 +1,17 @@
 import { fireEvent, render, screen } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { useRef, useState } from 'react'
-import { Popover, type PopoverAlign } from '@/components/pipodesk/primitives'
+import { Popover, type PopoverAlign, type PopoverSide } from '@/components/pipodesk/primitives'
 
 function Harness({
   onOpenChange,
   align,
-}: { onOpenChange?: (open: boolean) => void; align?: PopoverAlign } = {}) {
+  side,
+}: {
+  onOpenChange?: (open: boolean) => void
+  align?: PopoverAlign
+  side?: PopoverSide
+} = {}) {
   const [open, setOpen] = useState(false)
   const trigger = useRef<HTMLButtonElement>(null)
   const change = (next: boolean) => {
@@ -25,6 +30,7 @@ function Harness({
         label="Filtros"
         anchor={trigger}
         align={align}
+        side={side}
       >
         <button type="button">Status</button>
       </Popover>
@@ -91,6 +97,13 @@ describe('Popover', () => {
     fireEvent.click(screen.getByRole('button', { name: 'Filtros' }))
 
     expect(screen.getByRole('dialog')).toHaveAttribute('data-align', 'right')
+  })
+
+  it('should name the side it hangs from, which is what keeps a footer panel on screen', () => {
+    render(<Harness side="top" />)
+    fireEvent.click(screen.getByRole('button', { name: 'Filtros' }))
+
+    expect(screen.getByRole('dialog')).toHaveAttribute('data-side', 'top')
   })
 
   it('should stay open when the click lands inside of it', () => {
